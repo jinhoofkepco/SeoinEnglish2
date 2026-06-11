@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose owns the real theme (EmojiEnglishTheme). This is just the
+         launch/window theme; Material3 base avoids an ActionBar. -->
+    <style name="Theme.EmojiEnglish" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

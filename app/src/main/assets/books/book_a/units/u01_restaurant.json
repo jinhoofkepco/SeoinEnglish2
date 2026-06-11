@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 2,
+  "unitId": "u01_restaurant",
+  "title": "At a Restaurant",
+  "level": "A2",
+  "content": {
+    "words": [
+      { "id": "w_order", "text": "order", "meaningKo": "주문하다", "emoji": "🧾",
+        "example": "I want to order pasta.", "similarWords": ["request", "ask for"] },
+      { "id": "w_delicious", "text": "delicious", "meaningKo": "맛있는", "emoji": "😋",
+        "example": "The pasta is delicious.", "similarWords": ["tasty", "yummy"] }
+    ],
+    "comic": {
+      "panels": [
+        { "id": "p1", "speaker": "Mina", "text": "I want to order pasta.",
+          "emojiScene": "👩‍🦰 ➜ 🧾 ➜ 🍝", "focusWordIds": ["w_order"] },
+        { "id": "p2", "speaker": "Waiter", "text": "Sure! Anything to drink?",
+          "emojiScene": "🧑‍🍳 ➜ 🥤", "focusWordIds": [] },
+        { "id": "p3", "speaker": "Mina", "text": "It is delicious!",
+          "emojiScene": "🍝 ➜ 😋", "focusWordIds": ["w_delicious"] }
+      ]
+    },
+    "passage": {
+      "id": "passage_01",
+      "title": "Lunch Time",
+      "text": "Mina goes to a restaurant. She wants to order pasta. The pasta is delicious.",
+      "sentences": [
+        "Mina goes to a restaurant.",
+        "She wants to order pasta.",
+        "The pasta is delicious."
+      ],
+      "chunks": [
+        { "id": "c1", "text": "Mina goes to a restaurant.", "meaningKo": "미나는 식당에 간다." },
+        { "id": "c2", "text": "She wants to order pasta.", "meaningKo": "그녀는 파스타를 주문하고 싶다." },
+        { "id": "c3", "text": "The pasta is delicious.", "meaningKo": "파스타는 맛있다." }
+      ],
+      "questions": [
+        { "id": "q1", "type": "multiple_choice", "question": "What does Mina want to order?",
+          "choices": ["Pasta", "Coffee", "Cake"], "answer": "Pasta" }
+      ]
+    }
+  },
+  "steps": [
+    { "id": "s1", "type": "word_comic",        "params": { "panelIds": ["p1", "p2", "p3"] } },
+    { "id": "s2", "type": "voice_explain",     "params": { "targetType": "word", "targetId": "w_order", "promptTemplateId": "word_basic" } },
+    { "id": "s3", "type": "similar_word_card", "params": { "wordId": "w_delicious", "answer": "tasty", "choices": ["noisy", "tasty", "empty", "late"] } },
+    { "id": "s4", "type": "shadowing",         "params": { "passageId": "passage_01" } },
+    { "id": "s5", "type": "simple_question",   "params": { "questionIds": ["q1"] } },
+    { "id": "s6", "type": "chunk_interpret",   "params": { "chunkIds": ["c1", "c2", "c3"] } }
+  ]
+}

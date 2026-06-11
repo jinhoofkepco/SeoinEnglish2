@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 2,
+  "bookId": "book_a",
+  "title": "Emoji English Book A",
+  "level": "A2",
+  "coverEmoji": "📕",
+  "units": [
+    { "unitId": "u01_restaurant", "title": "At a Restaurant", "file": "units/u01_restaurant.json" }
+  ]
+}
