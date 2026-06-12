@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 2,
+  "unitId": "u02_butter",
+  "title": "How Butter Is Made",
+  "level": "A2",
+  "content": {
+    "words": [
+      { "id": "w_raw", "text": "raw", "meaningKo": "날것의, 익히지 않은", "emoji": "🥛",
+        "example": "Butter is made from raw cow's milk." },
+      { "id": "w_solid", "text": "solid", "meaningKo": "단단한, 고체의", "emoji": "🧈",
+        "example": "Milk turns into a block of solid butter." },
+      { "id": "w_separate", "text": "separate", "meaningKo": "분리하다", "emoji": "⚙️",
+        "example": "The machine separates the cream from the milk." },
+      { "id": "w_beat", "text": "beat", "meaningKo": "치다, 두드리다", "emoji": "💥",
+        "example": "The cream is beaten in a churner." },
+      { "id": "w_churn", "text": "churn", "meaningKo": "휘젓다 (버터를 만들다)", "emoji": "🌀",
+        "example": "Churning breaks down the fat droplets." },
+      { "id": "w_break_down", "text": "break down", "meaningKo": "분해하다, 부수다", "emoji": "🧩",
+        "example": "Churning breaks down the thin covering." },
+      { "id": "w_fat", "text": "fat", "meaningKo": "지방", "emoji": "🟡",
+        "example": "Butter is made of fat." },
+      { "id": "w_droplet", "text": "droplet", "meaningKo": "작은 방울", "emoji": "💧",
+        "example": "Each tiny fat droplet has a thin cover." }
+    ],
+    "comic": { "panels": [] },
+    "passage": null
+  },
+  "steps": [
+    { "id": "s1", "type": "story_comic", "params": {
+      "title": "How Butter Is Made",
+      "meaning": "버터가 만들어지는 진짜 과정을 따라가는 이야기예요. 색칠된 단어를 누르면 설명을 듣고, 🎙로 선생님과 이야기도 나눠보세요.",
+      "words": ["raw", "solid", "separate", "beat", "churn", "break down", "fat", "droplet"],
+      "wordExplanations": {
+        "raw": "Raw means not cooked. Butter is made from raw cow's milk.",
+        "solid": "Solid means hard and firm, with a clear shape. Butter is solid. Milk is not.",
+        "separate": "Separate means to take things apart, so they are not together anymore.",
+        "beat": "Beat means to hit something many, many times.",
+        "churn": "Churn means to beat or shake cream until it becomes butter.",
+        "break down": "Break down means to break something into small pieces.",
+        "fat": "Fat is the white or yellow oily part of food. Butter is mostly fat.",
+        "droplet": "A droplet is a very, very small drop of liquid."
+      },
+      "voiceTalks": {
+        "raw": "Target word: raw (= not cooked). In the story, butter is made from raw cow's milk. Ask ONE easy question, e.g.: Is raw food cooked? or: What raw food do you know?",
+        "solid": "Target word: solid (= hard and firm, with a clear shape). In the story, milk turns into a block of solid butter. Ask ONE easy question, e.g.: Is milk solid? Is ice solid?",
+        "separate": "Target word: separate (= to take things apart). In the story, a separator separates the fatty cream from the milk. Ask ONE easy question, e.g.: What does the separator separate?",
+        "beat": "Target word: beat (= to hit many times). In the story, the cream is beaten in a churner. Ask this book question: What is the closest meaning of beat - to boil, or to hit?",
+        "churn": "Target word: churn (= to beat or shake cream into butter). Ask ONE easy question, e.g.: What do we get when we churn cream?",
+        "break down": "Target phrase: break down (= to break into small pieces). In the story, churning breaks down the thin cover of each fat droplet. Ask ONE easy question, e.g.: What breaks down the covers of the droplets?",
+        "fat": "Target word: fat (= the oily part of food). In the story, fat droplets join together and become butter. Ask ONE easy question, e.g.: Which foods have a lot of fat?",
+        "droplet": "Target word: droplet (= a very small drop of liquid). Ask ONE easy question, e.g.: Is a droplet big or small? Where can you see droplets?"
+      },
+      "panels": [
+        {
+          "bg": "room", "mood": "warm",
+          "zoom": { "type": "kenburns", "scale": 1.25, "originX": 45, "originY": 55 },
+          "caption": "We love butter on warm toast!",
+          "sprites": [
+            { "char": "👧", "x": 30, "y": 70, "scale": 1.0, "anim": "sway" },
+            { "char": "🍞", "x": 60, "y": 72, "scale": 1.0, "anim": "none" },
+            { "char": "🧈", "x": 76, "y": 62, "scale": 0.8, "anim": "float" }
+          ],
+          "bubble": { "anchor": 0, "text": "Smooth and creamy!" }
+        },
+        {
+          "bg": "forest",
+          "zoom": { "type": "pan", "scale": 1.3, "originX": 50, "originY": 55 },
+          "sfx": [ { "text": "MOO!", "x": 30, "y": 28, "size": 9, "rotate": -8, "color": "#fde047" } ],
+          "caption": "Butter starts as raw cow's milk.",
+          "sprites": [
+            { "char": "🐄", "x": 35, "y": 66, "scale": 1.2, "anim": "sway" },
+            { "char": "🥛", "x": 68, "y": 72, "scale": 0.9, "anim": "bounce" },
+            { "char": "🌿", "x": 18, "y": 78, "scale": 0.7, "anim": "none" }
+          ],
+          "bubble": { "anchor": 1, "text": "Fresh, not cooked!" }
+        },
+        {
+          "bg": "sky", "fx": "speed",
+          "sfx": [ { "text": "Vroom!", "x": 70, "y": 30, "size": 10, "rotate": -10, "color": "#93c5fd" } ],
+          "caption": "A truck carries the fresh milk to a factory.",
+          "sprites": [
+            { "char": "🚚", "x": 42, "y": 68, "scale": 1.2, "anim": "dash" },
+            { "char": "🏭", "x": 80, "y": 60, "scale": 1.0, "anim": "none" }
+          ]
+        },
+        {
+          "bg": "room",
+          "zoom": { "type": "pan", "scale": 1.3, "originX": 50, "originY": 60 },
+          "caption": "A separator separates the fatty cream from the milk.",
+          "sprites": [
+            { "char": "⚙️", "x": 50, "y": 56, "scale": 1.1, "anim": "spin" },
+            { "char": "🥛", "x": 24, "y": 74, "scale": 0.9, "anim": "none" },
+            { "char": "🍦", "x": 76, "y": 74, "scale": 0.9, "anim": "bounce" }
+          ],
+          "bubble": { "anchor": 2, "text": "See you, milk!" }
+        },
+        {
+          "bg": "lava", "mood": "red",
+          "zoom": { "type": "pushin", "scale": 1.25, "originX": 50, "originY": 55 },
+          "sfx": [ { "text": "82°C!", "x": 74, "y": 26, "size": 11, "rotate": -8, "color": "#fde047" } ],
+          "caption": "The cream is heated to kill the germs.",
+          "sprites": [
+            { "char": "🍦", "x": 40, "y": 68, "scale": 1.0, "anim": "none" },
+            { "char": "🔥", "x": 40, "y": 80, "scale": 0.8, "anim": "float" },
+            { "char": "🦠", "x": 70, "y": 50, "scale": 0.7, "anim": "shiver" }
+          ],
+          "bubble": { "anchor": 2, "text": "Too hot!" }
+        },
+        {
+          "bg": "room", "fx": "shake",
+          "sfx": [ { "text": "BEAT!", "x": 72, "y": 28, "size": 11, "rotate": -10, "color": "#fb923c" } ],
+          "caption": "A churner beats the cream. Churn, churn, churn!",
+          "sprites": [
+            { "char": "🌀", "x": 50, "y": 58, "scale": 1.2, "anim": "spin" },
+            { "char": "🍦", "x": 50, "y": 78, "scale": 0.9, "anim": "shiver" }
+          ],
+          "bubble": { "anchor": 1, "text": "Hit me many times!" }
+        },
+        {
+          "bg": "ocean",
+          "zoom": { "type": "pushin", "scale": 1.4, "originX": 50, "originY": 55 },
+          "caption": "Churning breaks down the cover of each tiny fat droplet.",
+          "sprites": [
+            { "char": "💧", "x": 32, "y": 56, "scale": 0.8, "anim": "shiver" },
+            { "char": "💧", "x": 56, "y": 66, "scale": 0.7, "anim": "shiver" },
+            { "char": "💧", "x": 74, "y": 50, "scale": 0.6, "anim": "shiver" },
+            { "char": "✨", "x": 48, "y": 36, "scale": 0.6, "anim": "float" }
+          ],
+          "bubble": { "anchor": 0, "text": "My cover is gone!" }
+        },
+        {
+          "bg": "sunset", "mood": "warm",
+          "caption": "The fat droplets join together!",
+          "sprites": [
+            { "char": "💧", "x": 34, "y": 62, "scale": 0.8, "anim": "bounce" },
+            { "char": "🤝", "x": 52, "y": 60, "scale": 0.8, "anim": "none" },
+            { "char": "💧", "x": 70, "y": 62, "scale": 0.8, "anim": "bounce" }
+          ],
+          "bubble": { "anchor": 1, "text": "Together we are strong!" }
+        },
+        {
+          "bg": "sunset", "mood": "warm", "climax": true, "fx": "focus",
+          "zoom": { "type": "shakezoom", "scale": 1.3, "originX": 50, "originY": 58 },
+          "sfx": [ { "text": "Ta-da!", "x": 74, "y": 26, "size": 12, "rotate": -8, "color": "#fde047" } ],
+          "caption": "Now it is a block of solid butter. Yum!",
+          "sprites": [
+            { "char": "🧈", "x": 48, "y": 64, "scale": 1.3, "anim": "jump" },
+            { "char": "😋", "x": 76, "y": 56, "scale": 0.9, "anim": "bounce" },
+            { "char": "✨", "x": 26, "y": 40, "scale": 0.7, "anim": "float" }
+          ],
+          "bubble": { "anchor": 0, "text": "I was milk!" }
+        }
+      ]
+    } }
+  ]
+}

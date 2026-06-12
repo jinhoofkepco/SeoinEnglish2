@@ -1,5 +1,6 @@
 package com.seoin.emojienglish.steps.storycomic
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,6 +56,8 @@ import com.seoin.emojienglish.step.params
 import com.seoin.emojienglish.step.resultSummaries
 import com.seoin.emojienglish.step.stepId
 import com.seoin.emojienglish.step.timeOrderedActivities
+import com.seoin.emojienglish.voice.StepPromptKind
+import com.seoin.emojienglish.voice.VoicePrompt
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -96,13 +100,19 @@ class StoryComicFeature @Inject constructor() : StepFeature {
         val s = spec as StoryComicSpec
         val data = s.data
         var panelIndex by remember { mutableIntStateOf(0) }
+        var selectedWord by remember { mutableStateOf<String?>(null) }
         val panel = data.panels[panelIndex]
         val isLast = panelIndex == data.panels.lastIndex
 
-        fun speakWord(word: String) {
-            val explanation = data.wordExplanations[word.lowercase().trim()]
+        fun explanationOf(word: String): String? =
+            data.wordExplanations[word.lowercase().trim()]
                 ?: session.content.word(word)?.let { "${it.meaningKo}. ${it.example}" }
-                ?: return
+
+        // 단어 탭 = 선택 + 즉시 설명 낭독. 선택된 단어는 카드로 펼쳐져
+        // [다시 듣기] / [선생님과 이야기] 로 이어진다 (탭 → 듣기 → 대화의 3단 심화).
+        fun selectWord(word: String) {
+            selectedWord = word
+            val explanation = explanationOf(word) ?: return
             session.trace("word_tap", mapOf("word" to word))
             session.speak("$word. $explanation")
         }
@@ -161,9 +171,76 @@ class StoryComicFeature @Inject constructor() : StepFeature {
                     ) {
                         data.words.forEach { word ->
                             AssistChip(
-                                onClick = { speakWord(word) },
-                                label = { Text(word) },
+                                onClick = { selectWord(word) },
+                                label = { Text(if (selectedWord == word) "⭐ $word" else word) },
                             )
+                        }
+                    }
+                }
+
+                // 선택된 단어 카드 — 설명 텍스트 + 다시 듣기 + 선생님과 이야기 나누기
+                selectedWord?.let { word ->
+                    val explanation = explanationOf(word)
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(
+                            Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    word,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                )
+                                Text(
+                                    "✕",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier
+                                        .clickable { selectedWord = null }
+                                        .padding(4.dp),
+                                )
+                            }
+                            if (explanation != null) {
+                                Text(
+                                    explanation,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(
+                                    onClick = {
+                                        explanation?.let { session.speak("$word. $it") }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                ) { Text("🔊 다시 듣기") }
+                                Button(
+                                    onClick = {
+                                        session.trace("word_talk", mapOf("word" to word))
+                                        session.requestVoice(
+                                            VoicePrompt(
+                                                templateId = "story_word_talk",
+                                                kind = StepPromptKind.QUIZ_VOCAB,
+                                                payload = data.voiceTalks[word.lowercase().trim()]
+                                                    ?: explanation
+                                                    ?: word,
+                                                contextLabel = "단어 이야기 · $word",
+                                            ),
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                ) { Text("🎙 이야기 나누기") }
+                            }
                         }
                     }
                 }
@@ -185,7 +262,7 @@ class StoryComicFeature @Inject constructor() : StepFeature {
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            text = captionWithTappableWords(panel.caption, data.words, ::speakWord),
+                            text = captionWithTappableWords(panel.caption, data.words, ::selectWord),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
@@ -266,11 +343,15 @@ private fun captionWithTappableWords(
         textDecoration = TextDecoration.Underline,
     )
     // Find each today-word occurrence (case-insensitive, word boundary).
+    // Each token of a multi-word entry may inflect ("break down" → "breaks down",
+    // "churn" → "churning"), so every token gets a \w* suffix.
     data class Hit(val start: Int, val end: Int, val word: String)
     val hits = mutableListOf<Hit>()
     words.forEach { word ->
         if (word.isBlank()) return@forEach
-        Regex("\\b${Regex.escape(word)}\\w*", RegexOption.IGNORE_CASE)
+        val pattern = word.trim().split(Regex("\\s+"))
+            .joinToString(separator = "\\w*\\s+", prefix = "\\b", postfix = "\\w*") { Regex.escape(it) }
+        Regex(pattern, RegexOption.IGNORE_CASE)
             .findAll(caption)
             .forEach { m -> hits += Hit(m.range.first, m.range.last + 1, word) }
     }
@@ -314,6 +395,7 @@ internal val PreviewStory = StoryComicData(
         "order" to "Order means to ask for food in a restaurant.",
         "delicious" to "Delicious means the food tastes very, very good.",
     ),
+    voiceTalks = emptyMap(),
     panels = listOf(
         StoryPanel(
             bg = "room", mood = "warm", climax = false, fx = "",

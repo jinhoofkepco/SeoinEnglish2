@@ -31,6 +31,12 @@ internal data class StoryComicData(
     val words: List<String>,
     /** word(lowercase) → kid-friendly English explanation, read by TTS on tap. */
     val wordExplanations: Map<String, String>,
+    /**
+     * word(lowercase) → GPT voice discussion brief. Sent as a QUIZ_VOCAB payload:
+     * the tutor explains briefly, asks ONE question, listens and judges — the
+     * "설명 듣고 얘기 나눠보기" loop. Optional per word.
+     */
+    val voiceTalks: Map<String, String>,
     val panels: List<StoryPanel>,
 )
 
@@ -97,18 +103,20 @@ internal fun parseStoryComic(params: JsonObject): StoryComicData {
     val panels = panelsJson.mapNotNull { it as? JsonObject }.map { it.toStoryPanel() }
     if (panels.isEmpty()) throw StepSpecParseException("story_comic: panels 가 비었습니다")
 
-    val explanations = (params["wordExplanations"] as? JsonObject)?.entries
-        ?.mapNotNull { (k, v) ->
-            val text = (v as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
-            k.lowercase().trim() to text
-        }?.toMap() ?: emptyMap()
+    fun stringMap(key: String): Map<String, String> =
+        (params[key] as? JsonObject)?.entries
+            ?.mapNotNull { (k, v) ->
+                val text = (v as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+                k.lowercase().trim() to text
+            }?.toMap() ?: emptyMap()
 
     return StoryComicData(
         title = params.str("title") ?: "",
         meaning = params.str("meaning") ?: "",
         words = (params["words"] as? JsonArray)
             ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull } ?: emptyList(),
-        wordExplanations = explanations,
+        wordExplanations = stringMap("wordExplanations"),
+        voiceTalks = stringMap("voiceTalks"),
         panels = panels,
     )
 }
