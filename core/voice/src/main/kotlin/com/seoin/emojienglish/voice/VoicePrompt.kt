@@ -7,15 +7,26 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * A request to open the global coaching sheet for the current context — the
- * 🎙 entry point available on every screen (§3, §9.3). Carries the template id
- * and its variables; the persona/system text is filled from `templates.json`
- * (the `서인영어_brain2` doc, still pending — §14).
+ * A request from a Step (or the chrome 🎙) to run **one coaching prompt** inside
+ * the persistent voice session (§3, §9.3). Carries the template id + variables;
+ * the persona/system text is filled from `templates.json` (the `서인영어_brain2`
+ * doc, still pending — §14).
+ *
+ * [kind] picks the prompt *type* (read-along / explain / quiz…). The session's
+ * [VoiceSession.runPrompt] turns this into a [VoiceTurnScript] via
+ * `toTurnScript()` — Steps never build turn scripts or touch the mic. [payload]
+ * is the exact text to read aloud (e.g. the current sentence), exempt from the
+ * instruction sentence-cap.
+ *
+ * Adding [kind]/[payload] with defaults keeps every existing `VoicePrompt(...)`
+ * call site (and the frozen `StepSession.requestVoice` signature) source-compatible.
  */
 data class VoicePrompt(
     val templateId: String,
     val variables: Map<String, String> = emptyMap(),
     val contextLabel: String = "",   // e.g. "At a Restaurant · order" — sheet header
+    val kind: StepPromptKind = StepPromptKind.EXPLAIN,
+    val payload: String = "",
 )
 
 /**

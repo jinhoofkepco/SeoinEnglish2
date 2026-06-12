@@ -16,11 +16,20 @@ class FakeVoiceGateway(
     private val _state = MutableStateFlow(initial)
     override val state: StateFlow<VoiceShellState> = _state.asStateFlow()
 
+    private val _speaking = MutableStateFlow(false)
+    override val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
+
+    private val _micOpen = MutableStateFlow(false)
+    override val micOpen: StateFlow<Boolean> = _micOpen.asStateFlow()
+
     val turnLog = mutableListOf<VoiceTurnScript>()
     val spoken = mutableListOf<String>()
+    val renamed = mutableListOf<String>()
 
     /** Test hook: decide what the next turn returns. */
     var nextOutcome: (VoiceTurnScript) -> TurnOutcome = { TurnOutcome.Advanced("[fake]") }
+
+    override suspend fun connect(): VoiceShellState = _state.value
 
     override suspend fun prime(persona: String): PrimeResult {
         _state.value = VoiceShellState.PRIMED
@@ -34,5 +43,13 @@ class FakeVoiceGateway(
 
     override fun endChildTurnManually() {}
 
+    override fun setMicOpen(open: Boolean) { _micOpen.value = open }
+
+    override fun renameConversation(name: String) { renamed += name }
+
+    override fun setContentZoom(factor: Float) {}
+
     override fun speak(text: String, lang: String) { spoken += text }
+
+    override fun provideView(): android.webkit.WebView? = null
 }

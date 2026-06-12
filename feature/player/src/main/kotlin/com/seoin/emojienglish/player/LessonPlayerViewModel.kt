@@ -22,10 +22,12 @@ import com.seoin.emojienglish.step.StepRegistry
 import com.seoin.emojienglish.step.StepSession
 import com.seoin.emojienglish.step.StepSpec
 import com.seoin.emojienglish.step.StepSpecParseException
-import com.seoin.emojienglish.voice.VoiceController
+import com.seoin.emojienglish.voice.StepPromptKind
 import com.seoin.emojienglish.voice.VoiceGateway
 import com.seoin.emojienglish.voice.VoicePrompt
+import com.seoin.emojienglish.voice.VoiceSession
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -57,7 +59,7 @@ class LessonPlayerViewModel @Inject constructor(
     private val traceRepo: TraceRepository,
     private val progressRepo: ProgressRepository,
     private val masterMode: MasterModeState,
-    private val voiceController: VoiceController,
+    private val voiceSession: VoiceSession,
     private val voiceGateway: VoiceGateway,
     private val savedState: SavedStateHandle,
 ) : ViewModel() {
@@ -84,6 +86,19 @@ class LessonPlayerViewModel @Inject constructor(
     private val queue: PlayQueue = buildQueue()
     /** Step type per queue position (for navigator chip labels). */
     private val chipTypes: List<String> = queue.items.map { typeOf(it) }
+
+    /**
+     * One voice session per set (요구사항: 세트 동안 한 보이스). Started once here and
+     * kept alive across every step in this run; torn down in [onCleared]. The
+     * persona is a placeholder until `templates.json`(서인영어_brain2) lands (§14).
+     */
+    private val coachingPersona: String =
+        "You are 서인영어, a warm English tutor for a young Korean child. " +
+            "Speak slowly in very easy English. Keep turns short. " +
+            "Do not say bracket tags out loud."
+    private val setupJob = viewModelScope.launch {
+        voiceSession.startSet(coachingPersona, queue.sourceLabel)
+    }
 
     private val initialIndex: Int =
         savedState[KEY_INDEX]
@@ -120,7 +135,15 @@ class LessonPlayerViewModel @Inject constructor(
             progressRepo.save(queue.sessionId, queueIndex, item, result)
         }
 
-        override fun requestVoice(prompt: VoicePrompt) = voiceController.openSheet(prompt)
+        override fun requestVoice(prompt: VoicePrompt) {
+            // Route the step's prompt through the persistent session; wait for the
+            // set to finish connecting/priming so the first prompt isn't dropped.
+            viewModelScope.launch {
+                setupJob.join()
+                voiceSession.runPrompt(prompt)
+            }
+        }
+
         override fun speak(text: String, lang: String) = voiceGateway.speak(text, lang)
     }
 
@@ -148,13 +171,21 @@ class LessonPlayerViewModel @Inject constructor(
 
     fun openContextVoice() {
         val item = uiState.value.currentItem ?: return
-        voiceController.openSheet(
-            VoicePrompt(
-                templateId = "free_talk",
-                variables = mapOf("stepId" to item.stepId),
-                contextLabel = "${queue.sourceLabel} · ${item.stepId}",
-            ),
-        )
+        viewModelScope.launch {
+            setupJob.join()
+            voiceSession.runPrompt(
+                VoicePrompt(
+                    templateId = "free_talk",
+                    variables = mapOf("stepId" to item.stepId),
+                    contextLabel = "${queue.sourceLabel} · ${item.stepId}",
+                    kind = StepPromptKind.FREE_TALK,
+                ),
+            )
+        }
+    }
+
+    override fun onCleared() {
+        voiceSession.endSet()
     }
 
     private fun setIndex(i: Int) {

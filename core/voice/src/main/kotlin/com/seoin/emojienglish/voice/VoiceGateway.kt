@@ -1,5 +1,6 @@
 package com.seoin.emojienglish.voice
 
+import android.webkit.WebView
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -18,6 +19,23 @@ import kotlinx.coroutines.flow.StateFlow
 interface VoiceGateway {
     val state: StateFlow<VoiceShellState>
 
+    /**
+     * Whether the voice *speaker* is currently producing audio (text may have
+     * finished but the TTS plays on). The mic auto-gate holds until this is
+     * false (목표②: 설명이 끝까지 안 끊기게 — media-quiet, not text-complete).
+     */
+    val speaking: StateFlow<Boolean>
+
+    /** Whether the child's mic is currently open. Mirrors the GPT mute control. */
+    val micOpen: StateFlow<Boolean>
+
+    /**
+     * Bring the voice shell up: load chatgpt.com (if needed), open voice mode and
+     * wait until [VoiceShellState.READY]. Idempotent — a connected shell returns
+     * immediately. Keeps the **same** session across steps (한 세트 한 보이스).
+     */
+    suspend fun connect(): VoiceShellState
+
     /** Inject the coaching persona/role. Once per session (§D step 5). */
     suspend fun prime(persona: String): PrimeResult
 
@@ -27,8 +45,27 @@ interface VoiceGateway {
     /** "다 말했어요" button — manual end of the child's turn (§B-1). */
     fun endChildTurnManually()
 
+    /** Open/close the child mic directly (our panel button / auto-gate). */
+    fun setMicOpen(open: Boolean)
+
+    /** Best-effort rename of the current ChatGPT conversation (로그 관리). */
+    fun renameConversation(name: String)
+
+    /**
+     * Scale the WebView *content* independently of the view size (CSS zoom), so a
+     * small panel window can still show the whole voice UI. 1.0 = normal.
+     */
+    fun setContentZoom(factor: Float)
+
     /** Local TTS fallback / simple playback. */
     fun speak(text: String, lang: String = "en-US")
+
+    /**
+     * The single retained [WebView] to host in a Compose `AndroidView`, or null
+     * for gateways without one (Mock/Fake). The same instance survives step
+     * navigation so the voice session is never torn down mid-set.
+     */
+    fun provideView(): WebView?
 }
 
 /** Voice-shell lifecycle (§B-1). Surfaced as the 🟢/🟡/🔴 health pill (§D). */

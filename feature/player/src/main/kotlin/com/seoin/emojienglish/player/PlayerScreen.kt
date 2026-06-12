@@ -9,7 +9,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,9 +37,8 @@ fun PlayerScreen(
     val state by vm.uiState.collectAsStateWithLifecycle()
     val finished by vm.finished.collectAsStateWithLifecycle()
 
-    if (finished) {
-        LaunchedEffect(Unit) { onExit() }
-    }
+    // 오늘 학습을 다 끝내도 화면을 닫지 않고 그대로 두고 "다 했어요"만 표시(피드백 #1).
+    // 다른 곳으로 가려면 상단 제목(→홈)이나 칩을 쓰면 된다.
 
     Column(Modifier.fillMaxSize()) {
         StepNavigatorBar(
@@ -90,16 +88,20 @@ fun PlayerScreen(
             }
 
             // Floating "다음 단계": hidden until the step is complete, student mode only.
-            if (!state.masterMode && state.isCurrentComplete) {
+            // Bottom padding clears the global thin bar + the mini voice panel so it
+            // is never hidden behind them (요구사항 ④). Hidden once everything is done.
+            if (!state.masterMode && state.isCurrentComplete && !finished) {
                 Button(
                     onClick = vm::goNext,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 12.dp),
+                        .padding(bottom = 84.dp),
                 ) {
                     Text(if (state.isLast) "학습 종료" else "다음 단계")
                 }
             }
+            // On finishing, the screen stays put (피드백 #1) — the "다 했어요"
+            // indicator now lives on the home "오늘의 할일" list instead.
         }
     }
 }

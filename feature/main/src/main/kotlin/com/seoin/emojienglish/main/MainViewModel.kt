@@ -1,24 +1,35 @@
 package com.seoin.emojienglish.main
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.seoin.emojienglish.data.MasterModeState
-import com.seoin.emojienglish.voice.VoiceController
-import com.seoin.emojienglish.voice.VoicePrompt
+import com.seoin.emojienglish.voice.VoiceSession
+import com.seoin.emojienglish.voice.VoiceSessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val voiceController: VoiceController,
+    private val voiceSession: VoiceSession,
     private val masterMode: MasterModeState,
 ) : ViewModel() {
 
-    // --- Voice (global 🎙 sheet) ---
-    val activeVoicePrompt: StateFlow<VoicePrompt?> = voiceController.active
-    fun openFreeTalkVoice() =
-        voiceController.openSheet(VoicePrompt(templateId = "free_talk", contextLabel = "자유 대화"))
-    fun closeVoice() = voiceController.close()
+    // --- Voice (persistent panel, 요구사항 ⑤⑥) ---
+    val voiceState: StateFlow<VoiceSessionState> = voiceSession.state
+
+    /** 🎙 free-talk (목표③): open a session with manual mic, no auto-gate. */
+    fun openFreeTalkVoice() = viewModelScope.launch { voiceSession.startFreeTalk() }
+
+    /** Our mic on/off button — disables auto-gate (manual override). */
+    fun setMicManual(open: Boolean) = voiceSession.setMicManual(open)
+
+    fun cyclePanel() = voiceSession.cyclePanel()
+    fun renameConversation(name: String) = voiceSession.rename(name)
+
+    /** The retained ChatGPT WebView to host in the panel (null until created). */
+    fun provideVoiceView() = voiceSession.provideView()
 
     // --- Master toggle (thin bottom bar 🔒) ---
     val masterUnlocked: StateFlow<Boolean> = masterMode.unlocked

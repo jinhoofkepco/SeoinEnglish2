@@ -74,6 +74,12 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                 onOpenStep = { bookId, unitId, index ->
                     navController.navigate(PlayerDestinations.unit(bookId, unitId, index))
                 },
+                onHome = {
+                    navController.navigate(NavRoutes.HOME) {
+                        popUpTo(NavRoutes.HOME) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
     }

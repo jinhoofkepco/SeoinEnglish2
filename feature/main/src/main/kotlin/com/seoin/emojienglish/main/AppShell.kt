@@ -3,11 +3,16 @@ package com.seoin.emojienglish.main
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -47,21 +52,32 @@ fun AppShell(
     var showPin by remember { mutableStateOf(false) }
     val masterOn by vm.masterUnlocked.collectAsStateWithLifecycle()
 
-    Box(Modifier.fillMaxSize()) {
-        // Content reserves the collapsed bar height so it is never covered.
-        content(Modifier.fillMaxSize().padding(bottom = CollapsedBarHeight))
-
-        ThinBottomBar(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            expanded = expanded,
-            masterOn = masterOn,
-            onToggleExpand = { expanded = !expanded },
-            onVoice = vm::openFreeTalkVoice,
-            onMaster = { if (!vm.toggleMaster()) showPin = true },
+    Box(
+        Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.statusBars),
+    ) {
+        // Content reserves space for the thin bottom bar + Android nav bar.
+        content(
+            Modifier
+                .fillMaxSize()
+                .padding(bottom = CollapsedBarHeight)
+                .windowInsetsPadding(WindowInsets.navigationBars),
         )
-    }
 
-    VoiceSheetHost(vm)
+        // The persistent voice panel floats directly above the thin bottom bar and
+        // survives navigation (한 세트 한 보이스). Empty when no session is active.
+        Column(Modifier.align(Alignment.BottomCenter)) {
+            VoicePanel(vm)
+            ThinBottomBar(
+                expanded = expanded,
+                masterOn = masterOn,
+                onToggleExpand = { expanded = !expanded },
+                onVoice = vm::openFreeTalkVoice,
+                onMaster = { if (!vm.toggleMaster()) showPin = true },
+            )
+        }
+    }
 
     if (showPin) {
         MasterPinDialog(
@@ -81,7 +97,9 @@ private fun ThinBottomBar(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.navigationBars),
         tonalElevation = 3.dp,
         color = if (masterOn) MaterialTheme.colorScheme.tertiaryContainer
         else MaterialTheme.colorScheme.surface,

@@ -22,6 +22,17 @@ class MockVoiceGateway @Inject constructor() : VoiceGateway {
     private val _state = MutableStateFlow(VoiceShellState.READY)
     override val state: StateFlow<VoiceShellState> = _state.asStateFlow()
 
+    private val _speaking = MutableStateFlow(false)
+    override val speaking: StateFlow<Boolean> = _speaking.asStateFlow()
+
+    private val _micOpen = MutableStateFlow(false)
+    override val micOpen: StateFlow<Boolean> = _micOpen.asStateFlow()
+
+    override suspend fun connect(): VoiceShellState {
+        _state.value = VoiceShellState.READY
+        return _state.value
+    }
+
     override suspend fun prime(persona: String): PrimeResult {
         _state.value = VoiceShellState.PRIMED
         return PrimeResult.Primed
@@ -29,10 +40,14 @@ class MockVoiceGateway @Inject constructor() : VoiceGateway {
 
     override suspend fun runTurn(script: VoiceTurnScript): TurnOutcome {
         _state.value = VoiceShellState.COACHING
+        _speaking.value = true
         delay(150)
+        _speaking.value = false
         if (script.role == TurnRole.ASK_AND_LISTEN) {
             _state.value = VoiceShellState.CHILD_TURN
+            _micOpen.value = true
             delay(150)
+            _micOpen.value = false
             _state.value = VoiceShellState.COACHING
         }
         _state.value = VoiceShellState.PRIMED
@@ -41,11 +56,24 @@ class MockVoiceGateway @Inject constructor() : VoiceGateway {
 
     override fun endChildTurnManually() {
         if (_state.value == VoiceShellState.CHILD_TURN) {
+            _micOpen.value = false
             _state.value = VoiceShellState.COACHING
         }
+    }
+
+    override fun setMicOpen(open: Boolean) { _micOpen.value = open }
+
+    override fun renameConversation(name: String) {
+        // No-op in the mock.
+    }
+
+    override fun setContentZoom(factor: Float) {
+        // No-op in the mock.
     }
 
     override fun speak(text: String, lang: String) {
         // No-op in the mock. The real gateway routes this to Android TTS.
     }
+
+    override fun provideView(): android.webkit.WebView? = null
 }

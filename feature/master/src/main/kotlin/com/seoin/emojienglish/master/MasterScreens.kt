@@ -19,22 +19,42 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.seoin.emojienglish.designsystem.Pill
+import com.seoin.emojienglish.designsystem.StepNavigatorBar
 
 /**
  * Central master dashboard (요구사항 ⑦, log-only for now). Reached from the
  * navigator bar's "마스터" chip. Each log line links into that step's master view.
+ *
+ * Carries the same top navigator bar as the study screen (피드백 #4) so master
+ * mode looks consistent; the title returns home.
  */
 @Composable
 fun MasterScreen(
     onOpenStep: (bookId: String, unitId: String, stepIndex: Int) -> Unit,
+    onHome: () -> Unit = {},
     vm: MasterViewModel = hiltViewModel(),
 ) {
     val unlocked by vm.unlocked.collectAsStateWithLifecycle()
     val log by vm.log.collectAsStateWithLifecycle()
+    val observed by vm.observed.collectAsStateWithLifecycle()
 
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Pill("👩‍🏫 마스터 대시보드")
-        Text("학습 로그", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+    Column(Modifier.fillMaxSize()) {
+        // Same navigator bar as the study screen (피드백 #4): the most recent unit's
+        // step chips, each deep-linking into that step's master view.
+        StepNavigatorBar(
+            title = observed?.title ?: "👩‍🏫 마스터 대시보드",
+            chips = observed?.chips ?: emptyList(),
+            currentIndex = -1,
+            onTitleClick = onHome,
+            onChipClick = { i ->
+                observed?.let { onOpenStep(it.bookId, it.unitId, i) }
+            },
+            chipEnabled = { true },
+            showMasterChip = true,
+            onMasterClick = {},
+        )
+        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("학습 로그", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 
         if (!unlocked) {
             Text(
@@ -69,6 +89,7 @@ fun MasterScreen(
                 }
                 HorizontalDivider()
             }
+        }
         }
     }
 }

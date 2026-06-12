@@ -40,6 +40,7 @@ fun HomeScreen(
     vm: HomeViewModel = hiltViewModel(),
 ) {
     val masterOn by vm.masterUnlocked.collectAsStateWithLifecycle()
+    val completed by vm.completedUnits.collectAsStateWithLifecycle()
     val plan = vm.todayPlan()
     val books = vm.books()
 
@@ -55,18 +56,23 @@ fun HomeScreen(
                     if (plan == null || plan.items.isEmpty()) {
                         item {
                             vm.firstUnitRef()?.let { (bookId, unitId) ->
+                                val done = "$bookId/$unitId" in completed
                                 AssistChip(
                                     onClick = { onStartUnit(bookId, unitId) },
-                                    label = { Text("데모: 첫 단원 시작 ▶") },
+                                    label = { Text("데모: 첫 단원 시작 ▶" + if (done) "  ✅ 다했어요" else "") },
                                 )
                             } ?: Text("등록된 계획이 없습니다.", style = MaterialTheme.typography.bodySmall)
                         }
                     } else {
                         items(plan.items) { item ->
+                            val done = "${item.bookId}/${item.unitId}" in completed
                             AssistChip(
                                 onClick = { onStartUnit(item.bookId, item.unitId) },
                                 label = {
-                                    Text("${item.unitId} · ${item.stepId ?: item.stepSelector} ×${item.repeat}")
+                                    Text(
+                                        "${item.unitId} · ${item.stepId ?: item.stepSelector} ×${item.repeat}" +
+                                            if (done) "  ✅ 다했어요" else "",
+                                    )
                                 },
                             )
                         }
