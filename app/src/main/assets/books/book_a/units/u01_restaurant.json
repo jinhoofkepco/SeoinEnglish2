@@ -41,6 +41,82 @@
     }
   },
   "steps": [
+    { "id": "s0", "type": "story_comic", "params": {
+      "title": "Mina's Lunch Story",
+      "meaning": "오늘 배운 단어로 만든 이야기 만화예요. 칩이나 색칠된 단어를 누르면 설명을 들을 수 있어요.",
+      "words": ["order", "delicious"],
+      "wordExplanations": {
+        "order": "Order means to ask for food in a restaurant.",
+        "delicious": "Delicious means the food tastes very, very good."
+      },
+      "panels": [
+        {
+          "bg": "sunset", "mood": "warm",
+          "zoom": { "type": "pan", "scale": 1.35, "originX": 50, "originY": 55 },
+          "caption": "Mina is very hungry today.",
+          "sprites": [
+            { "char": "👧", "x": 32, "y": 72, "scale": 1.0, "rotate": 0, "flip": false, "anim": "sway" },
+            { "char": "🏠", "x": 70, "y": 66, "scale": 1.1, "rotate": 0, "flip": false, "anim": "none" },
+            { "char": "💭", "x": 48, "y": 36, "scale": 0.8, "rotate": 0, "flip": false, "anim": "float" }
+          ],
+          "bubble": { "anchor": 0, "text": "I'm hungry!" }
+        },
+        {
+          "bg": "room", "mood": "warm",
+          "zoom": { "type": "kenburns", "scale": 1.3, "originX": 45, "originY": 55 },
+          "caption": "She goes to a restaurant.",
+          "sprites": [
+            { "char": "👧", "x": 30, "y": 72, "scale": 1.0, "rotate": 0, "flip": false, "anim": "bounce" },
+            { "char": "🍽️", "x": 62, "y": 70, "scale": 0.9, "rotate": 0, "flip": false, "anim": "none" },
+            { "char": "🧑‍🍳", "x": 80, "y": 64, "scale": 0.9, "rotate": 0, "flip": true, "anim": "sway" }
+          ],
+          "bubble": { "anchor": 2, "text": "Welcome!" }
+        },
+        {
+          "bg": "room",
+          "zoom": { "type": "pushin", "scale": 1.3, "originX": 40, "originY": 60 },
+          "caption": "She wants to order pasta.",
+          "sprites": [
+            { "char": "👧", "x": 35, "y": 70, "scale": 1.1, "rotate": -4, "flip": false, "anim": "sway" },
+            { "char": "🧾", "x": 62, "y": 66, "scale": 0.9, "rotate": 6, "flip": false, "anim": "float" }
+          ],
+          "bubble": { "anchor": 0, "text": "Pasta, please!" }
+        },
+        {
+          "bg": "lava", "fx": "speed",
+          "sfx": [ { "text": "Sizzle!", "x": 70, "y": 30, "size": 10, "rotate": -10, "color": "#fb923c" } ],
+          "caption": "The cook makes the pasta fast.",
+          "sprites": [
+            { "char": "🧑‍🍳", "x": 38, "y": 68, "scale": 1.1, "rotate": 0, "flip": false, "anim": "shiver" },
+            { "char": "🍳", "x": 66, "y": 72, "scale": 0.9, "rotate": 0, "flip": false, "anim": "bounce" },
+            { "char": "🔥", "x": 66, "y": 52, "scale": 0.7, "rotate": 0, "flip": false, "anim": "float" }
+          ]
+        },
+        {
+          "bg": "room", "mood": "warm", "climax": true, "fx": "focus",
+          "zoom": { "type": "shakezoom", "scale": 1.3, "originX": 50, "originY": 60 },
+          "sfx": [ { "text": "Yum!", "x": 74, "y": 26, "size": 12, "rotate": -8, "color": "#fde047" } ],
+          "caption": "Wow, the pasta is delicious!",
+          "sprites": [
+            { "char": "😋", "x": 38, "y": 66, "scale": 1.2, "rotate": 0, "flip": false, "anim": "jump" },
+            { "char": "🍝", "x": 66, "y": 72, "scale": 1.0, "rotate": 0, "flip": false, "anim": "bounce" },
+            { "char": "✨", "x": 78, "y": 40, "scale": 0.7, "rotate": 0, "flip": false, "anim": "float" }
+          ],
+          "bubble": { "anchor": 0, "text": "So good!" }
+        },
+        {
+          "bg": "night", "mood": "dusk",
+          "zoom": { "type": "kenburns", "scale": 1.25, "originX": 55, "originY": 50 },
+          "caption": "Mina is happy. The end!",
+          "sprites": [
+            { "char": "👧", "x": 40, "y": 70, "scale": 1.0, "rotate": 0, "flip": false, "anim": "sway" },
+            { "char": "💖", "x": 62, "y": 44, "scale": 0.8, "rotate": 0, "flip": false, "anim": "float" },
+            { "char": "🌙", "x": 80, "y": 28, "scale": 0.8, "rotate": 0, "flip": false, "anim": "none" }
+          ],
+          "bubble": { "anchor": 0, "text": "Yummy day!" }
+        }
+      ]
+    } },
     { "id": "s1", "type": "word_comic",        "params": { "panelIds": ["p1", "p2", "p3"] } },
     { "id": "s2", "type": "voice_explain",     "params": { "targetType": "word", "targetId": "w_order", "promptTemplateId": "word_basic" } },
     { "id": "s3", "type": "similar_word_card", "params": { "wordId": "w_delicious", "answer": "tasty", "choices": ["noisy", "tasty", "empty", "late"] } },

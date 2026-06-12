@@ -41,6 +41,7 @@ include(":feature:master")
 // Removing any include() here must still leave a buildable app
 // (the missing type renders as an "unsupported step" card). See §0.6, §2.
 include(":steps:wordcomic")
+include(":steps:storycomic")
 include(":steps:voiceexplain")
 include(":steps:similarcard")
 include(":steps:shadowing")

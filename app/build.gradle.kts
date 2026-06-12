@@ -45,6 +45,7 @@ dependencies {
     // Steps are assembled ONLY here (§2). Comment any line out and the app still
     // builds — that type then renders as the "unsupported step" card (§0.6).
     implementation(project(":steps:wordcomic"))
+    implementation(project(":steps:storycomic"))
     implementation(project(":steps:voiceexplain"))
     implementation(project(":steps:similarcard"))
     implementation(project(":steps:shadowing"))

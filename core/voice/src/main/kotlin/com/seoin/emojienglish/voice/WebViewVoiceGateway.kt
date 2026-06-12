@@ -47,6 +47,7 @@ import kotlin.coroutines.resume
 @Singleton
 class WebViewVoiceGateway @Inject constructor(
     @ApplicationContext private val appContext: Context,
+    private val localTts: LocalTts,
 ) : VoiceGateway {
 
     private val main = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -271,8 +272,9 @@ class WebViewVoiceGateway @Inject constructor(
     }
 
     override fun speak(text: String, lang: String) {
-        // Local TTS fallback handled by DefaultVoiceController/Activity layer; the
-        // WebView engine relies on GPT voice. Left intentionally minimal.
+        // Instant local TTS — comic captions / word meanings (전체만화 낭독).
+        // GPT voice stays for interactive coaching turns only.
+        localTts.speak(text, lang)
     }
 
     override suspend fun textQuery(prompt: String): String? = withContext(Dispatchers.Main.immediate) {

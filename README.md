@@ -18,7 +18,7 @@
 | 홈 | `feature:home` | ✅ **통합 홈**(상단 1/3 오늘의 할일 한줄 리스트 + 하단 책 아이콘 그리드) + 책상세 |
 | 플레이어 | `feature:player` | ✅ **상단 네비게이터 바**(제목 1/3 + 스텝 칩 스크롤 + 마스터 칩) + 떠있는 "다음 단계"(완료 시 노출) + 칩 이동(학생=완료분만) + 마스터 시 MasterView |
 | 마스터 | `feature:master` | ◑ 중앙 대시보드 = **로그 한줄 리스트**(클릭→해당 스텝 활동화면) — 편집기/JSON 임포트는 M7 |
-| 스텝 ×6 | `steps:*` | ◑ **더미**: 자기 params는 진짜로 파싱, 화면은 DummyStepScaffold로 표시 |
+| 스텝 ×7 | `steps:*` | ◑ storycomic(전체만화)·wordcomic·similarcard·question·chunk는 실구현, voiceexplain·shadowing은 더미 |
 | 앱 | `app` | ✅ Hilt 조립 + NavHost + 샘플 책(assets) |
 
 `◑` = 윤곽/배선 완료, 본 구현은 다른 세션.

@@ -6,6 +6,7 @@ package com.seoin.emojienglish.designsystem
  * stay independent). Unknown types fall back to the raw type string.
  */
 fun stepTypeLabel(type: String): String = when (type) {
+    "story_comic" -> "전체만화"
     "word_comic" -> "단어만화"
     "voice_explain" -> "음성설명"
     "similar_word_card" -> "비슷한말"
@@ -16,6 +17,7 @@ fun stepTypeLabel(type: String): String = when (type) {
 }
 
 fun stepTypeEmoji(type: String): String = when (type) {
+    "story_comic" -> "🎬"
     "word_comic" -> "🗯️"
     "voice_explain" -> "🎙️"
     "similar_word_card" -> "🃏"
