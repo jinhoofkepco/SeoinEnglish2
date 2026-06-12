@@ -186,6 +186,17 @@ private fun JsonObject.int(key: String, default: Int): Int =
 private fun JsonObject.bool(key: String): Boolean =
     (this[key] as? JsonPrimitive)?.booleanOrNull ?: false
 
+/**
+ * Matcher for a today-word inside a caption. Every token may inflect
+ * ("break down" → "breaks down", "churn" → "churning"), so each gets \w*.
+ * Shared by the caption highlighter and the find-the-panel quiz.
+ */
+internal fun wordRegex(word: String): Regex {
+    val pattern = word.trim().split(Regex("\\s+"))
+        .joinToString(separator = "\\w*\\s+", prefix = "\\b", postfix = "\\w*") { Regex.escape(it) }
+    return Regex(pattern, RegexOption.IGNORE_CASE)
+}
+
 internal fun parseHexColor(value: String?, default: Int): Int {
     val hex = value?.removePrefix("#") ?: return default
     return runCatching {

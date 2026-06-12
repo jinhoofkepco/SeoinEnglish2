@@ -47,9 +47,16 @@ import kotlin.math.sin
  * All timings/thresholds match the original (camera 9s, sprites 2.4s, shake 180ms).
  */
 @Composable
-internal fun StoryComicPanelView(panel: StoryPanel, modifier: Modifier = Modifier) {
-    val animating = panel.zoom != null || panel.fx == "shake" ||
-        panel.sprites.any { it.anim != "none" }
+internal fun StoryComicPanelView(
+    panel: StoryPanel,
+    modifier: Modifier = Modifier,
+    /** false = still thumbnail (찾기 퀴즈) — no frame loop, camera/anims at t=0. */
+    animate: Boolean = true,
+) {
+    val animating = animate && (
+        panel.zoom != null || panel.fx == "shake" ||
+            panel.sprites.any { it.anim != "none" }
+        )
 
     var timeMs by remember { mutableLongStateOf(0L) }
     LaunchedEffect(panel, animating) {

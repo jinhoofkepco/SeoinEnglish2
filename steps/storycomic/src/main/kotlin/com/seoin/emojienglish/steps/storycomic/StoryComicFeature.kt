@@ -101,6 +101,8 @@ class StoryComicFeature @Inject constructor() : StepFeature {
         val data = s.data
         var panelIndex by remember { mutableIntStateOf(0) }
         var selectedWord by remember { mutableStateOf<String?>(null) }
+        var heardWords by remember { mutableStateOf(setOf<String>()) }
+        var inQuiz by remember { mutableStateOf(false) }
         val panel = data.panels[panelIndex]
         val isLast = panelIndex == data.panels.lastIndex
 
@@ -112,9 +114,40 @@ class StoryComicFeature @Inject constructor() : StepFeature {
         // [다시 듣기] / [선생님과 이야기] 로 이어진다 (탭 → 듣기 → 대화의 3단 심화).
         fun selectWord(word: String) {
             selectedWord = word
+            heardWords = heardWords + word
             val explanation = explanationOf(word) ?: return
             session.trace("word_tap", mapOf("word" to word))
             session.speak("$word. $explanation")
+        }
+
+        // 단어 수집 완료 — 한 번만 기록 (다 만나면 작은 축하 한 줄).
+        val allHeard = data.words.isNotEmpty() && heardWords.containsAll(data.words)
+        var celebrated by remember { mutableStateOf(false) }
+        LaunchedEffect(allHeard) {
+            if (allHeard && !celebrated) {
+                celebrated = true
+                session.trace("words_all_heard", mapOf("count" to data.words.size.toString()))
+            }
+        }
+
+        // 찾기 퀴즈 모드 — 만화 화면 전체를 퀴즈로 전환.
+        if (inQuiz) {
+            Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                Column(
+                    Modifier
+                        .widthIn(max = 720.dp)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                ) {
+                    StoryFindQuiz(
+                        data = data,
+                        session = session,
+                        onExit = { inQuiz = false },
+                    )
+                }
+            }
+            return
         }
 
         // 컷 등장 = 캡션 낭독 + 기록. 마지막 컷 도달 = 완료(Player CTA 활성).
@@ -172,10 +205,27 @@ class StoryComicFeature @Inject constructor() : StepFeature {
                         data.words.forEach { word ->
                             AssistChip(
                                 onClick = { selectWord(word) },
-                                label = { Text(if (selectedWord == word) "⭐ $word" else word) },
+                                label = {
+                                    Text(
+                                        when {
+                                            selectedWord == word -> "⭐ $word"
+                                            word in heardWords -> "✓ $word"
+                                            else -> word
+                                        },
+                                    )
+                                },
                             )
                         }
                     }
+                }
+
+                if (allHeard) {
+                    Text(
+                        "🎉 오늘의 단어를 다 만났어요!",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2E7D32),
+                    )
                 }
 
                 // 선택된 단어 카드 — 설명 텍스트 + 다시 듣기 + 선생님과 이야기 나누기
@@ -284,10 +334,10 @@ class StoryComicFeature @Inject constructor() : StepFeature {
                     }
                 }
 
-                // Replay + flow-aware next
+                // Replay + read-along + flow-aware next
                 Row(
                     Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     OutlinedButton(
                         onClick = {
@@ -295,7 +345,24 @@ class StoryComicFeature @Inject constructor() : StepFeature {
                             if (panel.caption.isNotBlank()) session.speak(panel.caption)
                         },
                         modifier = Modifier.weight(1f),
-                    ) { Text("🔁 다시 듣기") }
+                    ) { Text("🔁 듣기") }
+
+                    // 따라 읽기 — GPT가 천천히 읽어주고 아이가 따라 말함 (READ_ALONG).
+                    OutlinedButton(
+                        onClick = {
+                            session.trace("read_along", mapOf("panel" to panelIndex.toString()))
+                            session.requestVoice(
+                                VoicePrompt(
+                                    templateId = "story_read_along",
+                                    kind = StepPromptKind.READ_ALONG,
+                                    payload = panel.caption,
+                                    contextLabel = "따라 읽기 · 컷 ${panelIndex + 1}",
+                                ),
+                            )
+                        },
+                        enabled = panel.caption.isNotBlank(),
+                        modifier = Modifier.weight(1f),
+                    ) { Text("🗣 따라 읽기") }
 
                     if (!isLast) {
                         Button(
@@ -306,8 +373,19 @@ class StoryComicFeature @Inject constructor() : StepFeature {
                         OutlinedButton(
                             onClick = { panelIndex = 0 },
                             modifier = Modifier.weight(1f),
-                        ) { Text("처음부터 🔄") }
+                        ) { Text("🔄 처음부터") }
                     }
+                }
+
+                // 마지막 컷 = 회상 퀴즈로 마무리 (방금 본 컷에서 단어 장면 찾기).
+                if (isLast) {
+                    Button(
+                        onClick = {
+                            session.trace("quiz_start", emptyMap())
+                            inQuiz = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("🔍 단어 찾기 퀴즈") }
                 }
             }
         }
