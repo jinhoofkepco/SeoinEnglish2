@@ -76,4 +76,6 @@ class MockVoiceGateway @Inject constructor() : VoiceGateway {
     }
 
     override fun provideView(): android.webkit.WebView? = null
+
+    override suspend fun textQuery(prompt: String): String? = null
 }

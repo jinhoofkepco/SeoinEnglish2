@@ -1,5 +1,6 @@
 package com.seoin.emojienglish.data
 
+import com.seoin.emojienglish.model.ComicScript
 import com.seoin.emojienglish.model.QueueItem
 import com.seoin.emojienglish.model.StepResult
 import com.seoin.emojienglish.model.StepResultRecord
@@ -13,6 +14,16 @@ import kotlinx.coroutines.flow.map
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/**
+ * App-wide holder for the last LLM-generated [ComicScript] (Phase 3).
+ * Null = not yet generated; falls back to the static sample in the step.
+ * M5+ can persist this to DataStore/Room without any caller changes.
+ */
+@Singleton
+class ComicScriptHolder @Inject constructor() {
+    val script: MutableStateFlow<ComicScript?> = MutableStateFlow(null)
+}
 
 /**
  * In-memory data stores for the skeleton. Behaviour is the contract; storage is

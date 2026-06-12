@@ -275,6 +275,12 @@ class WebViewVoiceGateway @Inject constructor(
         // WebView engine relies on GPT voice. Left intentionally minimal.
     }
 
+    override suspend fun textQuery(prompt: String): String? = withContext(Dispatchers.Main.immediate) {
+        if (!send(prompt)) return@withContext null
+        val response = awaitResponseComplete(null)
+        response.assistantText.takeIf { it.isNotBlank() }
+    }
+
     // -------------------------------------------------------- send + confirm
 
     /** Inject [message] and confirm the user bubble actually appears. */

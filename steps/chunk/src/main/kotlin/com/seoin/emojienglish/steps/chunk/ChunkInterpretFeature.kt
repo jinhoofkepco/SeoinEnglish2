@@ -1,12 +1,47 @@
 package com.seoin.emojienglish.steps.chunk
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.seoin.emojienglish.designsystem.DummyMasterScaffold
 import com.seoin.emojienglish.designsystem.MasterActivityRow
 import com.seoin.emojienglish.designsystem.formatClock
-import com.seoin.emojienglish.designsystem.DummyStudentScaffold
+import com.seoin.emojienglish.model.Chunk
 import com.seoin.emojienglish.model.LessonContent
 import com.seoin.emojienglish.model.StepResult
 import com.seoin.emojienglish.model.StepTraceSnapshot
@@ -28,11 +63,6 @@ import dagger.multibindings.StringKey
 import kotlinx.serialization.json.JsonObject
 import javax.inject.Inject
 
-/**
- * DUMMY chunk_interpret step (§5.2 params: `chunkIds`). Real step walks each
- * chunk with its Korean meaning; the dummy lists the resolved chunks and
- * completes.
- */
 data class ChunkSpec(
     override val stepId: String,
     val chunkIds: List<String>,
@@ -50,18 +80,104 @@ class ChunkInterpretFeature @Inject constructor() : StepFeature {
     @Composable
     override fun StudentScreen(spec: StepSpec, session: StepSession, modifier: Modifier) {
         val s = spec as ChunkSpec
-        val resolved = s.chunkIds.mapNotNull { session.content.chunk(it) }
-        DummyStudentScaffold(
-            emoji = "🧩",
-            title = "청크 해석",
-            typeLabel = type,
-            summaryLines = listOf("청크 수: ${s.chunkIds.size}") +
-                resolved.take(2).map { "• ${it.text} — ${it.meaningKo}" },
-            completeButtonText = "해석 확인 → 완료",
-            modifier = modifier,
-        ) {
-            session.trace("chunk_view", mapOf("count" to s.chunkIds.size.toString()))
-            session.complete(StepResult.Completed())
+        val chunks = s.chunkIds.mapNotNull { session.content.chunk(it) }
+
+        if (chunks.isEmpty()) {
+            Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("청크 내용을 불러올 수 없습니다.", style = MaterialTheme.typography.bodyLarge)
+            }
+            return
+        }
+
+        var currentIndex by remember { mutableIntStateOf(0) }
+        val isLast = currentIndex == chunks.lastIndex
+        val current = chunks[currentIndex]
+
+        Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            Column(
+                Modifier
+                    .widthIn(max = 640.dp)
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                // Header + progress
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("청크 해석", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(
+                        "${currentIndex + 1} / ${chunks.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+                LinearProgressIndicator(
+                    progress = { (currentIndex + 1).toFloat() / chunks.size },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                // Animated chunk card
+                AnimatedContent(
+                    targetState = currentIndex,
+                    transitionSpec = {
+                        (slideInHorizontally { it / 2 } + fadeIn()) togetherWith
+                            (slideOutHorizontally { -it / 2 } + fadeOut())
+                    },
+                    label = "chunk",
+                ) { idx ->
+                    val chunk = chunks.getOrNull(idx) ?: chunks.first()
+                    ChunkCard(chunk = chunk, index = idx + 1, total = chunks.size)
+                }
+
+                // Dot indicators
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    chunks.indices.forEach { i ->
+                        val isActive = i == currentIndex
+                        Surface(
+                            color = if (isActive) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outlineVariant,
+                            shape = CircleShape,
+                            modifier = Modifier.size(if (isActive) 10.dp else 8.dp),
+                            content = {},
+                        )
+                    }
+                }
+
+                // Navigation buttons
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    if (currentIndex > 0) {
+                        TextButton(
+                            onClick = { currentIndex-- },
+                            modifier = Modifier.weight(1f),
+                        ) { Text("← 이전") }
+                    }
+
+                    if (isLast) {
+                        Button(
+                            onClick = {
+                                session.trace("chunk_view", mapOf("count" to chunks.size.toString()))
+                                session.complete(StepResult.Completed())
+                            },
+                            modifier = Modifier.weight(if (currentIndex > 0) 1f else 2f),
+                        ) { Text("✅ 완료") }
+                    } else {
+                        Button(
+                            onClick = {
+                                session.trace("chunk_seen", mapOf("index" to currentIndex.toString()))
+                                currentIndex++
+                            },
+                            modifier = Modifier.weight(if (currentIndex > 0) 1f else 2f),
+                        ) { Text("다음 →") }
+                    }
+                }
+            }
         }
     }
 
@@ -75,6 +191,52 @@ class ChunkInterpretFeature @Inject constructor() : StepFeature {
             },
             modifier = modifier,
         )
+    }
+}
+
+@Composable
+private fun ChunkCard(chunk: Chunk, index: Int, total: Int) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(260.dp),
+    ) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                chunk.text,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                textAlign = TextAlign.Center,
+                lineHeight = 40.sp,
+            )
+
+            if (chunk.meaningKo.isNotBlank()) {
+                Text(
+                    "▼",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f),
+                    modifier = Modifier.padding(vertical = 12.dp),
+                )
+                Text(
+                    chunk.meaningKo,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
     }
 }
 

@@ -61,6 +61,15 @@ interface VoiceGateway {
     fun speak(text: String, lang: String = "en-US")
 
     /**
+     * Send a plain-text prompt and return the full assistant reply text. Unlike
+     * [runTurn] this does NOT open voice mode — it injects a text message and
+     * reads back the text response. Used to ask the LLM to generate a
+     * [com.seoin.emojienglish.model.ComicScript] JSON from keywords (Phase 3).
+     * Returns null if the gateway is unavailable or the send fails.
+     */
+    suspend fun textQuery(prompt: String): String?
+
+    /**
      * The single retained [WebView] to host in a Compose `AndroidView`, or null
      * for gateways without one (Mock/Fake). The same instance survives step
      * navigation so the voice session is never torn down mid-set.

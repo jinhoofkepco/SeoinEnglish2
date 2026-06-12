@@ -25,9 +25,12 @@ class FakeVoiceGateway(
     val turnLog = mutableListOf<VoiceTurnScript>()
     val spoken = mutableListOf<String>()
     val renamed = mutableListOf<String>()
+    val textQueryLog = mutableListOf<String>()
 
     /** Test hook: decide what the next turn returns. */
     var nextOutcome: (VoiceTurnScript) -> TurnOutcome = { TurnOutcome.Advanced("[fake]") }
+    /** Test hook: decide what textQuery returns. */
+    var nextTextQueryResponse: String? = """{"panels":[]}"""
 
     override suspend fun connect(): VoiceShellState = _state.value
 
@@ -52,4 +55,9 @@ class FakeVoiceGateway(
     override fun speak(text: String, lang: String) { spoken += text }
 
     override fun provideView(): android.webkit.WebView? = null
+
+    override suspend fun textQuery(prompt: String): String? {
+        textQueryLog += prompt
+        return nextTextQueryResponse
+    }
 }
