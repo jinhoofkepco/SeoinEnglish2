@@ -103,8 +103,10 @@ class StoryComicFeature @Inject constructor() : StepFeature {
         var selectedWord by remember { mutableStateOf<String?>(null) }
         var heardWords by remember { mutableStateOf(setOf<String>()) }
         var inQuiz by remember { mutableStateOf(false) }
-        val panel = data.panels[panelIndex]
-        val isLast = panelIndex == data.panels.lastIndex
+        // 빠른 연타·재구성 사이의 stale 인덱스로 인한 OOB 크래시 방어 (피드백).
+        if (panelIndex > data.panels.lastIndex) panelIndex = data.panels.lastIndex
+        val panel = data.panels[panelIndex.coerceIn(0, data.panels.lastIndex)]
+        val isLast = panelIndex >= data.panels.lastIndex
 
         fun explanationOf(word: String): String? =
             data.wordExplanations[word.lowercase().trim()]
@@ -167,32 +169,13 @@ class StoryComicFeature @Inject constructor() : StepFeature {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                // Header: story title + meaning + progress
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        data.title.ifBlank { "이야기 만화" },
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFEA6A22),
-                    )
-                    Text(
-                        "${panelIndex + 1} / ${data.panels.size}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-                if (data.meaning.isNotBlank()) {
-                    Text(
-                        data.meaning,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+                // 제목/설명은 공간 절약을 위해 제거 — 진행 표시만 우측에 작게 (피드백).
+                Text(
+                    "${panelIndex + 1} / ${data.panels.size}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.align(Alignment.End),
+                )
 
                 // 오늘의 단어 칩 — 탭하면 단어 + 쉬운 영어 설명을 읽어줌
                 if (data.words.isNotEmpty()) {
@@ -366,7 +349,7 @@ class StoryComicFeature @Inject constructor() : StepFeature {
 
                     if (!isLast) {
                         Button(
-                            onClick = { panelIndex++ },
+                            onClick = { if (panelIndex < data.panels.lastIndex) panelIndex++ },
                             modifier = Modifier.weight(1f),
                         ) { Text("다음 컷 →") }
                     } else {

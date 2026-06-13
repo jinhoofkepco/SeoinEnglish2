@@ -144,7 +144,12 @@ class LessonPlayerViewModel @Inject constructor(
             }
         }
 
-        override fun speak(text: String, lang: String) = voiceGateway.speak(text, lang)
+        override fun speak(text: String, lang: String) {
+            // 다음 액션(다음 컷/문장 등 낭독)으로 넘어가면 학생 마이크를 자동으로 끈다
+            // — 모든 스텝 공통. 다시 말하려면 "대화"로 열어야 한다 (피드백).
+            voiceGateway.setMicOpen(false)
+            voiceGateway.speak(text, lang)
+        }
     }
 
     /** Floating "다음 단계" (요구사항 ④) — only meaningful in student mode. */

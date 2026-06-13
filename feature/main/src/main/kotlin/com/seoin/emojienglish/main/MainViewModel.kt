@@ -3,6 +3,7 @@ package com.seoin.emojienglish.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.seoin.emojienglish.data.MasterModeState
+import com.seoin.emojienglish.voice.VoicePanelMode
 import com.seoin.emojienglish.voice.VoiceSession
 import com.seoin.emojienglish.voice.VoiceSessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,7 @@ class MainViewModel @Inject constructor(
     fun setMicManual(open: Boolean) = voiceSession.setMicManual(open)
 
     fun cyclePanel() = voiceSession.cyclePanel()
+    fun setPanelMode(mode: VoicePanelMode) = voiceSession.setPanelMode(mode)
     fun renameConversation(name: String) = voiceSession.rename(name)
 
     /** The retained ChatGPT WebView to host in the panel (null until created). */

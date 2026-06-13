@@ -2,10 +2,13 @@ package com.seoin.emojienglish.voice
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -98,6 +101,14 @@ class DefaultVoiceSession @Inject constructor(
     /** Serializes gateway turns so rapid word taps QUEUE instead of overlapping. */
     private val turnMutex = Mutex()
 
+    /**
+     * Watches a manual-override mic so it doesn't stay stuck forever (사용자 피드백:
+     * 수동으로 한번 만지면 auto로 안 돌아옴). If the session goes quiet — no teacher
+     * voice playing and no turn running — for [MIC_RECLAIM_SILENCE_MS], we mute the
+     * mic and restore auto-gate, so the next coaching question re-opens it itself.
+     */
+    private var micWatchdog: Job? = null
+
     private val _state = MutableStateFlow(VoiceSessionState())
     override val state: StateFlow<VoiceSessionState> = _state.asStateFlow()
 
@@ -137,6 +148,7 @@ class DefaultVoiceSession @Inject constructor(
     }
 
     override fun endSet() {
+        cancelMicReclaimWatchdog()
         _state.value = _state.value.copy(
             mode = VoiceSessionMode.NONE,
             busy = false,
@@ -183,6 +195,47 @@ class DefaultVoiceSession @Inject constructor(
         // prompt layer cannot silently re-arm it (사용자 명시 규칙).
         _state.value = _state.value.copy(micAutoGate = false, manualOverride = true)
         gateway.setMicOpen(open)
+        // But the override must not be permanent: if the mic then sits open and
+        // quiet for a while, hand control back to auto (사용자 피드백).
+        startMicReclaimWatchdog()
+    }
+
+    /**
+     * While a manual override is active, count "quiet" time (no teacher voice, no
+     * running turn). After [MIC_RECLAIM_SILENCE_MS] of quiet, mute the mic and
+     * restore auto-gate. Any teacher voice / turn resets the timer, so an ongoing
+     * exchange is never cut off. Cancelled when the override ends or the set tears
+     * down.
+     */
+    private fun startMicReclaimWatchdog() {
+        micWatchdog?.cancel()
+        micWatchdog = scope.launch {
+            var lastActiveMs = System.currentTimeMillis()
+            while (isActive) {
+                delay(MIC_RECLAIM_POLL_MS)
+                val s = _state.value
+                if (!s.manualOverride) return@launch // already back to auto by another path
+                // Mid-exchange (tutor explaining / a turn running) → keep alive.
+                if (s.speaking || s.busy) {
+                    lastActiveMs = System.currentTimeMillis()
+                    continue
+                }
+                if (System.currentTimeMillis() - lastActiveMs >= MIC_RECLAIM_SILENCE_MS) {
+                    gateway.setMicOpen(false)
+                    _state.value = _state.value.copy(manualOverride = false, micAutoGate = true)
+                    android.util.Log.d(
+                        "SeoinVoice",
+                        "mic auto-reclaim: ${MIC_RECLAIM_SILENCE_MS}ms quiet in manual → muted, auto restored",
+                    )
+                    return@launch
+                }
+            }
+        }
+    }
+
+    private fun cancelMicReclaimWatchdog() {
+        micWatchdog?.cancel()
+        micWatchdog = null
     }
 
     override fun setAutoGate(enable: Boolean) {
@@ -191,6 +244,8 @@ class DefaultVoiceSession @Inject constructor(
     }
 
     override suspend fun startFreeTalk() {
+        // Free talk keeps the mic open on purpose — no reclaim watchdog here.
+        cancelMicReclaimWatchdog()
         _state.value = _state.value.copy(
             mode = VoiceSessionMode.FREE_TALK,
             micAutoGate = false,
@@ -225,4 +280,10 @@ class DefaultVoiceSession @Inject constructor(
     }
 
     override fun provideView(): android.webkit.WebView? = gateway.provideView()
+
+    private companion object {
+        /** Quiet time in a manual override before auto-gate is restored (사용자: ~7초). */
+        const val MIC_RECLAIM_SILENCE_MS = 7_000L
+        const val MIC_RECLAIM_POLL_MS = 500L
+    }
 }

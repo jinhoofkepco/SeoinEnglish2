@@ -53,10 +53,7 @@ fun VoicePrompt.toTurnScript(): VoiceTurnScript {
         // payload is cleared to avoid sending it twice.
         StepPromptKind.EXPLAIN -> VoiceTurnScript(
             role = TurnRole.READ_ONLY,
-            instruction = directive(
-                "\"$payload\"에 대해 3문장 이상으로 자세하게, 그러나 아주 쉬운 단어만 써서 " +
-                    "설명해주고, 쉬운 예문을 하나 들어서 설명해줘. 말할 때는 할 수 있는 한 가장 느리게 말해줘.",
-            ),
+            instruction = directive("$payload 할 수 있는 한 가장 느리게 말해줘."),
             payload = "",
         )
 

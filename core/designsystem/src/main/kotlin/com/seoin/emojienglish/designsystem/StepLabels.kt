@@ -13,6 +13,7 @@ fun stepTypeLabel(type: String): String = when (type) {
     "shadowing" -> "쉐도잉"
     "simple_question" -> "질문"
     "chunk_interpret" -> "청크해석"
+    "passage_read" -> "지문탐험"
     else -> type
 }
 
@@ -24,5 +25,6 @@ fun stepTypeEmoji(type: String): String = when (type) {
     "shadowing" -> "🗣️"
     "simple_question" -> "❓"
     "chunk_interpret" -> "🧩"
+    "passage_read" -> "📖"
     else -> "📄"
 }

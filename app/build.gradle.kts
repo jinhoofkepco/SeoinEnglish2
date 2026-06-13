@@ -51,6 +51,7 @@ dependencies {
     implementation(project(":steps:shadowing"))
     implementation(project(":steps:question"))
     implementation(project(":steps:chunk"))
+    implementation(project(":steps:passageread"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
