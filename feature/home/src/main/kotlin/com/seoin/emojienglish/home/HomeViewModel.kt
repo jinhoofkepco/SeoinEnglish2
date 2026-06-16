@@ -2,6 +2,7 @@ package com.seoin.emojienglish.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.seoin.emojienglish.content.ContentWriter
 import com.seoin.emojienglish.content.LessonRepository
 import com.seoin.emojienglish.data.MasterModeState
 import com.seoin.emojienglish.data.PlanRepository
@@ -9,15 +10,19 @@ import com.seoin.emojienglish.data.TraceRepository
 import com.seoin.emojienglish.model.Book
 import com.seoin.emojienglish.model.TodayPlan
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val lessonRepo: LessonRepository,
+    private val writer: ContentWriter,
     private val planRepo: PlanRepository,
     traceRepo: TraceRepository,
     masterMode: MasterModeState,
@@ -29,6 +34,9 @@ class HomeViewModel @Inject constructor(
 
     /** Master mode toggles the browse overlay (§11.5) without importing master. */
     val masterUnlocked: StateFlow<Boolean> = masterMode.unlocked
+
+    private val _contentVersion = MutableStateFlow(0)
+    val contentVersion: StateFlow<Int> = _contentVersion.asStateFlow()
 
     /**
      * Units the child has finished — keyed "bookId/unitId". Derived from the
@@ -53,5 +61,14 @@ class HomeViewModel @Inject constructor(
         val book = lessonRepo.books().firstOrNull() ?: return null
         val unit = book.units.firstOrNull() ?: return null
         return book.bookId to unit.unitId
+    }
+
+    fun deleteGeneratedUnit(bookId: String, unitId: String): Boolean {
+        val deleted = writer.deleteUnit(bookId, unitId)
+        if (deleted) {
+            lessonRepo.refresh()
+            _contentVersion.update { it + 1 }
+        }
+        return deleted
     }
 }

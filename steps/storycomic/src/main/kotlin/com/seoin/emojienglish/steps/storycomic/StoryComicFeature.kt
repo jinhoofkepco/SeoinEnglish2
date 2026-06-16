@@ -1,5 +1,6 @@
 package com.seoin.emojienglish.steps.storycomic
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -31,7 +33,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -42,9 +46,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.seoin.emojienglish.designsystem.DummyMasterScaffold
 import com.seoin.emojienglish.designsystem.MasterActivityRow
 import com.seoin.emojienglish.designsystem.formatClock
+import com.seoin.emojienglish.designsystem.rememberContentImage
 import com.seoin.emojienglish.model.LessonContent
 import com.seoin.emojienglish.model.StepResult
 import com.seoin.emojienglish.model.StepTraceSnapshot
@@ -56,6 +62,8 @@ import com.seoin.emojienglish.step.params
 import com.seoin.emojienglish.step.resultSummaries
 import com.seoin.emojienglish.step.stepId
 import com.seoin.emojienglish.step.timeOrderedActivities
+import com.seoin.emojienglish.voice.PictureController
+import com.seoin.emojienglish.voice.PictureWord
 import com.seoin.emojienglish.voice.StepPromptKind
 import com.seoin.emojienglish.voice.VoicePrompt
 import dagger.Binds
@@ -86,7 +94,9 @@ import javax.inject.Inject
  *     ("다음 컷" → "처음부터" at the end), and the step auto-completes on the
  *     last panel so the Player's CTA appears without an extra tap.
  */
-class StoryComicFeature @Inject constructor() : StepFeature {
+class StoryComicFeature @Inject constructor(
+    private val pictures: PictureController,
+) : StepFeature {
     override val type: String = "story_comic"
 
     override fun parseSpec(stepJson: JsonObject, content: LessonContent): StepSpec =
@@ -99,6 +109,7 @@ class StoryComicFeature @Inject constructor() : StepFeature {
     override fun StudentScreen(spec: StepSpec, session: StepSession, modifier: Modifier) {
         val s = spec as StoryComicSpec
         val data = s.data
+        val voiceActive by session.voiceActive.collectAsState()
         var panelIndex by remember { mutableIntStateOf(0) }
         var selectedWord by remember { mutableStateOf<String?>(null) }
         var heardWords by remember { mutableStateOf(setOf<String>()) }
@@ -112,14 +123,24 @@ class StoryComicFeature @Inject constructor() : StepFeature {
             data.wordExplanations[word.lowercase().trim()]
                 ?: session.content.word(word)?.let { "${it.meaningKo}. ${it.example}" }
 
-        // 단어 탭 = 선택 + 즉시 설명 낭독. 선택된 단어는 카드로 펼쳐져
-        // [다시 듣기] / [선생님과 이야기] 로 이어진다 (탭 → 듣기 → 대화의 3단 심화).
+        fun popupOf(word: String): StoryWordPopup? =
+            data.wordPopups[word.lowercase().trim()]
+
+        fun popupDefinitionOf(word: String): String? =
+            popupOf(word)?.definitionEn ?: explanationOf(word)
+
+        // 단어 탭 = 팝업 열기 + 영어 정의 즉시 낭독. 그림/대화는 팝업에서 이어진다.
         fun selectWord(word: String) {
             selectedWord = word
             heardWords = heardWords + word
-            val explanation = explanationOf(word) ?: return
             session.trace("word_tap", mapOf("word" to word))
-            session.speak("$word. $explanation")
+            if (!voiceActive) {
+                popupDefinitionOf(word)?.let { definition ->
+                    session.speak("$word. $definition")
+                }
+            } else {
+                session.trace("word_tts_skipped_voice_active", mapOf("word" to word))
+            }
         }
 
         // 단어 수집 완료 — 한 번만 기록 (다 만나면 작은 축하 한 줄).
@@ -209,73 +230,6 @@ class StoryComicFeature @Inject constructor() : StepFeature {
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2E7D32),
                     )
-                }
-
-                // 선택된 단어 카드 — 설명 텍스트 + 다시 듣기 + 선생님과 이야기 나누기
-                selectedWord?.let { word ->
-                    val explanation = explanationOf(word)
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(
-                            Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    word,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                )
-                                Text(
-                                    "✕",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier
-                                        .clickable { selectedWord = null }
-                                        .padding(4.dp),
-                                )
-                            }
-                            if (explanation != null) {
-                                Text(
-                                    explanation,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                )
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(
-                                    onClick = {
-                                        explanation?.let { session.speak("$word. $it") }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                ) { Text("🔊 다시 듣기") }
-                                Button(
-                                    onClick = {
-                                        session.trace("word_talk", mapOf("word" to word))
-                                        session.requestVoice(
-                                            VoicePrompt(
-                                                templateId = "story_word_talk",
-                                                kind = StepPromptKind.QUIZ_VOCAB,
-                                                payload = data.voiceTalks[word.lowercase().trim()]
-                                                    ?: explanation
-                                                    ?: word,
-                                                contextLabel = "단어 이야기 · $word",
-                                            ),
-                                        )
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                ) { Text("🎙 이야기 나누기") }
-                            }
-                        }
-                    }
                 }
 
                 // The panel — one per screen, big.
@@ -371,6 +325,48 @@ class StoryComicFeature @Inject constructor() : StepFeature {
                     ) { Text("🔍 단어 찾기 퀴즈") }
                 }
             }
+
+            selectedWord?.let { word ->
+                val key = word.lowercase().trim()
+                val popup = popupOf(word)
+                val explanation = explanationOf(word)
+                StoryWordPopupDialog(
+                    word = word,
+                    popup = popup,
+                    fallbackDefinition = explanation,
+                    voiceActive = voiceActive,
+                    onDismiss = { selectedWord = null },
+                    onPictureClick = {
+                        // 그림창에 단어 칩 추가(요청은 그림창에서 칩 탭 시). 팝업은 닫아
+                        // 그림창이 가려지지 않게 한다.
+                        session.trace("story_word_picture", mapOf("word" to word))
+                        pictures.addWord(
+                            PictureWord(
+                                id = key,
+                                label = word,
+                                prompt = storyPicturePayload(word, explanation),
+                            ),
+                        )
+                        selectedWord = null
+                    },
+                    onTalkClick = {
+                        session.trace("word_talk", mapOf("word" to word))
+                        session.requestVoice(
+                            VoicePrompt(
+                                templateId = "story_word_talk",
+                                kind = StepPromptKind.QUIZ_VOCAB,
+                                payload = storyWordTalkPayload(
+                                    word = word,
+                                    popup = popup,
+                                    extraBrief = data.voiceTalks[key] ?: explanation,
+                                    caption = panel.caption,
+                                ),
+                                contextLabel = "단어 이야기 · $word",
+                            ),
+                        )
+                    },
+                )
+            }
         }
     }
 
@@ -384,6 +380,126 @@ class StoryComicFeature @Inject constructor() : StepFeature {
             },
             modifier = modifier,
         )
+    }
+}
+
+@Composable
+private fun StoryWordPopupDialog(
+    word: String,
+    popup: StoryWordPopup?,
+    fallbackDefinition: String?,
+    voiceActive: Boolean,
+    onDismiss: () -> Unit,
+    onPictureClick: () -> Unit,
+    onTalkClick: () -> Unit,
+) {
+    val definition = popup?.definitionEn ?: fallbackDefinition.orEmpty()
+    val imageAsset = popup?.imageAsset.orEmpty()
+    val imageAlt = popup?.imageAlt.orEmpty()
+    var talkRequested by remember(word) { mutableStateOf(false) }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp,
+            shadowElevation = 12.dp,
+            modifier = Modifier
+                .widthIn(max = 430.dp)
+                .fillMaxWidth(),
+        ) {
+            Column(
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (imageAsset.isNotBlank()) {
+                    StoryWordAssetImage(
+                        assetPath = imageAsset,
+                        imageAlt = imageAlt,
+                        cols = popup?.gridCols ?: 0,
+                        rows = popup?.gridRows ?: 0,
+                        cell = popup?.cell ?: -1,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(18.dp)),
+                    )
+                }
+                Text(
+                    word,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                )
+                if (definition.isNotBlank()) {
+                    Text(
+                        definition,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                OutlinedButton(
+                    onClick = onPictureClick,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("🖼 그림 보기") }
+                Button(
+                    onClick = {
+                        if (talkRequested || voiceActive) return@Button
+                        talkRequested = true
+                        onTalkClick()
+                    },
+                    enabled = !talkRequested && !voiceActive,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        when {
+                            talkRequested -> "대화 요청됨"
+                            voiceActive -> "선생님 말하는 중"
+                            else -> "선생님이랑 대화하기"
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StoryWordAssetImage(
+    assetPath: String,
+    imageAlt: String,
+    cols: Int = 0,
+    rows: Int = 0,
+    cell: Int = -1,
+    modifier: Modifier = Modifier,
+) {
+    // filesDir(런타임 콘텐츠) → assets 순으로 찾는다. 그리드 한 장이면 해당 칸만 잘라 표시.
+    val bitmap = rememberContentImage(assetPath, cols, rows, cell)
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = imageAlt.ifBlank { null },
+            contentScale = ContentScale.Fit,
+            modifier = modifier,
+        )
+    } else {
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = modifier,
+        ) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    "No picture",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
@@ -436,6 +552,34 @@ private fun captionWithTappableWords(
     append(caption.substring(cursor))
 }
 
+// 그림창에 주입할 요청문 — 사진 우선, 없으면 간단히 그려달라고. 짧게.
+private fun storyPicturePayload(word: String, explanation: String?): String {
+    val ctx = explanation?.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: ""
+    return "\"$word\"$ctx 의 사진이나 그림을 보여줘. 못 찾으면 아이가 알아볼 수 있게 간단히 그려줘."
+}
+
+private fun storyWordTalkPayload(
+    word: String,
+    popup: StoryWordPopup?,
+    extraBrief: String?,
+    caption: String,
+): String = buildString {
+    appendLine("Word: $word")
+    popup?.definitionEn?.takeIf { it.isNotBlank() }?.let {
+        appendLine("English definition: $it")
+    }
+    popup?.imageAlt?.takeIf { it.isNotBlank() }?.let {
+        appendLine("Picture: $it")
+    }
+    caption.takeIf { it.isNotBlank() }?.let {
+        appendLine("Comic sentence: $it")
+    }
+    extraBrief?.takeIf { it.isNotBlank() }?.let {
+        appendLine("Extra teaching note: $it")
+    }
+    appendLine("Goal: Talk about the picture in very easy English, then ask the child one short question that helps them use the word.")
+}.trim()
+
 @Module
 @InstallIn(SingletonComponent::class)
 interface StoryComicBindModule {
@@ -456,6 +600,7 @@ internal val PreviewStory = StoryComicData(
         "order" to "Order means to ask for food in a restaurant.",
         "delicious" to "Delicious means the food tastes very, very good.",
     ),
+    wordPopups = emptyMap(),
     voiceTalks = emptyMap(),
     panels = listOf(
         StoryPanel(
@@ -487,7 +632,7 @@ internal val PreviewStory = StoryComicData(
 @Preview(name = "tablet", device = "spec:width=1280dp,height=800dp,dpi=240")
 @Composable
 private fun StoryComicPreview() {
-    StoryComicFeature().StudentScreen(
+    StoryComicFeature(com.seoin.emojienglish.voice.NoopPictureController).StudentScreen(
         spec = StoryComicSpec("s_story", PreviewStory),
         session = FakeStepSession(),
         modifier = Modifier,

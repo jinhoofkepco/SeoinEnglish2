@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.OpenInFull
@@ -63,7 +64,7 @@ fun BottomHub(
     expanded: Boolean,
     onToggleExpand: () -> Unit,
     onToggleMic: () -> Unit,
-    onVoice: () -> Unit,
+    onPicture: () -> Unit,
     onMaster: () -> Unit,
     onToggleWebView: () -> Unit,
     provideView: () -> WebView?,
@@ -119,7 +120,7 @@ fun BottomHub(
                 hasVoice = hasVoice,
                 onCollapse = onToggleExpand,
                 onToggleMic = onToggleMic,
-                onVoice = onVoice,
+                onPicture = onPicture,
                 onMaster = onMaster,
                 onToggleWebView = onToggleWebView,
             )
@@ -177,7 +178,7 @@ private fun ExpandedHubBar(
     hasVoice: Boolean,
     onCollapse: () -> Unit,
     onToggleMic: () -> Unit,
-    onVoice: () -> Unit,
+    onPicture: () -> Unit,
     onMaster: () -> Unit,
     onToggleWebView: () -> Unit,
 ) {
@@ -235,9 +236,10 @@ private fun ExpandedHubBar(
                 }
             }
 
-            TextButton(onClick = onVoice) {
-                Icon(Icons.Filled.Mic, contentDescription = null)
-                Text(if (hasVoice) " 대화" else " Voice")
+            // "대화"(자유대화) 자리를 그림창 토글로 대체.
+            TextButton(onClick = onPicture) {
+                Icon(Icons.Filled.Image, contentDescription = null)
+                Text(" 그림")
             }
             TextButton(onClick = onMaster) {
                 Icon(

@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.util.Log
 import android.webkit.PermissionRequest
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -102,6 +103,22 @@ class WebViewVoiceGateway @Inject constructor(
         wv.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 pageLoaded = true
+            }
+
+            override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
+                Log.w(TAG, "renderer gone didCrash=${detail?.didCrash()} — dropping voice webview")
+                if (view === webView) {
+                    webView = null
+                    pageLoaded = false
+                    primedOnce = false
+                }
+                pendingAudio.clear()
+                _speaking.value = false
+                _micOpen.value = false
+                _state.value = VoiceShellState.RECONNECTING
+                (view?.parent as? android.view.ViewGroup)?.removeView(view)
+                view?.destroy()
+                return true
             }
         }
         WebView.setWebContentsDebuggingEnabled(true)

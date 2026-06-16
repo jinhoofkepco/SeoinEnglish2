@@ -78,6 +78,7 @@ class LessonPlayerViewModel @Inject constructor(
         val currentItem: QueueItem? = null,
         val finished: Boolean = false,
         val masterMode: Boolean = false,
+        val voiceActive: Boolean = false,
         val chips: List<NavStepChip> = emptyList(),
         val maxReached: Int = 0,
         val masterSnapshot: StepTraceSnapshot? = null,
@@ -108,18 +109,22 @@ class LessonPlayerViewModel @Inject constructor(
     private val maxReachedFlow = MutableStateFlow(initialIndex)
     private val _finished = MutableStateFlow(false)
     val finished: StateFlow<Boolean> = _finished.asStateFlow()
+    private val voiceActive: StateFlow<Boolean> = voiceSession.state
+        .map { it.busy || it.speaking }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     val uiState: StateFlow<UiState> =
-        combine(indexFlow, masterMode.unlocked, maxReachedFlow) { idx, master, maxR ->
-            Triple(idx, master, maxR)
-        }.flatMapLatest { (idx, master, maxR) ->
+        combine(indexFlow, masterMode.unlocked, maxReachedFlow, voiceActive) { idx, master, maxR, voice ->
+            PlayerInputs(idx, master, maxR, voice)
+        }.flatMapLatest { input ->
+            val idx = input.index
             val item = queue.itemAt(idx)
             val resultFlow = if (item != null) progressRepo.result(queue.sessionId, idx) else flowOf(null)
-            resultFlow.map { result -> buildState(idx, item, result, master, maxR) }
+            resultFlow.map { result -> buildState(idx, item, result, input.master, input.maxReached, input.voiceActive) }
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = buildState(indexFlow.value, queue.itemAt(indexFlow.value), null, false, maxReachedFlow.value),
+            initialValue = buildState(indexFlow.value, queue.itemAt(indexFlow.value), null, false, maxReachedFlow.value, false),
         )
 
     /** The session a Step is handed (§7.1). Stateless — delegates to repos/flows. */
@@ -127,6 +132,8 @@ class LessonPlayerViewModel @Inject constructor(
         override val content = lessonRepo.unit(item.bookId, item.unitId).content
         override val savedResult: StateFlow<StepResult?> =
             progressRepo.result(queue.sessionId, queueIndex)
+        override val voiceActive: StateFlow<Boolean> =
+            this@LessonPlayerViewModel.voiceActive
 
         override fun trace(action: String, detail: Map<String, String>) =
             traceRepo.add(item.toTraceEvent(queue.sessionId, action, detail))
@@ -148,12 +155,25 @@ class LessonPlayerViewModel @Inject constructor(
             // 다음 액션(다음 컷/문장 등 낭독)으로 넘어가면 학생 마이크를 자동으로 끈다
             // — 모든 스텝 공통. 다시 말하려면 "대화"로 열어야 한다 (피드백).
             voiceGateway.setMicOpen(false)
+            val voice = voiceSession.state.value
+            if (voice.busy || voice.speaking) {
+                android.util.Log.d(
+                    "SeoinVoice",
+                    "local TTS skipped during teacher voice busy=${voice.busy} speaking=${voice.speaking}: ${text.take(48)}",
+                )
+                trace("tts_skipped_voice_active", mapOf("text" to text.take(80)))
+                return
+            }
             voiceGateway.speak(text, lang)
         }
     }
 
     /** Floating "다음 단계" (요구사항 ④) — only meaningful in student mode. */
     fun goNext() {
+        if (voiceActive.value) {
+            android.util.Log.d("SeoinVoice", "goNext blocked while teacher voice is active")
+            return
+        }
         val state = uiState.value
         if (!state.isCurrentComplete) return
         if (state.isLast) {
@@ -167,6 +187,10 @@ class LessonPlayerViewModel @Inject constructor(
     /** Navigator chip tap (요구사항 ①). Student: only reached steps. Master: any. */
     fun goTo(index: Int) {
         if (index !in queue.items.indices) return
+        if (!masterMode.unlocked.value && voiceActive.value) {
+            android.util.Log.d("SeoinVoice", "goTo blocked while teacher voice is active")
+            return
+        }
         val allowed = masterMode.unlocked.value || index <= maxReachedFlow.value
         if (allowed) setIndex(index)
     }
@@ -205,6 +229,7 @@ class LessonPlayerViewModel @Inject constructor(
         result: StepResult?,
         master: Boolean,
         maxReached: Int,
+        voiceActive: Boolean,
     ): UiState {
         val chips = chipTypes.mapIndexed { i, type ->
             NavStepChip(
@@ -225,6 +250,7 @@ class LessonPlayerViewModel @Inject constructor(
                 isLast = true,
                 finished = _finished.value,
                 masterMode = master,
+                voiceActive = voiceActive,
                 chips = chips,
                 maxReached = maxReached,
             )
@@ -266,11 +292,19 @@ class LessonPlayerViewModel @Inject constructor(
             currentItem = item,
             finished = _finished.value,
             masterMode = master,
+            voiceActive = voiceActive,
             chips = chips,
             maxReached = maxReached,
             masterSnapshot = snapshot,
         )
     }
+
+    private data class PlayerInputs(
+        val index: Int,
+        val master: Boolean,
+        val maxReached: Int,
+        val voiceActive: Boolean,
+    )
 
     private fun occurrenceLabel(item: QueueItem): String =
         if (item.totalOccurrences > 1) "반복 ${item.occurrence}/${item.totalOccurrences}회차" else ""

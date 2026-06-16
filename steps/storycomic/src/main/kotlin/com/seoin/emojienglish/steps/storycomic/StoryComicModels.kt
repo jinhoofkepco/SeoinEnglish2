@@ -31,6 +31,8 @@ internal data class StoryComicData(
     val words: List<String>,
     /** word(lowercase) → kid-friendly English explanation, read by TTS on tap. */
     val wordExplanations: Map<String, String>,
+    /** word(lowercase) → popup definition and image shown when a word chip is tapped. */
+    val wordPopups: Map<String, StoryWordPopup>,
     /**
      * word(lowercase) → GPT voice discussion brief. Sent as a QUIZ_VOCAB payload:
      * the tutor explains briefly, asks ONE question, listens and judges — the
@@ -38,6 +40,16 @@ internal data class StoryComicData(
      */
     val voiceTalks: Map<String, String>,
     val panels: List<StoryPanel>,
+)
+
+internal data class StoryWordPopup(
+    val definitionEn: String,
+    val imageAsset: String,
+    val imageAlt: String,
+    /** 한 장의 그리드 이미지를 쓸 때: 칸 번호(0-base, row-major)와 격자 크기. */
+    val cell: Int = -1,
+    val gridCols: Int = 0,
+    val gridRows: Int = 0,
 )
 
 internal data class StoryPanel(
@@ -110,12 +122,28 @@ internal fun parseStoryComic(params: JsonObject): StoryComicData {
                 k.lowercase().trim() to text
             }?.toMap() ?: emptyMap()
 
+    fun wordPopupMap(key: String): Map<String, StoryWordPopup> =
+        (params[key] as? JsonObject)?.entries
+            ?.mapNotNull { (k, v) ->
+                val obj = v as? JsonObject ?: return@mapNotNull null
+                val definition = obj.str("definitionEn") ?: return@mapNotNull null
+                k.lowercase().trim() to StoryWordPopup(
+                    definitionEn = definition,
+                    imageAsset = obj.str("imageAsset") ?: "",
+                    imageAlt = obj.str("imageAlt") ?: "",
+                    cell = obj.int("cell", -1),
+                    gridCols = obj.int("gridCols", 0),
+                    gridRows = obj.int("gridRows", 0),
+                )
+            }?.toMap() ?: emptyMap()
+
     return StoryComicData(
         title = params.str("title") ?: "",
         meaning = params.str("meaning") ?: "",
         words = (params["words"] as? JsonArray)
             ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull } ?: emptyList(),
         wordExplanations = stringMap("wordExplanations"),
+        wordPopups = wordPopupMap("wordPopups"),
         voiceTalks = stringMap("voiceTalks"),
         panels = panels,
     )

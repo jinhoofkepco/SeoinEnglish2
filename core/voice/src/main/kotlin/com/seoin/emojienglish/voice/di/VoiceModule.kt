@@ -2,9 +2,11 @@ package com.seoin.emojienglish.voice.di
 
 import com.seoin.emojienglish.voice.DefaultVoiceController
 import com.seoin.emojienglish.voice.DefaultVoiceSession
+import com.seoin.emojienglish.voice.PictureController
 import com.seoin.emojienglish.voice.VoiceController
 import com.seoin.emojienglish.voice.VoiceGateway
 import com.seoin.emojienglish.voice.VoiceSession
+import com.seoin.emojienglish.voice.WebViewPictureGateway
 import com.seoin.emojienglish.voice.WebViewVoiceGateway
 import dagger.Binds
 import dagger.Module
@@ -34,4 +36,8 @@ interface VoiceModule {
     @Binds
     @Singleton
     fun bindVoiceController(impl: DefaultVoiceController): VoiceController
+
+    @Binds
+    @Singleton
+    fun bindPictureController(impl: WebViewPictureGateway): PictureController
 }

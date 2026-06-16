@@ -3,6 +3,8 @@ package com.seoin.emojienglish.steps.passageread
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,17 +43,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import kotlin.math.roundToInt
 import com.seoin.emojienglish.designsystem.DummyMasterScaffold
 import com.seoin.emojienglish.designsystem.MasterActivityRow
 import com.seoin.emojienglish.designsystem.formatClock
@@ -68,6 +76,8 @@ import com.seoin.emojienglish.step.resultSummaries
 import com.seoin.emojienglish.step.stepId
 import com.seoin.emojienglish.step.string
 import com.seoin.emojienglish.step.timeOrderedActivities
+import com.seoin.emojienglish.voice.PictureController
+import com.seoin.emojienglish.voice.PictureWord
 import com.seoin.emojienglish.voice.StepPromptKind
 import com.seoin.emojienglish.voice.VoicePrompt
 import dagger.Binds
@@ -77,6 +87,7 @@ import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoMap
 import dagger.multibindings.StringKey
 import javax.inject.Inject
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -158,7 +169,9 @@ data class PassageExploreItem(
  *  - 하단 = 청크 힌트 + **작은 원형 버튼**(따라 읽기·영어설명·한글설명) + 이전/다음.
  *  - 탐험 단어는 본문 인라인(점선 밑줄+🔎), 길게 누르면 영상/질문/실험 메뉴.
  */
-class PassageReadFeature @Inject constructor() : StepFeature {
+class PassageReadFeature @Inject constructor(
+    private val pictures: PictureController,
+) : StepFeature {
     override val type: String = "passage_read"
 
     override fun parseSpec(stepJson: JsonObject, content: LessonContent): StepSpec =
@@ -194,77 +207,87 @@ class PassageReadFeature @Inject constructor() : StepFeature {
         // 문단 끝 조망: 본문 흐름을 안 해치게 아이콘만 두고, 누르면 하단에 펼침.
         var overlookParaId by remember { mutableStateOf<String?>(null) }
         val overlookPara = data.paragraphs.firstOrNull { it.id == overlookParaId }
+        // 상시 안내 대신 작은 ! — 누르면 위에서 잠깐 떴다 사라진다.
+        var showHint by remember { mutableStateOf(false) }
 
         LaunchedEffect(current.id) {
             session.trace("passage_sentence_view", mapOf("sentence" to current.id))
             session.speak(current.text)
         }
-
-        Column(modifier.fillMaxSize()) {
-            // 상단 한 줄: 문단 제목 · 진행
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    paragraph?.title.orEmpty().ifBlank { data.title },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    "${currentIndex + 1} / ${sentences.size}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                )
+        LaunchedEffect(showHint) {
+            if (showHint) {
+                delay(1800)
+                showHint = false
             }
+        }
 
-            // 지문 영역 — 화면 상단 60%, 스크롤, 현재 문장 중앙 고정
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(0.6f),
-            ) {
-                PassageScroll(
-                    data = data,
-                    currentId = current.id,
-                    onSentenceClick = { id ->
-                        currentIndex = sentences.indexOfFirst { it.id == id }.coerceAtLeast(0)
-                    },
-                    onChunkClick = { chunk ->
-                        selectedChunkId = chunk.id
-                        session.trace(
-                            "passage_chunk_tap",
-                            mapOf("sentence" to current.id, "chunk" to chunk.id, "text" to chunk.text),
-                        )
-                        session.speak(chunk.text)
-                    },
-                    overlookOpenId = overlookParaId,
-                    onOverlookToggle = { pid ->
-                        overlookParaId = if (overlookParaId == pid) null else pid
-                        if (overlookParaId != null) session.trace("passage_overlook_open", mapOf("paragraph" to pid))
-                    },
-                )
-            }
+        Box(modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize()) {
+                // 상단 한 줄: 문단 제목 · ! 안내 · 진행
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        paragraph?.title.orEmpty().ifBlank { data.title },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.weight(1f),
+                    )
+                    InfoDot(onClick = { showHint = true })
+                    Text(
+                        "${currentIndex + 1} / ${sentences.size}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
 
-            // ── 하단 컨트롤 (40%) — 가는 구분선으로만 구획 ────────────────────
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(0.4f),
-            ) {
+                // 지문 영역 — 남는 공간 전부. 버튼을 맨 아래로 내리고 지문을 키운다.
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                ) {
+                    PassageScroll(
+                        data = data,
+                        currentId = current.id,
+                        onSentenceClick = { id ->
+                            currentIndex = sentences.indexOfFirst { it.id == id }.coerceAtLeast(0)
+                        },
+                        onChunkClick = { chunk ->
+                            selectedChunkId = chunk.id
+                            session.trace(
+                                "passage_chunk_tap",
+                                mapOf("sentence" to current.id, "chunk" to chunk.id, "text" to chunk.text),
+                            )
+                            session.speak(chunk.text)
+                        },
+                        onPicture = { label, prompt ->
+                            session.trace("passage_picture", mapOf("sentence" to current.id, "text" to label))
+                            pictures.addWord(
+                                PictureWord(id = "${current.id}_${label.hashCode()}", label = label, prompt = prompt),
+                            )
+                        },
+                        overlookOpenId = overlookParaId,
+                        onOverlookToggle = { pid ->
+                            overlookParaId = if (overlookParaId == pid) null else pid
+                            if (overlookParaId != null) session.trace("passage_overlook_open", mapOf("paragraph" to pid))
+                        },
+                    )
+                }
+
+                // ── 하단 컨트롤 — 맨 아래 고정. 가는 구분선으로만 구획 ──────────────
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Column(
                     Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
+                        .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    // 조망 펼침이 우선, 아니면 청크 힌트(둘 다 한 줄 인라인).
+                    // 맥락 힌트(있을 때만): 조망 펼침 우선, 아니면 선택한 청크 한 줄.
                     if (overlookPara != null) {
                         OverlookInline(
                             para = overlookPara,
@@ -281,19 +304,16 @@ class PassageReadFeature @Inject constructor() : StepFeature {
                             },
                             onClose = { overlookParaId = null },
                         )
-                    } else {
+                    } else if (selectedChunk != null) {
                         ChunkHintInline(
                             chunk = selectedChunk,
-                            onReplay = { selectedChunk?.let { session.speak(it.text) } },
+                            onReplay = { session.speak(selectedChunk.text) },
                         )
                     }
 
-                    Spacer(Modifier.weight(1f, fill = false))
-
-                    // 모든 버튼을 한 줄(1열)로: 이전 · 따라읽기 · EN · 한 · 다음.
+                    // 버튼: 이전 = 맨 왼쪽, 나머지(따라읽기·EN·한·다음)는 오른쪽으로.
                     Row(
                         Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         CircleNav(
@@ -302,54 +322,81 @@ class PassageReadFeature @Inject constructor() : StepFeature {
                             enabled = currentIndex > 0,
                             filled = false,
                         ) { if (currentIndex > 0) currentIndex-- }
-                        CircleAction(emoji = "🗣", label = "따라 읽기") {
-                            session.trace("passage_read_along", mapOf("sentence" to current.id))
-                            session.requestVoice(
-                                VoicePrompt(
-                                    templateId = "passage_read_along",
-                                    kind = StepPromptKind.READ_ALONG,
-                                    payload = current.text,
-                                    contextLabel = "${data.title} · 문장 ${currentIndex + 1}",
-                                ),
-                            )
-                        }
-                        CircleAction(text = "EN", label = "영어 설명") {
-                            session.trace("passage_sentence_decode", mapOf("sentence" to current.id, "lang" to "en"))
-                            session.requestVoice(
-                                VoicePrompt(
-                                    templateId = "passage_sentence_decode",
-                                    kind = StepPromptKind.EXPLAIN,
-                                    payload = sentenceDecodePayload(data, current),
-                                    contextLabel = "${data.title} · 문장 구조",
-                                ),
-                            )
-                        }
-                        CircleAction(text = "한", label = "한글 뜻") {
-                            session.trace("passage_sentence_ko", mapOf("sentence" to current.id, "lang" to "ko"))
-                            // 한글 뜻도 보이스(GPT)에게: 청크 단위 영어→한글 번갈아 설명.
-                            session.requestVoice(
-                                VoicePrompt(
-                                    templateId = "passage_sentence_ko",
-                                    kind = StepPromptKind.EXPLAIN,
-                                    payload = sentenceKoPayload(data, current),
-                                    contextLabel = "${data.title} · 한글 뜻",
-                                ),
-                            )
-                        }
-                        CircleNav(
-                            emoji = if (currentIndex == sentences.lastIndex) "✓" else "›",
-                            label = if (currentIndex == sentences.lastIndex) "완료" else "다음",
-                            enabled = true,
-                            filled = true,
+
+                        Spacer(Modifier.weight(1f))
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            if (currentIndex < sentences.lastIndex) {
-                                currentIndex++
-                            } else {
-                                session.trace("passage_complete", mapOf("sentenceCount" to sentences.size.toString()))
-                                session.complete(StepResult.Completed())
+                            CircleAction(emoji = "🗣", label = "따라 읽기") {
+                                session.trace("passage_read_along", mapOf("sentence" to current.id))
+                                session.requestVoice(
+                                    VoicePrompt(
+                                        templateId = "passage_read_along",
+                                        kind = StepPromptKind.READ_ALONG,
+                                        payload = current.text,
+                                        contextLabel = "${data.title} · 문장 ${currentIndex + 1}",
+                                    ),
+                                )
+                            }
+                            CircleAction(text = "EN", label = "영어 설명") {
+                                session.trace("passage_sentence_decode", mapOf("sentence" to current.id, "lang" to "en"))
+                                session.requestVoice(
+                                    VoicePrompt(
+                                        templateId = "passage_sentence_decode",
+                                        kind = StepPromptKind.EXPLAIN,
+                                        payload = sentenceDecodePayload(data, current),
+                                        contextLabel = "${data.title} · 문장 구조",
+                                    ),
+                                )
+                            }
+                            CircleAction(text = "한", label = "한글 뜻") {
+                                session.trace("passage_sentence_ko", mapOf("sentence" to current.id, "lang" to "ko"))
+                                // 한글 뜻도 보이스(GPT)에게: 청크 단위 영어→한글 번갈아 설명.
+                                session.requestVoice(
+                                    VoicePrompt(
+                                        templateId = "passage_sentence_ko",
+                                        kind = StepPromptKind.EXPLAIN,
+                                        payload = sentenceKoPayload(data, current),
+                                        contextLabel = "${data.title} · 한글 뜻",
+                                    ),
+                                )
+                            }
+                            CircleNav(
+                                emoji = if (currentIndex == sentences.lastIndex) "✓" else "›",
+                                label = if (currentIndex == sentences.lastIndex) "완료" else "다음",
+                                enabled = true,
+                                filled = true,
+                            ) {
+                                if (currentIndex < sentences.lastIndex) {
+                                    currentIndex++
+                                } else {
+                                    session.trace("passage_complete", mapOf("sentenceCount" to sentences.size.toString()))
+                                    session.complete(StepResult.Completed())
+                                }
                             }
                         }
                     }
+                }
+            }
+
+            // ! 안내 토스트 — 위에서 1~2초만 떴다 사라진다.
+            if (showHint) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.inverseSurface,
+                    tonalElevation = 4.dp,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 44.dp, start = 24.dp, end = 24.dp),
+                ) {
+                    Text(
+                        "문장에서 단어 조각을 눌러보세요.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    )
                 }
             }
         }
@@ -405,6 +452,7 @@ private fun PassageScroll(
     currentId: String,
     onSentenceClick: (String) -> Unit,
     onChunkClick: (PassageChunk) -> Unit,
+    onPicture: (String, String) -> Unit,
     overlookOpenId: String?,
     onOverlookToggle: (String) -> Unit,
 ) {
@@ -421,6 +469,7 @@ private fun PassageScroll(
                         isCurrent = sentence.id == currentId,
                         onClick = { onSentenceClick(sentence.id) },
                         onChunkClick = onChunkClick,
+                        onPicture = onPicture,
                     )
                 }
             }
@@ -476,9 +525,12 @@ private fun ParagraphHeader(title: String) {
 }
 
 /**
- * 한 문장 한 줄 — 현재든 아니든 **같은 폰트/줄간격**. 현재 문장만 왼쪽 컬러 바 +
- * 진한 글자색 + 청크 구간 옅은 밑줄(탭 영역). 줄바꿈/배치가 안 바뀌어 안정적.
- * 탐험 단어는 색 + 🔎, 길게 눌러 메뉴는 하단으로 위임(여기선 짧은 탭만).
+ * 한 문장 한 줄 — 현재 문장만 왼쪽 컬러 바 + 진한 글자색. 현재 문장은 **원문 그대로**
+ * 그려서(청크 구분자 없음) 좌표↔글자가 1:1. 상호작용:
+ *  - **짧은 탭 = 청크 낭독**(기존 동작 유지).
+ *  - **길게 누르면 그 단어가 선택**되고, 누른 채 **드래그하면 단어 단위로 범위 확장**,
+ *    손을 떼면 선택이 남고 그 자리에 작은 **메뉴판**(그림 등)이 뜬다.
+ *  - 줄 끝(마지막 단어 뒤 여백)을 길게 누르면 **문장 전체 선택**.
  */
 @Composable
 private fun SentenceLine(
@@ -486,46 +538,82 @@ private fun SentenceLine(
     isCurrent: Boolean,
     onClick: () -> Unit,
     onChunkClick: (PassageChunk) -> Unit,
+    onPicture: (String, String) -> Unit,
 ) {
     val baseColor = if (isCurrent) MaterialTheme.colorScheme.onSurface
                     else MaterialTheme.colorScheme.outlineVariant
-    val infoColor = MaterialTheme.colorScheme.primary
-
+    val highlight = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
     val chunkColorA = MaterialTheme.colorScheme.primary
     val chunkColorB = MaterialTheme.colorScheme.tertiary
-    val annotated = buildAnnotatedString {
-        if (!isCurrent) {
+
+    var layout by remember(sentence) { mutableStateOf<TextLayoutResult?>(null) }
+    var selection by remember(sentence, isCurrent) { mutableStateOf<TextRange?>(null) }
+    var menuAnchor by remember(sentence, isCurrent) { mutableStateOf<Offset?>(null) }
+
+    val annotated = remember(sentence, isCurrent, selection, highlight, chunkColorA, chunkColorB) {
+        buildAnnotatedString {
             append(sentence.text)
-        } else {
-            // 청크를 순서대로 직접 이어 붙이며, 청크마다 색을 교대(A/B)로 줘서
-            // 어디서 끊기는지 한눈에 보이게 한다. 사이에는 가는 칸막이 ' | '.
-            val sorted = sentence.chunks.sortedBy { it.startChar }
-            sorted.forEachIndexed { i, chunk ->
-                val explore = chunk.exploreIds.isNotEmpty()
-                val color = when {
-                    explore -> infoColor
-                    i % 2 == 0 -> chunkColorA
-                    else -> chunkColorB
-                }
-                val startLen = length
-                pushLink(
-                    androidx.compose.ui.text.LinkAnnotation.Clickable(
-                        tag = chunk.id,
-                        linkInteractionListener = { onChunkClick(chunk) },
-                    ),
-                )
-                withStyle(SpanStyle(color = color, textDecoration = TextDecoration.Underline)) {
-                    append(chunk.text)
-                    if (explore) append(" 🔎")
-                }
-                pop()
-                if (i < sorted.lastIndex) {
-                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.outlineVariant)) {
-                        append("  ·  ")
+            if (isCurrent) {
+                // 청크 구분 — 색 교대 + 밑줄. 구분자(글자) 없이 색으로만 입혀 좌표↔글자 1:1 유지.
+                sentence.chunks.sortedBy { it.startChar }.forEachIndexed { i, chunk ->
+                    val color = if (chunk.exploreIds.isNotEmpty() || i % 2 == 0) chunkColorA else chunkColorB
+                    val start = chunk.startChar.coerceIn(0, length)
+                    val end = chunk.endChar.coerceIn(0, length)
+                    if (start < end) {
+                        addStyle(SpanStyle(color = color, textDecoration = TextDecoration.Underline), start, end)
                     }
                 }
             }
+            val sel = selection
+            if (isCurrent && sel != null && sel.start < sel.end &&
+                sel.start >= 0 && sel.end <= length
+            ) {
+                addStyle(SpanStyle(background = highlight), sel.start, sel.end)
+            }
         }
+    }
+
+    val gestures = if (isCurrent) {
+        Modifier
+            .pointerInput(sentence) {
+                detectTapGestures(onTap = { pos ->
+                    // 길게 누르기-드래그가 방금 메뉴를 열었으면 그 뒤 따라오는 탭은 무시.
+                    if (menuAnchor != null) return@detectTapGestures
+                    selection = null
+                    val l = layout ?: return@detectTapGestures
+                    chunkAtOffset(sentence, l.getOffsetForPosition(pos))?.let(onChunkClick)
+                })
+            }
+            .pointerInput(sentence) {
+                var anchor: TextRange? = null
+                var lastPos = Offset.Zero
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { pos ->
+                        menuAnchor = null
+                        lastPos = pos
+                        val l = layout ?: return@detectDragGesturesAfterLongPress
+                        val line = l.getLineForVerticalPosition(pos.y)
+                        val sel = if (pos.x > l.getLineRight(line)) {
+                            TextRange(0, sentence.text.length)        // 줄 끝 여백 → 문장 전체
+                        } else {
+                            l.getWordBoundary(l.getOffsetForPosition(pos))
+                        }
+                        anchor = sel
+                        selection = sel
+                    },
+                    onDrag = { change, _ ->
+                        lastPos = change.position
+                        val l = layout ?: return@detectDragGesturesAfterLongPress
+                        val a = anchor ?: return@detectDragGesturesAfterLongPress
+                        val w = l.getWordBoundary(l.getOffsetForPosition(change.position))
+                        selection = TextRange(minOf(a.start, w.start), maxOf(a.end, w.end))
+                    },
+                    onDragEnd = { menuAnchor = lastPos },
+                    onDragCancel = { menuAnchor = null },
+                )
+            }
+    } else {
+        Modifier
     }
 
     val barColor = if (isCurrent) MaterialTheme.colorScheme.primary else Color.Transparent
@@ -534,12 +622,6 @@ private fun SentenceLine(
             .fillMaxWidth()
             .clickable(enabled = !isCurrent, onClick = onClick),
     ) {
-        // 왼쪽 컬러 바 (현재 문장만)
-        Box(
-            Modifier
-                .padding(start = 0.dp)
-                .size(width = 3.dp, height = 1.dp),
-        )
         Row(Modifier.fillMaxWidth()) {
             Box(
                 Modifier
@@ -554,10 +636,75 @@ private fun SentenceLine(
                 fontFamily = FontFamily.Serif,
                 color = baseColor,
                 lineHeight = 28.sp,
+                onTextLayout = { layout = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 10.dp, top = 4.dp, bottom = 4.dp),
+                    .padding(start = 10.dp, top = 4.dp, bottom = 4.dp)
+                    .then(gestures),
             )
+        }
+
+        // 선택 후 손 뗀 자리에 뜨는 작은 메뉴판 (펜 사이드버튼 메뉴 느낌).
+        val anchor = menuAnchor
+        val sel = selection
+        if (isCurrent && anchor != null && sel != null && sel.start < sel.end) {
+            val selText = sentence.text
+                .substring(sel.start.coerceIn(0, sentence.text.length), sel.end.coerceIn(0, sentence.text.length))
+                .trim()
+            SelectionActionMenu(
+                anchor = anchor,
+                selectedText = selText,
+                onPicture = {
+                    onPicture(selText, passagePicturePayload(selText, sentence))
+                    menuAnchor = null
+                },
+                onDismiss = { menuAnchor = null; selection = null },
+            )
+        }
+    }
+}
+
+private fun chunkAtOffset(sentence: PassageSentence, offset: Int): PassageChunk? =
+    sentence.chunks.firstOrNull { offset >= it.startChar && offset < it.endChar }
+
+/** 클릭 근처 작은 메뉴판 — 선택 텍스트 + 액션 줄(지금은 그림, 추후 줄만 추가). */
+@Composable
+private fun SelectionActionMenu(
+    anchor: Offset,
+    selectedText: String,
+    onPicture: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Popup(
+        offset = IntOffset(anchor.x.roundToInt(), anchor.y.roundToInt()),
+        onDismissRequest = onDismiss,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            shadowElevation = 8.dp,
+            modifier = Modifier.widthIn(max = 240.dp),
+        ) {
+            Column(Modifier.padding(vertical = 6.dp)) {
+                Text(
+                    selectedText.ifBlank { "선택" },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Text(
+                    "🖼 그림",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onPicture)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                )
+            }
         }
     }
 }
@@ -621,17 +768,7 @@ private fun OverlookInline(para: PassageParagraph, onAsk: () -> Unit, onClose: (
 
 /** 선택한 청크 한 줄 — 영어 · 한글뜻 · 🔊. 박스 무게를 최소화. */
 @Composable
-private fun ChunkHintInline(chunk: PassageChunk?, onReplay: () -> Unit) {
-    if (chunk == null) {
-        Text(
-            "문장에서 단어 조각을 눌러보세요.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            textAlign = TextAlign.Center,
-        )
-        return
-    }
+private fun ChunkHintInline(chunk: PassageChunk, onReplay: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(10.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -738,6 +875,26 @@ private fun CircleNav(
             style = MaterialTheme.typography.labelSmall,
             color = if (enabled) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.outlineVariant,
         )
+    }
+}
+
+/** 아주 작은 ! 안내 점 — 누르면 상단에 토스트가 잠깐 뜬다(상시 문구 대체). */
+@Composable
+private fun InfoDot(onClick: () -> Unit) {
+    Surface(
+        shape = CircleShape,
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.size(20.dp).clickable(onClick = onClick),
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                "!",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
     }
 }
 
@@ -985,6 +1142,10 @@ private fun sentenceDecodePayload(data: PassageReadData, sentence: PassageSenten
 private fun chunkDecodePayload(data: PassageReadData, sentence: PassageSentence, chunk: PassageChunk): String =
     "\"${chunk.text}\"가 이 문장에서 어떤 뜻·역할인지 쉽게 설명해줘: ${sentence.text}"
 
+// 그림창에 주입할 요청문 — 사진 우선, 없으면 간단히 그려달라고. 짧게 + 문맥 한 줄.
+private fun passagePicturePayload(selectedText: String, sentence: PassageSentence): String =
+    "\"${selectedText.trim()}\" 의 사진이나 그림을 보여줘. 못 찾으면 아이가 알아볼 수 있게 간단히 그려줘. 문맥: ${sentence.text}"
+
 private fun parentExplorePayload(
     data: PassageReadData,
     sentence: PassageSentence,
@@ -1068,7 +1229,7 @@ private val PreviewPassage = PassageReadData(
 @Preview(name = "tablet", device = "spec:width=1280dp,height=800dp,dpi=240")
 @Composable
 private fun PassageReadPreview() {
-    PassageReadFeature().StudentScreen(
+    PassageReadFeature(com.seoin.emojienglish.voice.NoopPictureController).StudentScreen(
         spec = PassageReadSpec("s_passage", PreviewPassage),
         session = FakeStepSession(),
         modifier = Modifier,

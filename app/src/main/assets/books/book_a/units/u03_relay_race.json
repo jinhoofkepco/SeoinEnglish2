@@ -1,0 +1,426 @@
+{
+  "schemaVersion": 2,
+  "unitId": "u03_relay_race",
+  "title": "The Relay Race Mix-Up",
+  "level": "A2",
+  "content": {
+    "words": [
+      {
+        "id": "w_amused",
+        "text": "amused",
+        "meaningKo": "즐거워하는, 재미있어하는",
+        "emoji": "😄",
+        "example": "The children were amused by the movie.",
+        "similarWords": ["happy", "interested"]
+      },
+      {
+        "id": "w_beat",
+        "text": "beat",
+        "meaningKo": "이기다",
+        "emoji": "🏆",
+        "example": "James can beat his sister in video games.",
+        "similarWords": ["win against", "defeat"]
+      },
+      {
+        "id": "w_bouncing",
+        "text": "bouncing",
+        "meaningKo": "튀어 오르는",
+        "emoji": "🏀",
+        "example": "The twins played together by bouncing the ball.",
+        "similarWords": ["jumping back", "springing"]
+      },
+      {
+        "id": "w_cooperate",
+        "text": "cooperate",
+        "meaningKo": "협동하다",
+        "emoji": "🤝",
+        "example": "Runners must cooperate to win a relay race.",
+        "similarWords": ["work together", "team up"]
+      },
+      {
+        "id": "w_describe",
+        "text": "describe",
+        "meaningKo": "묘사하다, 설명하다",
+        "emoji": "🗣️",
+        "example": "I describe my problem to my dad.",
+        "similarWords": ["explain", "tell about"]
+      },
+      {
+        "id": "w_entertained",
+        "text": "entertained",
+        "meaningKo": "즐겁게 해 준",
+        "emoji": "🎪",
+        "example": "The funny clown entertained the girls.",
+        "similarWords": ["kept happy", "amused"]
+      },
+      {
+        "id": "w_held_tongue",
+        "text": "held her tongue",
+        "meaningKo": "말을 참았다",
+        "emoji": "🤐",
+        "example": "She held her tongue and didn't say a word.",
+        "similarWords": ["stayed quiet", "said nothing"]
+      },
+      {
+        "id": "w_imagination",
+        "text": "imagination",
+        "meaningKo": "상상력",
+        "emoji": "💭",
+        "example": "Kate used her imagination to pretend she was in space.",
+        "similarWords": ["creative mind", "make-believe"]
+      },
+      {
+        "id": "w_interact",
+        "text": "interact",
+        "meaningKo": "소통하다, 어울리다",
+        "emoji": "💬",
+        "example": "Mia likes to chat and interact with her friends at lunch.",
+        "similarWords": ["talk with", "do things together"]
+      },
+      {
+        "id": "w_line_up",
+        "text": "line up",
+        "meaningKo": "줄을 서다",
+        "emoji": "🧍",
+        "example": "We had to line up to get on the bus.",
+        "similarWords": ["stand in a line", "queue"]
+      },
+      {
+        "id": "w_match",
+        "text": "match",
+        "meaningKo": "맞먹다, 비슷하게 하다",
+        "emoji": "⚖️",
+        "example": "My sister tried to match me at running, but she couldn't.",
+        "similarWords": ["keep up with", "be equal to"]
+      },
+      {
+        "id": "w_patient",
+        "text": "patient",
+        "meaningKo": "참을성 있는",
+        "emoji": "🧘",
+        "example": "Tina was patient and waited for her friend.",
+        "similarWords": ["calm", "able to wait"]
+      },
+      {
+        "id": "w_peaceful",
+        "text": "peaceful",
+        "meaningKo": "평화로운, 조용한",
+        "emoji": "🌿",
+        "example": "It was a quiet and peaceful morning.",
+        "similarWords": ["quiet", "calm"]
+      },
+      {
+        "id": "w_stinks",
+        "text": "stinks",
+        "meaningKo": "별로다, 기분 나쁘다",
+        "emoji": "😖",
+        "example": "It stinks to lose the game!",
+        "similarWords": ["is bad", "feels unfair"]
+      },
+      {
+        "id": "w_thumped",
+        "text": "thumped",
+        "meaningKo": "쿵 하고 쳤다",
+        "emoji": "💥",
+        "example": "The boy thumped the ball hard with his foot.",
+        "similarWords": ["hit hard", "banged"]
+      }
+    ],
+    "comic": {
+      "panels": [
+        {
+          "id": "p1",
+          "speaker": "Narrator",
+          "text": "It is a peaceful morning at the park.",
+          "emojiScene": "🌿🏞️☀️",
+          "focusWordIds": ["w_peaceful"]
+        },
+        {
+          "id": "p2",
+          "speaker": "Teacher",
+          "text": "Please line up for the relay race.",
+          "emojiScene": "👩‍🏫🧍🧍🧍🏁",
+          "focusWordIds": ["w_line_up"]
+        },
+        {
+          "id": "p3",
+          "speaker": "Mina",
+          "text": "Let's interact and cooperate!",
+          "emojiScene": "💬🤝👧👦",
+          "focusWordIds": ["w_interact", "w_cooperate"]
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "id": "s0",
+      "type": "story_comic",
+      "params": {
+        "title": "The Relay Race Mix-Up",
+        "meaning": "Unit 5의 새 단어들을 하나의 공원 릴레이 만화로 엮은 초안입니다. 단어를 외우기보다 장면 속에서 왜 그 단어가 필요한지 느끼게 하는 것이 목표예요.",
+        "words": [
+          "peaceful",
+          "line up",
+          "interact",
+          "cooperate",
+          "beat",
+          "thumped",
+          "bouncing",
+          "stinks",
+          "patient",
+          "held her tongue",
+          "imagination",
+          "describe",
+          "entertained",
+          "amused",
+          "match"
+        ],
+        "wordExplanations": {
+          "peaceful": "Peaceful means quiet and calm.",
+          "line up": "Line up means to stand in a line with other people.",
+          "interact": "Interact means to talk or do something with someone.",
+          "cooperate": "Cooperate means to work together.",
+          "beat": "Beat means to win against someone in a game or race.",
+          "thumped": "Thumped means hit hard with a dull sound.",
+          "bouncing": "Bouncing means moving up again after hitting a surface.",
+          "stinks": "Stinks can mean something feels bad, unfair, or unpleasant.",
+          "patient": "Patient means able to stay calm and wait.",
+          "held her tongue": "Held her tongue means she stayed quiet and did not say the words she wanted to say.",
+          "imagination": "Imagination is the power to make pictures or ideas in your mind.",
+          "describe": "Describe means to say or write what something is like.",
+          "entertained": "Entertained means kept people happy and interested.",
+          "amused": "Amused means happy because something is funny or interesting.",
+          "match": "Match means to be as good as someone or to keep up with them."
+        },
+        "wordPopups": {
+          "peaceful": {
+            "definitionEn": "quiet and calm, with no noise or worry",
+            "imageAsset": "books/book_a/images/u03_relay_race/peaceful.png",
+            "imageAlt": "A quiet lake sits between green mountains under a calm sky."
+          },
+          "line up": {
+            "definitionEn": "to stand in a row, one behind another",
+            "imageAsset": "books/book_a/images/u03_relay_race/line_up.png",
+            "imageAlt": "Four children stand neatly in one line."
+          },
+          "interact": {
+            "definitionEn": "to talk or do things with someone",
+            "imageAsset": "books/book_a/images/u03_relay_race/interact.png",
+            "imageAlt": "A boy and a girl talk to each other with speech bubbles."
+          },
+          "cooperate": {
+            "definitionEn": "to work together to do something",
+            "imageAsset": "books/book_a/images/u03_relay_race/cooperate.png",
+            "imageAlt": "Two children put puzzle pieces together."
+          },
+          "beat": {
+            "definitionEn": "to win against someone in a game or contest",
+            "imageAsset": "books/book_a/images/u03_relay_race/beat.png",
+            "imageAlt": "A scoreboard shows three to one after a soccer game."
+          },
+          "thumped": {
+            "definitionEn": "hit something hard and made a dull sound",
+            "imageAsset": "books/book_a/images/u03_relay_race/thumped.png",
+            "imageAlt": "A boy kicks a soccer ball with a strong thump."
+          },
+          "bouncing": {
+            "definitionEn": "moving up and down after hitting a surface",
+            "imageAsset": "books/book_a/images/u03_relay_race/bouncing.png",
+            "imageAlt": "A basketball moves up and down after hitting the floor."
+          },
+          "stinks": {
+            "definitionEn": "is bad, unfair, or unpleasant",
+            "imageAsset": "books/book_a/images/u03_relay_race/stinks.png",
+            "imageAlt": "A boy holds his nose because of a bad smell."
+          },
+          "patient": {
+            "definitionEn": "able to stay calm and wait",
+            "imageAsset": "books/book_a/images/u03_relay_race/patient.png",
+            "imageAlt": "A girl waits calmly on a bench near a clock."
+          },
+          "held her tongue": {
+            "definitionEn": "stayed quiet instead of saying something",
+            "imageAsset": "books/book_a/images/u03_relay_race/held_her_tongue.png",
+            "imageAlt": "A girl puts a finger to her lips to stay quiet."
+          },
+          "imagination": {
+            "definitionEn": "the ability to make pictures or ideas in your mind",
+            "imageAsset": "books/book_a/images/u03_relay_race/imagination.png",
+            "imageAlt": "A boy imagines a rocket and a castle in a thought bubble."
+          },
+          "describe": {
+            "definitionEn": "to say what someone or something is like",
+            "imageAsset": "books/book_a/images/u03_relay_race/describe.png",
+            "imageAlt": "A girl talks about an apple in a speech bubble."
+          },
+          "entertained": {
+            "definitionEn": "made someone happy and interested",
+            "imageAsset": "books/book_a/images/u03_relay_race/entertained.png",
+            "imageAlt": "A clown performs for children with colorful balls."
+          },
+          "amused": {
+            "definitionEn": "feeling happy because something is funny or interesting",
+            "imageAsset": "books/book_a/images/u03_relay_race/amused.png",
+            "imageAlt": "A boy laughs because something is funny."
+          },
+          "match": {
+            "definitionEn": "to be the same or go well together",
+            "imageAsset": "books/book_a/images/u03_relay_race/match.png",
+            "imageAlt": "Two striped socks match because they look alike."
+          }
+        },
+        "voiceTalks": {
+          "cooperate": "Explain cooperate with a relay race example. Ask the child when they had to work together with someone.",
+          "held her tongue": "Explain that this phrase means staying quiet even when you want to speak. Ask when staying quiet can be kind.",
+          "imagination": "Explain imagination with pretending. Ask the child what the baton could become in their imagination.",
+          "match": "Explain match as keeping up with someone's level or speed. Ask how runners can match each other's speed."
+        },
+        "panels": [
+          {
+            "bg": "forest",
+            "mood": "warm",
+            "zoom": { "type": "kenburns", "scale": 1.25, "originX": 50, "originY": 55 },
+            "caption": "It is a peaceful morning at the park.",
+            "sprites": [
+              { "char": "🌿", "x": 18, "y": 70, "scale": 1.1, "rotate": 0, "flip": false, "anim": "sway" },
+              { "char": "☀️", "x": 78, "y": 22, "scale": 0.9, "rotate": 0, "flip": false, "anim": "float" },
+              { "char": "👧", "x": 38, "y": 72, "scale": 1.0, "rotate": 0, "flip": false, "anim": "sway" },
+              { "char": "👦", "x": 58, "y": 72, "scale": 1.0, "rotate": 0, "flip": true, "anim": "sway" }
+            ],
+            "bubble": { "anchor": 2, "text": "Nice and quiet!" }
+          },
+          {
+            "bg": "sky",
+            "mood": "warm",
+            "zoom": { "type": "pan", "scale": 1.3, "originX": 45, "originY": 55 },
+            "caption": "The children line up for a relay race.",
+            "sprites": [
+              { "char": "👩", "x": 18, "y": 70, "scale": 1.0, "rotate": 0, "flip": false, "anim": "none" },
+              { "char": "🧍", "x": 42, "y": 72, "scale": 1.0, "rotate": 0, "flip": false, "anim": "bounce" },
+              { "char": "🧍", "x": 55, "y": 72, "scale": 1.0, "rotate": 0, "flip": false, "anim": "bounce" },
+              { "char": "🧍", "x": 68, "y": 72, "scale": 1.0, "rotate": 0, "flip": false, "anim": "bounce" },
+              { "char": "🏁", "x": 84, "y": 58, "scale": 1.0, "rotate": 0, "flip": false, "anim": "sway" }
+            ],
+            "bubble": { "anchor": 0, "text": "Line up, please!" }
+          },
+          {
+            "bg": "plain",
+            "zoom": { "type": "pushin", "scale": 1.25, "originX": 52, "originY": 60 },
+            "caption": "They interact and plan how to cooperate.",
+            "sprites": [
+              { "char": "👧", "x": 30, "y": 70, "scale": 1.0, "rotate": -2, "flip": false, "anim": "sway" },
+              { "char": "👦", "x": 50, "y": 70, "scale": 1.0, "rotate": 2, "flip": true, "anim": "sway" },
+              { "char": "👧", "x": 70, "y": 70, "scale": 1.0, "rotate": 0, "flip": false, "anim": "sway" },
+              { "char": "💬", "x": 42, "y": 38, "scale": 0.8, "rotate": -6, "flip": false, "anim": "float" },
+              { "char": "🤝", "x": 62, "y": 42, "scale": 0.9, "rotate": 4, "flip": false, "anim": "float" }
+            ],
+            "bubble": { "anchor": 1, "text": "Let's work together!" }
+          },
+          {
+            "bg": "sky",
+            "fx": "speed",
+            "sfx": [
+              { "text": "Zoom!", "x": 72, "y": 28, "size": 11, "rotate": -9, "color": "#38bdf8" }
+            ],
+            "caption": "Max wants to beat everyone, so he runs too fast.",
+            "sprites": [
+              { "char": "👦", "x": 36, "y": 70, "scale": 1.2, "rotate": -8, "flip": false, "anim": "dash" },
+              { "char": "💨", "x": 20, "y": 70, "scale": 0.9, "rotate": 0, "flip": false, "anim": "float" },
+              { "char": "🏆", "x": 76, "y": 42, "scale": 0.9, "rotate": 6, "flip": false, "anim": "float" }
+            ],
+            "bubble": { "anchor": 0, "text": "I will beat them!" }
+          },
+          {
+            "bg": "plain",
+            "fx": "shake",
+            "mood": "red",
+            "sfx": [
+              { "text": "THUMP!", "x": 66, "y": 26, "size": 12, "rotate": -8, "color": "#ef4444" },
+              { "text": "Boing!", "x": 82, "y": 42, "size": 9, "rotate": 10, "color": "#facc15" }
+            ],
+            "caption": "He thumped the ball, and it went bouncing away.",
+            "sprites": [
+              { "char": "👦", "x": 30, "y": 70, "scale": 1.1, "rotate": -10, "flip": false, "anim": "shiver" },
+              { "char": "⚽", "x": 60, "y": 62, "scale": 0.9, "rotate": 12, "flip": false, "anim": "jump" },
+              { "char": "💥", "x": 48, "y": 62, "scale": 0.9, "rotate": 0, "flip": false, "anim": "float" },
+              { "char": "↗️", "x": 78, "y": 50, "scale": 1.2, "rotate": 0, "flip": false, "anim": "float" }
+            ],
+            "bubble": { "anchor": 0, "text": "Oops!" }
+          },
+          {
+            "bg": "sunset",
+            "mood": "dusk",
+            "zoom": { "type": "kenburns", "scale": 1.2, "originX": 52, "originY": 60 },
+            "caption": "\"This stinks!\" Max says, but Mina is patient and held her tongue.",
+            "sprites": [
+              { "char": "😖", "x": 30, "y": 70, "scale": 1.1, "rotate": -4, "flip": false, "anim": "shiver" },
+              { "char": "👧", "x": 62, "y": 70, "scale": 1.0, "rotate": 0, "flip": true, "anim": "sway" },
+              { "char": "🤐", "x": 75, "y": 45, "scale": 0.8, "rotate": 0, "flip": false, "anim": "float" }
+            ],
+            "bubble": { "anchor": 0, "text": "This stinks!" }
+          },
+          {
+            "bg": "night",
+            "mood": "dusk",
+            "zoom": { "type": "pushin", "scale": 1.25, "originX": 60, "originY": 52 },
+            "caption": "Mina uses her imagination to describe a new plan.",
+            "sprites": [
+              { "char": "👧", "x": 30, "y": 70, "scale": 1.0, "rotate": 0, "flip": false, "anim": "sway" },
+              { "char": "💭", "x": 54, "y": 34, "scale": 1.0, "rotate": -6, "flip": false, "anim": "float" },
+              { "char": "⭐", "x": 70, "y": 36, "scale": 0.9, "rotate": 0, "flip": false, "anim": "spin" },
+              { "char": "🏁", "x": 78, "y": 62, "scale": 0.8, "rotate": 6, "flip": false, "anim": "sway" }
+            ],
+            "bubble": { "anchor": 0, "text": "Imagine the baton is a star!" }
+          },
+          {
+            "bg": "room",
+            "mood": "warm",
+            "fx": "focus",
+            "sfx": [
+              { "text": "Ha ha!", "x": 70, "y": 28, "size": 10, "rotate": -8, "color": "#fbbf24" }
+            ],
+            "caption": "Her funny plan entertained the team, and everyone was amused.",
+            "sprites": [
+              { "char": "👧", "x": 28, "y": 70, "scale": 1.0, "rotate": 0, "flip": false, "anim": "jump" },
+              { "char": "😄", "x": 52, "y": 70, "scale": 1.1, "rotate": 0, "flip": false, "anim": "bounce" },
+              { "char": "😄", "x": 70, "y": 70, "scale": 1.1, "rotate": 0, "flip": false, "anim": "bounce" },
+              { "char": "🎪", "x": 80, "y": 40, "scale": 0.8, "rotate": 6, "flip": false, "anim": "float" }
+            ],
+            "bubble": { "anchor": 1, "text": "That's funny!" }
+          },
+          {
+            "bg": "sky",
+            "fx": "speed",
+            "climax": true,
+            "zoom": { "type": "shakezoom", "scale": 1.3, "originX": 55, "originY": 60 },
+            "sfx": [
+              { "text": "Together!", "x": 66, "y": 24, "size": 10, "rotate": -6, "color": "#fde047" }
+            ],
+            "caption": "Now they cooperate and match each other's speed.",
+            "sprites": [
+              { "char": "👧", "x": 32, "y": 70, "scale": 1.0, "rotate": -4, "flip": false, "anim": "dash" },
+              { "char": "👦", "x": 48, "y": 70, "scale": 1.0, "rotate": -4, "flip": false, "anim": "dash" },
+              { "char": "👧", "x": 64, "y": 70, "scale": 1.0, "rotate": -4, "flip": false, "anim": "dash" },
+              { "char": "🤝", "x": 78, "y": 42, "scale": 0.9, "rotate": 0, "flip": false, "anim": "float" }
+            ],
+            "bubble": { "anchor": 1, "text": "Same speed!" }
+          },
+          {
+            "bg": "forest",
+            "mood": "warm",
+            "zoom": { "type": "kenburns", "scale": 1.2, "originX": 50, "originY": 55 },
+            "caption": "The race ends in a peaceful cheer.",
+            "sprites": [
+              { "char": "🏁", "x": 20, "y": 62, "scale": 1.0, "rotate": 0, "flip": false, "anim": "sway" },
+              { "char": "👧", "x": 44, "y": 72, "scale": 1.0, "rotate": 0, "flip": false, "anim": "jump" },
+              { "char": "👦", "x": 58, "y": 72, "scale": 1.0, "rotate": 0, "flip": true, "anim": "jump" },
+              { "char": "🌿", "x": 76, "y": 70, "scale": 1.0, "rotate": 0, "flip": false, "anim": "sway" }
+            ],
+            "bubble": { "anchor": 1, "text": "We did it together!" }
+          }
+        ]
+      }
+    }
+  ]
+}

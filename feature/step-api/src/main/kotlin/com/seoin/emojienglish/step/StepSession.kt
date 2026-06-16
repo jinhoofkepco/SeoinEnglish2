@@ -3,7 +3,10 @@ package com.seoin.emojienglish.step
 import com.seoin.emojienglish.model.LessonContent
 import com.seoin.emojienglish.model.StepResult
 import com.seoin.emojienglish.voice.VoicePrompt
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+
+private val inactiveVoiceActive = MutableStateFlow(false)
 
 /**
  * The Step's only channel to the outside world (§4.2).
@@ -18,6 +21,10 @@ interface StepSession {
 
     /** Result saved for THIS occurrence. Used to restore UI on re-entry. */
     val savedResult: StateFlow<StepResult?>
+
+    /** True while the global teacher voice is running or preparing a turn. */
+    val voiceActive: StateFlow<Boolean>
+        get() = inactiveVoiceActive
 
     /** Record one learning-trace event (delegated to TraceRepository). */
     fun trace(action: String, detail: Map<String, String> = emptyMap())

@@ -40,6 +40,7 @@ fun AppShell(
     var showPin by remember { mutableStateOf(false) }
     val masterOn by vm.masterUnlocked.collectAsStateWithLifecycle()
     val voice by vm.voiceState.collectAsStateWithLifecycle()
+    val picture by vm.pictureState.collectAsStateWithLifecycle()
 
     val density = LocalDensity.current
     var hubHeightPx by remember { mutableIntStateOf(0) }
@@ -53,6 +54,16 @@ fun AppShell(
         // Content reserves exactly the measured hub height — never more, never less.
         content(Modifier.fillMaxSize().padding(bottom = hubHeightDp))
 
+        // 그림창 오버레이 — 콘텐츠 위, 단 하단 허브 **아래**에 그려서 "그림" 버튼을
+        // 다시 눌러 닫을 수 있게 한다(허브가 패널 위로 보임). 열렸을 때만 렌더.
+        PicturePanel(
+            state = picture,
+            onClose = vm::closePicture,
+            onWord = vm::requestPicture,
+            provideView = vm::providePictureView,
+            bottomInset = hubHeightDp,
+        )
+
         Box(
             Modifier
                 .align(Alignment.BottomCenter)
@@ -65,7 +76,7 @@ fun AppShell(
                 expanded = expanded,
                 onToggleExpand = { expanded = !expanded },
                 onToggleMic = { vm.setMicManual(!voice.micOpen) },
-                onVoice = vm::openFreeTalkVoice,
+                onPicture = vm::togglePicture,
                 onMaster = { if (!vm.toggleMaster()) showPin = true },
                 onToggleWebView = {
                     vm.setPanelMode(

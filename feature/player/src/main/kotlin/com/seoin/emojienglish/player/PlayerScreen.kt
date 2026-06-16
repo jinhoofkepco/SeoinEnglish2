@@ -93,11 +93,18 @@ fun PlayerScreen(
             if (!state.masterMode && state.isCurrentComplete && !finished) {
                 Button(
                     onClick = vm::goNext,
+                    enabled = !state.voiceActive,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 84.dp),
                 ) {
-                    Text(if (state.isLast) "학습 종료" else "다음 단계")
+                    Text(
+                        when {
+                            state.voiceActive -> "선생님 말 끝나면 이동"
+                            state.isLast -> "학습 종료"
+                            else -> "다음 단계"
+                        },
+                    )
                 }
             }
             // On finishing, the screen stays put (피드백 #1) — the "다 했어요"

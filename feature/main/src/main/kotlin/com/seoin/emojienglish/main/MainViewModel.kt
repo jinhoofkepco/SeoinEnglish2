@@ -3,6 +3,9 @@ package com.seoin.emojienglish.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.seoin.emojienglish.data.MasterModeState
+import com.seoin.emojienglish.voice.PictureController
+import com.seoin.emojienglish.voice.PictureState
+import com.seoin.emojienglish.voice.PictureWord
 import com.seoin.emojienglish.voice.VoicePanelMode
 import com.seoin.emojienglish.voice.VoiceSession
 import com.seoin.emojienglish.voice.VoiceSessionState
@@ -14,6 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val voiceSession: VoiceSession,
+    private val pictures: PictureController,
     private val masterMode: MasterModeState,
 ) : ViewModel() {
 
@@ -32,6 +36,13 @@ class MainViewModel @Inject constructor(
 
     /** The retained ChatGPT WebView to host in the panel (null until created). */
     fun provideVoiceView() = voiceSession.provideView()
+
+    // --- 그림창 (2번째 WebView, task 2) ---
+    val pictureState: StateFlow<PictureState> = pictures.state
+    fun togglePicture() = pictures.toggle()
+    fun closePicture() = pictures.close()
+    fun requestPicture(word: PictureWord) = pictures.requestPicture(word)
+    fun providePictureView() = pictures.provideView()
 
     // --- Master toggle (thin bottom bar 🔒) ---
     val masterUnlocked: StateFlow<Boolean> = masterMode.unlocked
