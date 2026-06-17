@@ -99,10 +99,16 @@ class InMemoryPlanRepository @Inject constructor() : PlanRepository {
 
 @Singleton
 class InMemoryMasterModeState @Inject constructor() : MasterModeState {
-    private val _unlocked = MutableStateFlow(false)
+    private companion object {
+        // Development switch: keep master mode open on app start.
+        // Revert by changing this to false after authoring tests are done.
+        private const val DEV_UNLOCK_MASTER_ON_START = true
+    }
+
+    private val _unlocked = MutableStateFlow(DEV_UNLOCK_MASTER_ON_START)
     override val unlocked: StateFlow<Boolean> = _unlocked.asStateFlow()
 
-    private val _keepUnlocked = MutableStateFlow(false)
+    private val _keepUnlocked = MutableStateFlow(DEV_UNLOCK_MASTER_ON_START)
     override val keepUnlocked: StateFlow<Boolean> = _keepUnlocked.asStateFlow()
 
     // TODO(M7): store a hashed PIN in DataStore + auto-lock on inactivity (§11.1).

@@ -8,15 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,12 +37,6 @@ fun MasterScreen(
     val unlocked by vm.unlocked.collectAsStateWithLifecycle()
     val log by vm.log.collectAsStateWithLifecycle()
     val observed by vm.observed.collectAsStateWithLifecycle()
-
-    var authoring by remember { mutableStateOf(false) }
-    if (authoring) {
-        AuthoringScreen(onBack = { authoring = false })
-        return
-    }
 
     Column(Modifier.fillMaxSize()) {
         // Same navigator bar as the study screen (피드백 #4): the most recent unit's
@@ -74,8 +64,6 @@ fun MasterScreen(
             )
             return@Column
         }
-
-        Button(onClick = { authoring = true }) { Text("🛠 콘텐츠 만들기 (단어만화)") }
 
         if (log.isEmpty()) {
             Text("아직 학습 기록이 없습니다.", style = MaterialTheme.typography.bodyMedium)

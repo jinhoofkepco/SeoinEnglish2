@@ -34,6 +34,8 @@ import com.seoin.emojienglish.voice.VoicePanelMode
 @Composable
 fun AppShell(
     vm: MainViewModel,
+    onOpenMasterLog: () -> Unit,
+    onOpenAuthoring: () -> Unit,
     content: @Composable (Modifier) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -77,6 +79,8 @@ fun AppShell(
                 onToggleExpand = { expanded = !expanded },
                 onToggleMic = { vm.setMicManual(!voice.micOpen) },
                 onPicture = vm::togglePicture,
+                onAuthoring = onOpenAuthoring,
+                onLog = onOpenMasterLog,
                 onMaster = { if (!vm.toggleMaster()) showPin = true },
                 onToggleWebView = {
                     vm.setPanelMode(

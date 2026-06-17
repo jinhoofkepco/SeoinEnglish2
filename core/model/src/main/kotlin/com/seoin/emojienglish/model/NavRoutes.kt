@@ -14,6 +14,7 @@ object NavRoutes {
     const val BOOK = "book"            // book/{bookId}
     const val PLAYER = "player"        // player?...  (study + master step view)
     const val MASTER = "master"        // central master dashboard (log)
+    const val AUTHORING = "authoring"  // master-only content maker
 
     fun book(bookId: String) = "$BOOK/$bookId"
 }

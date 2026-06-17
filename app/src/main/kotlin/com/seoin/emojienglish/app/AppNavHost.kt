@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.seoin.emojienglish.home.BookDetailScreen
 import com.seoin.emojienglish.home.HomeScreen
+import com.seoin.emojienglish.master.AuthoringScreen
 import com.seoin.emojienglish.master.MasterScreen
 import com.seoin.emojienglish.model.NavRoutes
 import com.seoin.emojienglish.player.PlayerDestinations
@@ -81,6 +82,10 @@ fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) 
                     }
                 },
             )
+        }
+
+        composable(NavRoutes.AUTHORING) {
+            AuthoringScreen(onBack = { navController.popBackStack() })
         }
     }
 }

@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.seoin.emojienglish.designsystem.EmojiEnglishTheme
 import com.seoin.emojienglish.main.AppShell
 import com.seoin.emojienglish.main.MainViewModel
+import com.seoin.emojienglish.model.NavRoutes
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -41,7 +42,11 @@ private fun EmojiEnglishRoot() {
     EmojiEnglishTheme {
         val navController = rememberNavController()
         val mainViewModel: MainViewModel = hiltViewModel()
-        AppShell(vm = mainViewModel) { modifier ->
+        AppShell(
+            vm = mainViewModel,
+            onOpenMasterLog = { navController.navigate(NavRoutes.MASTER) },
+            onOpenAuthoring = { navController.navigate(NavRoutes.AUTHORING) },
+        ) { modifier ->
             AppNavHost(navController = navController, modifier = modifier)
         }
     }

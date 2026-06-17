@@ -77,6 +77,24 @@ class WebViewPictureGateway @Inject constructor(
 
     override fun provideView(): WebView = ensureWebView()
 
+    /**
+     * Master authoring uses a single ChatGPT WebView for stability. Picture
+     * WebView state is disposable and will be recreated when the picture panel
+     * is opened again after leaving authoring.
+     */
+    fun shutdownForAuthoring() {
+        main.launch {
+            val old = webView ?: return@launch
+            Log.d(TAG, "shutdownForAuthoring: dropping picture webview")
+            _state.value = PictureState()
+            webView = null
+            pageLoaded = false
+            (old.parent as? android.view.ViewGroup)?.removeView(old)
+            runCatching { old.stopLoading() }
+            runCatching { old.destroy() }
+        }
+    }
+
     override fun addWord(word: PictureWord) {
         ensureWebView()
         val merged = (_state.value.words + word).distinctBy { it.id }

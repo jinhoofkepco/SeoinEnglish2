@@ -129,6 +129,29 @@ class WebViewVoiceGateway @Inject constructor(
 
     override fun provideView(): WebView = ensureWebView()
 
+    /**
+     * Master authoring needs ChatGPT WebView memory to be reserved for the
+     * authoring shell. Dropping this instance is safe: entering a lesson later
+     * creates and primes a fresh voice WebView.
+     */
+    fun shutdownForAuthoring() {
+        main.launch {
+            val old = webView ?: return@launch
+            Log.d(TAG, "shutdownForAuthoring: dropping voice webview")
+            pendingAudio.clear()
+            localTts.stop()
+            _speaking.value = false
+            _micOpen.value = false
+            _state.value = VoiceShellState.NOT_LOGGED_IN
+            webView = null
+            pageLoaded = false
+            primedOnce = false
+            (old.parent as? android.view.ViewGroup)?.removeView(old)
+            runCatching { old.stopLoading() }
+            runCatching { old.destroy() }
+        }
+    }
+
     /** Call after the app grants RECORD_AUDIO so any queued web mic request lands. */
     fun flushPendingAudioPermission() {
         if (pendingAudio.isEmpty() || !hasRecordAudio()) return

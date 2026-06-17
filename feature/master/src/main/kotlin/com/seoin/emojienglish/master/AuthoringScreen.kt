@@ -12,20 +12,24 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -33,11 +37,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-/**
- * 마스터 저작 화면 — 단어만화(story_comic) 단원을 GPT로 만든다.
- * 하단에 저작 전용 ChatGPT 웹뷰를 띄워 **로그인·생성 과정 확인·이미지 수동 다운로드**를
- * 할 수 있게 한다.
- */
 @Composable
 fun AuthoringScreen(
     onBack: () -> Unit,
@@ -45,6 +44,9 @@ fun AuthoringScreen(
 ) {
     val s by vm.state.collectAsStateWithLifecycle()
     val reload by vm.webReloads.collectAsStateWithLifecycle()
+    val http431 by vm.http431State.collectAsStateWithLifecycle()
+    var showAdvanced by remember { mutableStateOf(false) }
+    var confirmClearAllCookies by remember { mutableStateOf(false) }
 
     val passagePhotoPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(10),
@@ -52,160 +54,215 @@ fun AuthoringScreen(
     val wordPhotoPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(10),
     ) { uris -> vm.addWordPhotos(uris) }
-    val smallButtonPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+
+    val buttonPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+    val canRun = !s.running && (s.passagePhotoCount > 0 || s.wordPhotoCount > 0 || s.source.isNotBlank())
 
     Column(Modifier.fillMaxSize()) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            TextButton(onClick = onBack) { Text("← 뒤로") }
-            Text("콘텐츠 만들기", style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = onBack, contentPadding = buttonPadding) { Text("뒤로") }
+            Text("콘텐츠 만들기", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text(
+                if (s.unitId.isBlank()) "ID 자동" else s.unitId,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                maxLines = 1,
+            )
+            TextButton(
+                onClick = { showAdvanced = !showAdvanced },
+                contentPadding = buttonPadding,
+            ) { Text(if (showAdvanced) "접기" else "고급") }
         }
 
         Column(
             Modifier
                 .fillMaxWidth()
+                .heightIn(max = 260.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp)
-                .weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             OutlinedTextField(
-                value = s.bookTitle, onValueChange = vm::setBookTitle,
-                label = { Text("책 이름") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-            )
-            Text("책 ID: ${s.bookId}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-            OutlinedTextField(
-                value = s.unitTitle, onValueChange = vm::setUnitTitle,
-                label = { Text("단원 이름") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                value = s.unitTitle,
+                onValueChange = vm::setUnitTitle,
+                label = { Text("단원명") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
-                value = s.unitId, onValueChange = vm::setUnitId,
-                label = { Text("단원 ID (영문/숫자)") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = s.source, onValueChange = vm::setSource,
-                label = { Text("소스 텍스트 (지문 문장 또는 단어만화 주제)") },
-                modifier = Modifier.fillMaxWidth().height(120.dp),
+                value = s.source,
+                onValueChange = vm::setSource,
+                label = { Text("텍스트") },
+                modifier = Modifier.fillMaxWidth().height(72.dp),
             )
 
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+            if (showAdvanced) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = { passagePhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                        enabled = !s.running,
-                        modifier = Modifier.weight(1.15f).height(38.dp),
-                        contentPadding = smallButtonPadding,
-                    ) {
-                        Text(
-                            if (s.passagePhotoCount > 0) "지문${s.passagePhotoCount}" else "지문사진",
-                            style = MaterialTheme.typography.labelSmall,
-                            maxLines = 1,
-                        )
-                    }
-                    OutlinedButton(
-                        onClick = { wordPhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                        enabled = !s.running,
-                        modifier = Modifier.weight(1.15f).height(38.dp),
-                        contentPadding = smallButtonPadding,
-                    ) {
-                        Text(
-                            if (s.wordPhotoCount > 0) "단어${s.wordPhotoCount}" else "단어사진",
-                            style = MaterialTheme.typography.labelSmall,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = vm::runAllAuto,
-                        enabled = !s.running && s.unitId.isNotBlank() &&
-                            (s.passagePhotoCount > 0 || s.wordPhotoCount > 0 || s.source.isNotBlank()),
-                        modifier = Modifier.weight(1.35f).height(38.dp),
-                        contentPadding = smallButtonPadding,
-                    ) { Text("전체자동", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                    OutlinedTextField(
+                        value = s.bookTitle,
+                        onValueChange = vm::setBookTitle,
+                        label = { Text("책") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedTextField(
+                        value = s.unitId,
+                        onValueChange = vm::setUnitId,
+                        label = { Text("단원 ID") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = vm::extractSentencesAuto,
-                        enabled = !s.running && (s.passagePhotoCount > 0 || s.source.isNotBlank()),
-                        modifier = Modifier.weight(1f).height(38.dp),
-                        contentPadding = smallButtonPadding,
-                    ) { Text("문장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                    OutlinedButton(
-                        onClick = vm::buildPassageAndSave,
-                        enabled = !s.running && s.sentences.isNotEmpty(),
-                        modifier = Modifier.weight(1.15f).height(38.dp),
-                        contentPadding = smallButtonPadding,
-                    ) { Text("지문저장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                    OutlinedButton(
-                        onClick = vm::extractWordsAuto,
-                        enabled = !s.running && (s.wordPhotoCount > 0 || s.source.isNotBlank()),
-                        modifier = Modifier.weight(1f).height(38.dp),
-                        contentPadding = smallButtonPadding,
-                    ) { Text("단어", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                    OutlinedButton(
-                        onClick = vm::buildAndSave,
-                        enabled = !s.running && s.words.isNotEmpty(),
-                        modifier = Modifier.weight(1.15f).height(38.dp),
-                        contentPadding = smallButtonPadding,
-                    ) { Text("만화JSON", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = vm::requestGridImage,
-                        enabled = !s.running && s.words.isNotEmpty(),
-                        modifier = Modifier.weight(1f).height(38.dp),
-                        contentPadding = smallButtonPadding,
-                    ) { Text("그림", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                    OutlinedButton(
-                        onClick = vm::captureGridImage,
-                        enabled = !s.running && s.unitId.isNotBlank(),
-                        modifier = Modifier.weight(1.1f).height(38.dp),
-                        contentPadding = smallButtonPadding,
-                    ) { Text("그림저장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                }
+                OutlinedButton(
+                    onClick = vm::runResponseMenuProbe,
+                    enabled = !s.running,
+                    modifier = Modifier.fillMaxWidth().height(32.dp),
+                    contentPadding = buttonPadding,
+                ) { Text("대기테스트", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { passagePhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                    enabled = !s.running,
+                    modifier = Modifier.weight(1f).height(34.dp),
+                    contentPadding = buttonPadding,
+                ) { Text(if (s.passagePhotoCount > 0) "지문 ${s.passagePhotoCount}" else "지문사진", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                OutlinedButton(
+                    onClick = { wordPhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                    enabled = !s.running,
+                    modifier = Modifier.weight(1f).height(34.dp),
+                    contentPadding = buttonPadding,
+                ) { Text(if (s.wordPhotoCount > 0) "단어 ${s.wordPhotoCount}" else "단어사진", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                Button(
+                    onClick = vm::runAllAuto,
+                    enabled = canRun,
+                    modifier = Modifier.weight(1.05f).height(34.dp),
+                    contentPadding = buttonPadding,
+                ) { Text("전체자동", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = vm::extractSentencesAuto,
+                    enabled = !s.running && (s.passagePhotoCount > 0 || s.source.isNotBlank()),
+                    modifier = Modifier.weight(1f).height(32.dp),
+                    contentPadding = buttonPadding,
+                ) { Text("문장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                OutlinedButton(
+                    onClick = vm::buildPassageAndSave,
+                    enabled = !s.running && s.sentences.isNotEmpty(),
+                    modifier = Modifier.weight(1f).height(32.dp),
+                    contentPadding = buttonPadding,
+                ) { Text("지문저장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                OutlinedButton(
+                    onClick = vm::extractWordsAuto,
+                    enabled = !s.running && (s.wordPhotoCount > 0 || s.source.isNotBlank()),
+                    modifier = Modifier.weight(1f).height(32.dp),
+                    contentPadding = buttonPadding,
+                ) { Text("단어", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                OutlinedButton(
+                    onClick = vm::buildAndSave,
+                    enabled = !s.running && s.words.isNotEmpty(),
+                    modifier = Modifier.weight(1f).height(32.dp),
+                    contentPadding = buttonPadding,
+                ) { Text("만화저장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = vm::requestGridImage,
+                    enabled = !s.running && s.words.isNotEmpty(),
+                    modifier = Modifier.weight(1f).height(32.dp),
+                    contentPadding = buttonPadding,
+                ) { Text("그림요청", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                OutlinedButton(
+                    onClick = vm::captureGridImage,
+                    enabled = !s.running,
+                    modifier = Modifier.weight(1f).height(32.dp),
+                    contentPadding = buttonPadding,
+                ) { Text("그림저장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                Text(
+                    "문장 ${s.sentences.size} · 단어 ${s.words.size}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.weight(1.25f).align(Alignment.CenterVertically),
+                    maxLines = 1,
+                )
             }
 
             if (s.running) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CircularProgressIndicator(modifier = Modifier.height(18.dp))
-                    Text(s.status, style = MaterialTheme.typography.bodySmall)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    CircularProgressIndicator(modifier = Modifier.height(16.dp))
+                    Text(s.status, style = MaterialTheme.typography.labelSmall, maxLines = 2)
                 }
-            } else if (s.status.isNotBlank()) {
-                Text(s.status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            } else {
+                if (s.status.isNotBlank()) {
+                    Text(s.status, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 2)
+                }
+                s.error?.let {
+                    Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error, maxLines = 2)
+                }
             }
-            s.error?.let { Text("⚠ $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
 
-            if (s.words.isNotEmpty()) {
-                Text("추출 단어: ${s.words.joinToString(", ")}", style = MaterialTheme.typography.labelMedium)
-            }
-            if (s.sentences.isNotEmpty()) {
-                Text(
-                    "추출 문장: ${s.sentences.take(4).joinToString(" / ")}",
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
-            if (s.unitJsonPreview.isNotBlank()) {
-                Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+            if (http431.active) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     Text(
-                        s.unitJsonPreview.take(2000),
+                        "ChatGPT 로드 오류 431: 쿠키/헤더가 너무 커졌습니다. 자동 쿠키 삭제는 하지 않았습니다.",
                         style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(8.dp),
+                        color = MaterialTheme.colorScheme.error,
+                        maxLines = 2,
                     )
+                    Text(
+                        "host=${http431.host} · url=${http431.requestUrlLength} · q=${http431.qQueryLength} · cookies=${http431.cookieCount} · conv_key=${http431.convKeyCookieCount}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        maxLines = 2,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = vm::retryChatGptAfter431,
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            contentPadding = buttonPadding,
+                        ) { Text("다시 시도", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                        OutlinedButton(
+                            onClick = vm::openChatGptInBrowser,
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            contentPadding = buttonPadding,
+                        ) { Text("브라우저", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                        if (http431.convKeyCookieCount > 0) {
+                            OutlinedButton(
+                                onClick = vm::clearTemporaryChatCookiesAfter431,
+                                modifier = Modifier.weight(1f).height(32.dp),
+                                contentPadding = buttonPadding,
+                            ) { Text("임시 채팅 쿠키 정리", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                        }
+                        OutlinedButton(
+                            onClick = { confirmClearAllCookies = true },
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            contentPadding = buttonPadding,
+                        ) { Text("앱 내 WebView 쿠키 전체 초기화", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+                    }
                 }
             }
         }
 
-        // GPT 웹뷰 — 로그인·생성 확인·이미지 수동 다운로드용.
         Text(
-            "ChatGPT 창: 지문사진과 단어사진은 따로 첨부 / 여러 번 선택하면 누적 / 전체자동은 들어온 묶음만 생성.",
+            "ChatGPT",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
         )
-        Box(Modifier.fillMaxWidth().height(520.dp)) {
-            // 렌더러가 죽으면 webReloads 가 증가 → key 가 바뀌어 새 웹뷰를 다시 붙인다.
+        Box(Modifier.fillMaxWidth().weight(1f)) {
             key(reload) {
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
@@ -217,5 +274,26 @@ fun AuthoringScreen(
                 )
             }
         }
+    }
+
+    if (confirmClearAllCookies) {
+        AlertDialog(
+            onDismissRequest = { confirmClearAllCookies = false },
+            title = { Text("앱 내 WebView 쿠키 전체 초기화") },
+            text = {
+                Text("ChatGPT 로그인 쿠키를 포함해 앱 안의 모든 WebView 쿠키가 삭제됩니다. 음성/그림/저작 WebView에서 다시 로그인이 필요할 수 있습니다.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmClearAllCookies = false
+                        vm.clearAllInAppWebViewCookiesAfterConfirmation()
+                    },
+                ) { Text("초기화") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearAllCookies = false }) { Text("취소") }
+            },
+        )
     }
 }

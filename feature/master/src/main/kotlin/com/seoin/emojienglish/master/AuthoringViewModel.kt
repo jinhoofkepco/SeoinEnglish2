@@ -1,6 +1,7 @@
 package com.seoin.emojienglish.master
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Base64
 import android.webkit.WebView
@@ -12,6 +13,8 @@ import com.seoin.emojienglish.model.LessonContent
 import com.seoin.emojienglish.model.LessonUnit
 import com.seoin.emojienglish.model.StepDef
 import com.seoin.emojienglish.voice.AuthoringWebGateway
+import com.seoin.emojienglish.voice.WebViewPictureGateway
+import com.seoin.emojienglish.voice.WebViewVoiceGateway
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +47,8 @@ import javax.inject.Inject
 class AuthoringViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val gateway: AuthoringWebGateway,
+    private val voiceGateway: WebViewVoiceGateway,
+    private val pictureGateway: WebViewPictureGateway,
     private val writer: ContentWriter,
     private val lessonRepo: LessonRepository,
 ) : ViewModel() {
@@ -78,10 +83,67 @@ class AuthoringViewModel @Inject constructor(
         val sentences: List<String>,
     )
 
-    fun provideView(): WebView = gateway.provideView()
+    private data class PassageJsonBatch(
+        val startNumber: Int,
+        val sentences: List<String>,
+    )
+
+    init {
+        isolateAuthoringWebView()
+    }
+
+    fun provideView(): WebView {
+        isolateAuthoringWebView()
+        return gateway.provideView()
+    }
+
+    private fun isolateAuthoringWebView() {
+        voiceGateway.shutdownForAuthoring()
+        pictureGateway.shutdownForAuthoring()
+    }
 
     /** 렌더러가 죽어 웹뷰가 새로 만들어진 횟수 — 화면이 AndroidView를 다시 붙이는 key. */
     val webReloads: StateFlow<Int> = gateway.reloads
+    val http431State = gateway.http431State
+
+    fun retryChatGptAfter431() {
+        gateway.retryAfterHttp431()
+        _state.update { it.copy(status = "ChatGPT를 다시 로드합니다.", error = null) }
+    }
+
+    fun openChatGptInBrowser() {
+        runCatching {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://chatgpt.com/"))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        }.onFailure { e ->
+            _state.update { it.copy(error = "브라우저 열기 실패: ${e.message}") }
+        }
+    }
+
+    fun clearTemporaryChatCookiesAfter431() {
+        viewModelScope.launch {
+            val count = gateway.clearTemporaryChatCookiesAfter431()
+            _state.update {
+                it.copy(
+                    status = if (count > 0) "임시 채팅 쿠키 ${count}개를 정리하고 ChatGPT를 다시 로드합니다." else "정리할 임시 채팅 쿠키가 없습니다.",
+                    error = null,
+                )
+            }
+        }
+    }
+
+    fun clearAllInAppWebViewCookiesAfterConfirmation() {
+        viewModelScope.launch {
+            gateway.clearAllWebViewCookiesAfterConfirmation()
+            _state.update {
+                it.copy(
+                    status = "앱 내 WebView 쿠키를 전체 초기화하고 ChatGPT를 다시 로드합니다. 다시 로그인이 필요할 수 있습니다.",
+                    error = null,
+                )
+            }
+        }
+    }
 
     fun setPhoto(uri: Uri?) {
         setPassagePhotos(uri?.let { listOf(it) }.orEmpty())
@@ -227,9 +289,9 @@ class AuthoringViewModel @Inject constructor(
 
     /** 입력된 묶음만 한 번에: 지문사진이면 지문, 단어사진이면 만화, 둘 다 있으면 한 단원에 둘 다. */
     fun runAllAuto() {
-        val s = _state.value
-        if (s.running) return
-        if (s.unitId.isBlank()) { _state.update { it.copy(error = "단원 ID를 입력하세요.") }; return }
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
         val hasPassageInput = s.passagePhotoCount > 0 || (s.wordPhotoCount <= 0 && s.source.isNotBlank())
         val hasWordInput = s.wordPhotoCount > 0
         if (!hasPassageInput && !hasWordInput) {
@@ -247,6 +309,16 @@ class AuthoringViewModel @Inject constructor(
                 }
                 if (sentences.isEmpty()) error("문장 추출 실패.")
                 _state.update { it.copy(sentences = sentences, status = "자동 ① 지문 문장 ${sentences.size}개 → 지문 JSON 생성 중…") }
+                if (TEMP_STOP_AFTER_PASSAGE_JSON_DOWNLOAD) {
+                    val downloads = downloadPassageParamsFilesForReview(sentences, s)
+                    _state.update {
+                        it.copy(
+                            sentences = sentences,
+                            status = "지문 JSON 다운로드 확인 완료(${downloads.size}개). 임시 설정으로 단원 저장/다음 단계는 여기서 중단했습니다.",
+                        )
+                    }
+                    return@runStep
+                }
                 passageParams = generatePassageParams(sentences, s)
             }
 
@@ -276,6 +348,7 @@ class AuthoringViewModel @Inject constructor(
                     error("그리드 그림 요청 전송 실패(로그인/작성창 확인).")
                 }
                 val bytes = awaitGridImageBytes(beforeImages + 1)
+                saveImageDownload(s, GRID_FILE, bytes)
                 writer.writeImage(s.bookId, s.unitId, GRID_FILE, bytes)
                 lessonRepo.refresh()
                 _state.update {
@@ -285,11 +358,31 @@ class AuthoringViewModel @Inject constructor(
         }
     }
 
+    fun runResponseMenuProbe() {
+        val current = _state.value
+        if (current.running) return
+        runStep("Pro 응답 완료 감지 테스트…") {
+            prepareFreshChat("response-menu-probe")
+            val proSelected = gateway.selectProExpansionMode()
+            _state.update {
+                it.copy(status = "대기테스트: Pro 확장=${if (proSelected) "선택됨" else "미확인"} · 더미 요청 전송 중…")
+            }
+            val response = gateway.query(
+                "Give a compact but thoughtful JSON design plan for a child-friendly English passage reader. " +
+                    "Return 6 numbered bullets, each with one concrete UI detail and one learning reason. " +
+                    "Do not make an image."
+            ) ?: error(gateway.lastQueryFailureMessage("대기테스트"))
+            _state.update {
+                it.copy(status = "대기테스트 완료: 답변 ${response.length}자 · 하단 복사/평가 메뉴 감지 후 반환됨.")
+            }
+        }
+    }
+
     /** 사진/텍스트에서 문장을 뽑아 passage_read 단원만 저장. */
     fun runPassageAuto() {
-        val s = _state.value
-        if (s.running) return
-        if (s.unitId.isBlank()) { _state.update { it.copy(error = "단원 ID를 입력하세요.") }; return }
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
         if (s.passagePhotoCount <= 0 && s.source.isBlank()) {
             _state.update { it.copy(error = "사진을 고르거나 지문 텍스트를 입력하세요.") }
             return
@@ -302,6 +395,17 @@ class AuthoringViewModel @Inject constructor(
             }
             if (sentences.isEmpty()) error("문장 추출 실패.")
             _state.update { it.copy(sentences = sentences, status = "자동 ① 문장 ${sentences.size}개 → 지문 JSON 생성 중…") }
+
+            if (TEMP_STOP_AFTER_PASSAGE_JSON_DOWNLOAD) {
+                val downloads = downloadPassageParamsFilesForReview(sentences, s)
+                _state.update {
+                    it.copy(
+                        sentences = sentences,
+                        status = "지문 JSON 다운로드 확인 완료(${downloads.size}개). 임시 설정으로 passage_read 저장은 중단했습니다.",
+                    )
+                }
+                return@runStep
+            }
 
             val params = generatePassageParams(sentences, s)
             val unit = savePassageUnit(params, sentences, s)
@@ -317,9 +421,9 @@ class AuthoringViewModel @Inject constructor(
 
     /** ② 현재 단어들로 단원 JSON 생성 → 청크로 수신 → filesDir 저장 → 즉시 반영. */
     fun buildAndSave() {
-        val s = _state.value
-        if (s.running) return
-        if (s.unitId.isBlank()) { _state.update { it.copy(error = "단원 ID를 입력하세요.") }; return }
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
         if (s.words.isEmpty()) { _state.update { it.copy(error = "먼저 단어를 추출하세요(소스/사진).") }; return }
         runStep("② 단원 JSON 생성 요청 → 청크 수신 준비… (${s.words.size}개 단어)") {
             val params = generateStoryParams(s.words, s)
@@ -336,11 +440,18 @@ class AuthoringViewModel @Inject constructor(
 
     /** 현재 문장들로 passage_read 단원 JSON 생성 → 저장. */
     fun buildPassageAndSave() {
-        val s = _state.value
-        if (s.running) return
-        if (s.unitId.isBlank()) { _state.update { it.copy(error = "단원 ID를 입력하세요.") }; return }
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
         if (s.sentences.isEmpty()) { _state.update { it.copy(error = "먼저 문장을 추출하세요(사진/텍스트).") }; return }
         runStep("② 지문 JSON 생성 요청 → 청크 수신 준비… (${s.sentences.size}개 문장)") {
+            if (TEMP_STOP_AFTER_PASSAGE_JSON_DOWNLOAD) {
+                val downloads = downloadPassageParamsFilesForReview(s.sentences, s)
+                _state.update {
+                    it.copy(status = "지문 JSON 다운로드 확인 완료(${downloads.size}개). 임시 설정으로 passage_read 저장은 중단했습니다.")
+                }
+                return@runStep
+            }
             val params = generatePassageParams(s.sentences, s)
             val unit = savePassageUnit(params, s.sentences, s)
             _state.update {
@@ -358,9 +469,9 @@ class AuthoringViewModel @Inject constructor(
      * 큰 응답 문자열을 evaluateJavascript 결과로 직접 받지 않아 WebView 다운 위험을 줄인다.
      */
     fun buildAndSaveViaLink() {
-        val s = _state.value
-        if (s.running) return
-        if (s.unitId.isBlank()) { _state.update { it.copy(error = "단원 ID를 입력하세요.") }; return }
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
         if (s.words.isEmpty()) { _state.update { it.copy(error = "먼저 단어를 추출하세요.") }; return }
         runStep("②(청크) JSON 생성 요청…") {
             val params = generateStoryParams(s.words, s)
@@ -383,8 +494,9 @@ class AuthoringViewModel @Inject constructor(
 
     /** ③ 단어 전체를 담은 **한 장의 격자 그리드**를 요청(수동으로 grid.png 저장). */
     fun requestGridImage() {
-        val s = _state.value
-        if (s.running || s.words.isEmpty()) return
+        val current = _state.value
+        if (current.running || current.words.isEmpty()) return
+        val s = ensureUnitId(current)
         val side = gridSide(s.words.size)
         runStep("③ 그리드 그림 생성 요청 중… (${side}×$side, grid.png)") {
             prepareFreshChat("manual-grid-image")
@@ -402,14 +514,15 @@ class AuthoringViewModel @Inject constructor(
 
     /** 생성된 그리드 그림을 **앱이 직접 가져와** grid.png 로 저장(수동 다운로드 대체). */
     fun captureGridImage() {
-        val s = _state.value
-        if (s.running) return
-        if (s.unitId.isBlank()) { _state.update { it.copy(error = "단원 ID가 필요합니다.") }; return }
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
         runStep("그림 가져오는 중…") {
             val bytes = decodeImageDataUrl(
                 gateway.captureLastImageDataUrl()
                     ?: error("그림을 못 가져옴(생성된 이미지가 없거나 읽기 실패). 그림이 화면에 보이는지 확인."),
             )
+            saveImageDownload(s, GRID_FILE, bytes)
             writer.writeImage(s.bookId, s.unitId, GRID_FILE, bytes)
             lessonRepo.refresh()
             _state.update { it.copy(status = "grid.png 저장됨(${bytes.size}B) → 칸별로 바로 표시됩니다.") }
@@ -418,9 +531,9 @@ class AuthoringViewModel @Inject constructor(
 
     /** ChatGPT에서 **수동 다운로드한 .json 파일을 가져와** 단원으로 저장(가장 견고한 경로). */
     fun importJson(uri: Uri) {
-        val s = _state.value
-        if (s.running) return
-        if (s.unitId.isBlank()) { _state.update { it.copy(error = "단원 ID를 입력하세요.") }; return }
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
         runStep("JSON 파일 가져오는 중…") {
             val text = withContext(Dispatchers.IO) {
                 context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
@@ -449,9 +562,9 @@ class AuthoringViewModel @Inject constructor(
 
     /** 수동 다운로드한 그리드 이미지를 grid.png 로 저장. */
     fun importGridImage(uri: Uri) {
-        val s = _state.value
-        if (s.running) return
-        if (s.unitId.isBlank()) { _state.update { it.copy(error = "단원 ID를 입력하세요.") }; return }
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
         runStep("그림 파일 가져오는 중…") {
             val bytes = withContext(Dispatchers.IO) {
                 context.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
@@ -485,6 +598,7 @@ class AuthoringViewModel @Inject constructor(
 
     private suspend fun extractWords(source: String): List<String> {
         prepareFreshChat("source-word-extract")
+        gateway.selectInstantMode()
         val prompt = buildString {
             append("아래 글에서 초등학생이 배울 핵심 영어 단어를 8~14개 골라 ")
             append("JSON 배열로만 답해줘. 설명·코드펜스 없이 [\"word\", ...] 형식만.\n\n글:\n")
@@ -496,6 +610,7 @@ class AuthoringViewModel @Inject constructor(
 
     private suspend fun extractSentences(source: String): List<String> {
         prepareFreshChat("source-sentence-extract")
+        gateway.selectInstantMode()
         val prompt = buildString {
             append("아래 지문에서 아이가 읽을 영어 문장만 순서대로 추출해 ")
             append("JSON 배열로만 답해줘. 설명·코드펜스 없이 [\"sentence\", ...] 형식만.\n")
@@ -520,6 +635,7 @@ class AuthoringViewModel @Inject constructor(
                 it.copy(status = "① 단어사진 ${index + 1}/${batches.size} 첨부($attach) · ${start}~${end}쪽 분석…")
             }
             delay(uploadDelayMs(batch.size))
+            gateway.selectInstantMode()
             val resp = gateway.query(photoWordBatchPrompt(start, end, batch.size))
                 ?: error(gateway.lastQueryFailureMessage("${start}~${end}쪽 단어 분석"))
             words += parseWordArray(resp)
@@ -541,6 +657,7 @@ class AuthoringViewModel @Inject constructor(
                 it.copy(status = "① 지문사진 ${index + 1}/${batches.size} 첨부($attach) · ${start}~${end}쪽 문장 추출…")
             }
             delay(uploadDelayMs(batch.size))
+            gateway.selectInstantMode()
             val resp = gateway.query(photoSentenceBatchPrompt(start, end, batch.size))
                 ?: error(gateway.lastQueryFailureMessage("${start}~${end}쪽 문장 추출"))
             pages += parsePageSentenceGroups(resp, start, batch.size)
@@ -599,29 +716,92 @@ class AuthoringViewModel @Inject constructor(
 
     private suspend fun reorderSentencesWithGpt(pages: List<PageSentences>): List<String> {
         prepareFreshChat("page-order")
+        gateway.selectInstantMode()
         val resp = gateway.query(pageOrderPrompt(pages)).orEmpty()
         return parseSentenceArray(resp)
     }
 
     private suspend fun generateStoryParams(words: List<String>, s: State): JsonObject {
         prepareFreshChat("story-json")
-        val before = gateway.assistantMessageCount()
+        val before = gateway.assistantMarker()
         if (!gateway.sendOnly(storyPrompt(words))) {
             throw IllegalStateException("JSON 요청 전송 실패(로그인/작성창 확인).")
         }
         val jsonText = awaitStoryJsonChunk(before)
+        saveJsonDownload(s, "story_params.json", jsonText)
         return enrichStoryParams(jsonText, words, s)
     }
 
     private suspend fun generatePassageParams(sentences: List<String>, s: State): JsonObject {
         prepareFreshChat("passage-json")
-        val before = gateway.assistantMessageCount()
+        val before = gateway.assistantMarker()
         if (!gateway.sendOnly(passagePrompt(sentences, s))) {
             throw IllegalStateException("지문 JSON 요청 전송 실패(로그인/작성창 확인).")
         }
-        val jsonText = awaitPassageJsonChunk(before)
+        val jsonText = runCatching { awaitPassageJsonChunk(before, attempts = 24) }.getOrElse { firstError ->
+            val retryBefore = gateway.assistantMarker()
+            if (!gateway.sendOnly(passageRetryPrompt(sentences, s))) throw firstError
+            runCatching { awaitPassageJsonChunk(retryBefore, attempts = 18) }.getOrElse {
+                return fallbackPassageParams(sentences, s)
+            }
+        }
+        saveJsonDownload(s, "passage_params.json", jsonText)
         return runCatching { json.parseToJsonElement(jsonText).jsonObject }
             .getOrElse { throw IllegalStateException("지문 JSON 파싱 실패: ${it.message}") }
+    }
+
+    private suspend fun downloadPassageParamsFilesForReview(sentences: List<String>, s: State): List<String> {
+        val batches = splitPassageJsonBatches(sentences)
+        val results = mutableListOf<String>()
+        val finalBaseName = downloadName(s, "passage_params").removeSuffix(".json")
+        batches.forEachIndexed { index, batch ->
+            prepareFreshChat("passage-json-download-${index + 1}")
+            val proSelected = gateway.selectProExpansionMode()
+            val isFinal = index == batches.lastIndex
+            val partBaseName = if (isFinal) finalBaseName else "${finalBaseName}_part_${index + 1}"
+            _state.update {
+                it.copy(
+                    status = "지문 JSON 파일 요청 ${index + 1}/${batches.size} · Pro 확장=${if (proSelected) "선택됨" else "미확인"}",
+                )
+            }
+            val resp = gateway.query(passageDownloadPrompt(batch, s, index + 1, batches.size, partBaseName, isFinal))
+                ?: error(gateway.lastQueryFailureMessage("지문 JSON 파일 요청 ${index + 1}/${batches.size}"))
+            val download = gateway.requestAssistantDownload(partBaseName, wantsImage = false)
+            if (!download.contains("confirmed=true")) {
+                val jsonText = extractJson(resp) ?: resp.trim()
+                gateway.saveTextToDownloads("$partBaseName.json", jsonText, "application/json")
+            }
+            results += "$partBaseName.json :: $download"
+            _state.update {
+                it.copy(status = "지문 JSON 다운로드 확인 ${index + 1}/${batches.size}: $partBaseName.json")
+            }
+        }
+        return results
+    }
+
+    private fun splitPassageJsonBatches(sentences: List<String>): List<PassageJsonBatch> {
+        if (sentences.isEmpty()) return emptyList()
+        val out = mutableListOf<PassageJsonBatch>()
+        var start = 1
+        var chars = 0
+        val bucket = mutableListOf<String>()
+        fun flush() {
+            if (bucket.isEmpty()) return
+            out += PassageJsonBatch(start, bucket.toList())
+            start += bucket.size
+            bucket.clear()
+            chars = 0
+        }
+        sentences.forEach { sentence ->
+            val nextChars = chars + sentence.length
+            if (bucket.isNotEmpty() && (bucket.size >= PASSAGE_JSON_CHUNK_SENTENCES || nextChars > PASSAGE_JSON_CHUNK_CHARS)) {
+                flush()
+            }
+            bucket += sentence
+            chars += sentence.length
+        }
+        flush()
+        return out
     }
 
     private fun saveStoryUnit(params: JsonObject, words: List<String>, s: State): LessonUnit {
@@ -695,24 +875,27 @@ class AuthoringViewModel @Inject constructor(
         return bytes
     }
 
-    private suspend fun awaitStoryJsonChunk(beforeAssistantCount: Int): String {
-        val requiredCount = beforeAssistantCount + 1
+    private suspend fun awaitStoryJsonChunk(before: AuthoringWebGateway.AssistantMarker): String {
+        val requiredCount = before.count + 1
         for (i in 1..45) {
             delay(if (i == 1) 2500 else 1800)
             _state.update { it.copy(status = "② JSON 청크 확인 중… $i/45") }
-            val captured = gateway.captureLastAssistantJsonChunked(requiredCount) ?: continue
+            val captured = gateway.captureLastAssistantJsonChunked(requiredCount, before) ?: continue
             val jsonText = extractJson(captured) ?: captured.trim()
             if (looksLikeStoryParams(jsonText)) return jsonText
         }
         throw IllegalStateException("JSON 청크를 못 받음(응답 생성이 끝났는지, 화면에 JSON이 보이는지 확인).")
     }
 
-    private suspend fun awaitPassageJsonChunk(beforeAssistantCount: Int): String {
-        val requiredCount = beforeAssistantCount + 1
-        for (i in 1..45) {
+    private suspend fun awaitPassageJsonChunk(
+        before: AuthoringWebGateway.AssistantMarker,
+        attempts: Int = 45,
+    ): String {
+        val requiredCount = before.count + 1
+        for (i in 1..attempts) {
             delay(if (i == 1) 2500 else 1800)
-            _state.update { it.copy(status = "② 지문 JSON 청크 확인 중… $i/45") }
-            val captured = gateway.captureLastAssistantJsonChunked(requiredCount) ?: continue
+            _state.update { it.copy(status = "② 지문 JSON 청크 확인 중… $i/$attempts") }
+            val captured = gateway.captureLastAssistantJsonChunked(requiredCount, before) ?: continue
             val jsonText = extractJson(captured) ?: captured.trim()
             if (looksLikePassageParams(jsonText)) return jsonText
         }
@@ -729,6 +912,91 @@ class AuthoringViewModel @Inject constructor(
         obj["paragraphs"]?.jsonArray?.isNotEmpty() == true ||
             obj["sentences"]?.jsonArray?.isNotEmpty() == true
     }.getOrDefault(false)
+
+    private fun fallbackPassageParams(sentences: List<String>, s: State): JsonObject {
+        val sentenceObjects = sentences.mapIndexed { index, sentence ->
+            val sentenceId = "s${index + 1}"
+            buildJsonObject {
+                put("id", JsonPrimitive(sentenceId))
+                put("text", JsonPrimitive(sentence))
+                put("chunks", JsonArray(chunkSentence(sentence, sentenceId)))
+            }
+        }
+        val chunkSize = ((sentenceObjects.size + 1) / 2).coerceAtLeast(1)
+        val paragraphs = sentenceObjects.chunked(chunkSize).mapIndexed { index, group ->
+            buildJsonObject {
+                put("id", JsonPrimitive("p${index + 1}"))
+                put("title", JsonPrimitive(if (index == 0) "Read and Decode" else "Keep Decoding"))
+                put("overlookQuestion", JsonPrimitive("What do these sentences help us understand?"))
+                put("overlookHintKo", JsonPrimitive("문장을 작은 덩어리로 나누면 누가 무엇을 하는지 찾기 쉬워요."))
+                put("sentences", JsonArray(group))
+            }
+        }
+        return buildJsonObject {
+            put("title", JsonPrimitive(s.unitTitle.ifBlank { "Shared Read" }))
+            put("trackLabel", JsonPrimitive("Shared Read"))
+            put("curiosityQuestion", JsonPrimitive("What can we understand by reading each chunk?"))
+            put("coverVisual", JsonPrimitive("📖"))
+            put("defaultChunkSetId", JsonPrimitive("short"))
+            put(
+                "processSteps",
+                JsonArray(
+                    listOf(
+                        buildJsonObject {
+                            put("id", JsonPrimitive("notice"))
+                            put("label", JsonPrimitive("Notice"))
+                            put("caption", JsonPrimitive("Look for who does what."))
+                            put("visual", JsonPrimitive("🔎"))
+                        },
+                        buildJsonObject {
+                            put("id", JsonPrimitive("chunk"))
+                            put("label", JsonPrimitive("Chunk"))
+                            put("caption", JsonPrimitive("Read each sentence in small parts."))
+                            put("visual", JsonPrimitive("🧩"))
+                        },
+                    ),
+                ),
+            )
+            put("exploreItems", JsonArray(emptyList()))
+            put("paragraphs", JsonArray(paragraphs))
+        }
+    }
+
+    private fun chunkSentence(sentence: String, sentenceId: String): List<JsonObject> {
+        val wordMatches = Regex("\\S+").findAll(sentence).toList()
+        if (wordMatches.isEmpty()) return listOf(chunkObject(sentenceId, 1, sentence, 0, sentence.length, "object"))
+        val targetChunks = wordMatches.size.coerceIn(2, 5)
+        val wordsPerChunk = ((wordMatches.size + targetChunks - 1) / targetChunks).coerceAtLeast(1)
+        return wordMatches.chunked(wordsPerChunk).mapIndexed { index, group ->
+            val start = group.first().range.first
+            val end = group.last().range.last + 1
+            val role = when (index) {
+                0 -> "subject"
+                1 -> "action"
+                2 -> "object"
+                3 -> "place"
+                else -> "linker"
+            }
+            chunkObject(sentenceId, index + 1, sentence.substring(start, end), start, end, role)
+        }
+    }
+
+    private fun chunkObject(
+        sentenceId: String,
+        index: Int,
+        text: String,
+        start: Int,
+        end: Int,
+        role: String,
+    ): JsonObject = buildJsonObject {
+        put("id", JsonPrimitive("${sentenceId}_c$index"))
+        put("text", JsonPrimitive(text))
+        put("start", JsonPrimitive(start))
+        put("end", JsonPrimitive(end))
+        put("role", JsonPrimitive(role))
+        put("meaningKo", JsonPrimitive(""))
+        put("teacherPrompt", JsonPrimitive("Read this small part and ask what it tells us."))
+    }
 
     /** GPT가 준 params JSON 문자열에 그리드 셀/이미지 경로를 채운다(query·링크 공용). */
     private fun enrichStoryParams(jsonText: String, words: List<String>, s: State): JsonObject {
@@ -807,6 +1075,62 @@ class AuthoringViewModel @Inject constructor(
         append("문장이 5개 이하면 문단 1개, 많으면 의미 흐름에 따라 2~3문단. JSON만 출력.")
     }
 
+    private fun passageRetryPrompt(sentences: List<String>, s: State): String = buildString {
+        append("Return ONLY one valid JSON object. No markdown. No code fence. No explanation.\n")
+        append("Create passage_read params for sentence decoding practice.\n")
+        append("Title hint: ${s.unitTitle.ifBlank { s.unitId }}\n")
+        append("Do not alter sentence text.\n")
+        append("Required top-level keys: title, trackLabel, curiosityQuestion, coverVisual, defaultChunkSetId, processSteps, exploreItems, paragraphs.\n")
+        append("Each paragraph has id, title, overlookQuestion, overlookHintKo, sentences.\n")
+        append("Each sentence has id, text, chunks.\n")
+        append("Each chunk has id, text, startChar, endChar, role, decodeHint, meaningKo, exploreIds.\n")
+        append("Sentences:\n")
+        sentences.forEachIndexed { i, sentence -> append("${i + 1}. $sentence\n") }
+    }
+
+    private fun passageDownloadPrompt(
+        batch: PassageJsonBatch,
+        s: State,
+        part: Int,
+        total: Int,
+        fileBaseName: String,
+        isFinal: Boolean,
+    ): String = buildString {
+        if (part == 1) {
+            append("Create the initial passage_read JSON object for a long passage.\n")
+        } else {
+            append("Continue from the previous JSON object in this same chat.\n")
+            append("Append the new sentences below to the existing JSON. Keep all earlier paragraphs/sentences/chunks already produced.\n")
+            append("Return the full updated JSON object, not only the added part.\n")
+        }
+        append("Provide the current full updated JSON as a downloadable file named \"$fileBaseName.json\".\n")
+        append("If file creation is unavailable, answer with ONLY the current full updated raw JSON object so the app can save it.\n")
+        if (isFinal) append("This is the final part.\n") else append("This is not the final part.\n")
+        append("Do not make an image. Do not open a new chat. No markdown. No code fence. No explanation.\n\n")
+        append("Task: create passage_read params for English decoding practice, not content memorization.\n")
+        append("This is part $part of $total for a long passage.\n")
+        append("For this part, add the sentences listed below to the JSON.\n")
+        append("Keep the original sentence text exactly. Use sentence ids starting from s${batch.startNumber}.\n")
+        append("Title hint: ${s.unitTitle.ifBlank { s.unitId }}\n\n")
+        append("Required JSON schema:\n")
+        append("{\n")
+        append("  \"title\": \"English title\",\n")
+        append("  \"trackLabel\": \"Shared Read\",\n")
+        append("  \"curiosityQuestion\": \"one child-friendly question\",\n")
+        append("  \"coverVisual\": \"one visual description\",\n")
+        append("  \"defaultChunkSetId\": \"short\",\n")
+        append("  \"processSteps\": [{\"id\":\"step1\",\"label\":\"English label\",\"caption\":\"short caption\",\"visual\":\"visual description\"}],\n")
+        append("  \"exploreItems\": [{\"id\":\"item1\",\"label\":\"topic\",\"sentenceIds\":[\"s1\"],\"searchContext\":\"context\",\"parentPrompt\":\"guardian question\",\"visual\":\"visual description\"}],\n")
+        append("  \"paragraphs\": [{\"id\":\"p$part\",\"title\":\"paragraph title\",\"overlookQuestion\":\"question\",\"overlookHintKo\":\"Korean hint\",\"sentences\":[...]}]\n")
+        append("}\n\n")
+        append("Each sentence object must have id, text, chunks.\n")
+        append("Each chunk must have id, text, startChar, endChar, role, decodeHint, meaningKo, exploreIds.\n")
+        append("startChar/endChar must match Kotlin substring(startChar, endChar) for the chunk text.\n")
+        append("Use 2 to 5 chunks per sentence. role is one of subject/action/object/time/place/linker.\n\n")
+        append("Sentences:\n")
+        batch.sentences.forEachIndexed { i, sentence -> append("${batch.startNumber + i}. $sentence\n") }
+    }
+
     private fun photoSentenceBatchPrompt(startPage: Int, endPage: Int, count: Int): String = buildString {
         append("첨부된 이미지 ${count}장은 영어책 지문 사진이며, 사용자가 선택한 순서대로 전체 책의 ")
         append("${startPage}쪽부터 ${endPage}쪽까지야.\n")
@@ -856,6 +1180,45 @@ class AuthoringViewModel @Inject constructor(
         append("After it's generated I'll save it as grid.png.")
     }
 
+    private suspend fun saveJsonDownload(s: State, suffix: String, text: String) {
+        runCatching {
+            gateway.saveTextToDownloads(downloadName(s, suffix), text, "application/json")
+        }
+    }
+
+    private suspend fun saveImageDownload(s: State, suffix: String, bytes: ByteArray) {
+        runCatching {
+            gateway.saveBytesToDownloads(downloadName(s, suffix), bytes, "image/png")
+        }
+    }
+
+    private fun downloadName(s: State, suffix: String): String {
+        val stem = s.unitId.ifBlank { "unit" }.replace(Regex("[^A-Za-z0-9._-]"), "_")
+        return "${stem}_$suffix"
+    }
+
+    private fun ensureUnitId(s: State): State {
+        if (s.unitId.isNotBlank()) return s
+        val generated = autoUnitId(s)
+        val next = s.copy(unitId = generated, error = null)
+        _state.value = next
+        return next
+    }
+
+    private fun autoUnitId(s: State): String {
+        val seed = sequenceOf(
+            s.unitTitle,
+            s.source.lineSequence().firstOrNull().orEmpty(),
+            s.words.firstOrNull().orEmpty(),
+            s.sentences.firstOrNull().orEmpty(),
+        )
+            .map { slugId(it).take(32).trim('_') }
+            .firstOrNull { it.isNotBlank() }
+            ?: "unit"
+        val suffix = (System.currentTimeMillis() % 1_000_000L).toString().padStart(6, '0')
+        return "${seed}_$suffix"
+    }
+
     private fun gridSide(n: Int): Int {
         var side = 4
         while (side * side < n) side++   // 16칸이면 4×4, 더 많으면 키운다
@@ -865,9 +1228,9 @@ class AuthoringViewModel @Inject constructor(
     private fun uploadDelayMs(count: Int): Long =
         (2500L + count.coerceAtLeast(1) * 1200L).coerceAtMost(9000L)
 
-    private suspend fun prepareFreshChat(reason: String) {
-        gateway.recycleForAuthoringBatch(reason)
-        gateway.newChat()
+    private fun prepareFreshChat(reason: String) {
+        isolateAuthoringWebView()
+        gateway.provideView()
     }
 
     private fun ensurePhotoAttachSucceeded(result: String) {
@@ -908,7 +1271,10 @@ class AuthoringViewModel @Inject constructor(
         const val BG_LIST = "(snow/sky/forest/desert/lava/ocean/night/room/sunset/plain)"
         const val ANIM_LIST = "(none/bounce/shiver/float/dash/roll/jump/sway/spin)"
         const val GRID_FILE = "grid.png"
-        const val PHOTO_BATCH_SIZE = 1
+        const val PHOTO_BATCH_SIZE = 5
+        const val PASSAGE_JSON_CHUNK_SENTENCES = 12
+        const val PASSAGE_JSON_CHUNK_CHARS = 3_800
+        const val TEMP_STOP_AFTER_PASSAGE_JSON_DOWNLOAD = true
         val gridKeys = setOf("imageAsset", "cell", "gridCols", "gridRows")
         const val PHOTO_WORD_PROMPT =
             "이 사진을 보고 초등학생이 배울 핵심 영어 단어를 8~14개 골라 JSON 배열로만 답해줘. " +

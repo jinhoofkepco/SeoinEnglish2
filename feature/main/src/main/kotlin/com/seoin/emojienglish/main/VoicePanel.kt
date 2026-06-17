@@ -65,6 +65,8 @@ fun BottomHub(
     onToggleExpand: () -> Unit,
     onToggleMic: () -> Unit,
     onPicture: () -> Unit,
+    onAuthoring: () -> Unit,
+    onLog: () -> Unit,
     onMaster: () -> Unit,
     onToggleWebView: () -> Unit,
     provideView: () -> WebView?,
@@ -121,6 +123,8 @@ fun BottomHub(
                 onCollapse = onToggleExpand,
                 onToggleMic = onToggleMic,
                 onPicture = onPicture,
+                onAuthoring = onAuthoring,
+                onLog = onLog,
                 onMaster = onMaster,
                 onToggleWebView = onToggleWebView,
             )
@@ -179,6 +183,8 @@ private fun ExpandedHubBar(
     onCollapse: () -> Unit,
     onToggleMic: () -> Unit,
     onPicture: () -> Unit,
+    onAuthoring: () -> Unit,
+    onLog: () -> Unit,
     onMaster: () -> Unit,
     onToggleWebView: () -> Unit,
 ) {
@@ -240,6 +246,14 @@ private fun ExpandedHubBar(
             TextButton(onClick = onPicture) {
                 Icon(Icons.Filled.Image, contentDescription = null)
                 Text(" 그림")
+            }
+            if (masterOn) {
+                TextButton(onClick = onAuthoring) {
+                    Text("컨")
+                }
+                TextButton(onClick = onLog) {
+                    Text("로")
+                }
             }
             TextButton(onClick = onMaster) {
                 Icon(

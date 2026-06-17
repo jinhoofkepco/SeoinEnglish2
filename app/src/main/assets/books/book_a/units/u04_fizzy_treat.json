@@ -1,0 +1,1046 @@
+{
+  "schemaVersion": 2,
+  "unitId": "u04_fizzy_treat",
+  "title": "Let's Make a Fizzy Treat!",
+  "level": "A2",
+  "content": {
+    "words": [
+      {
+        "id": "w_fizzy",
+        "text": "fizzy",
+        "meaningKo": "거품이 톡톡 나는",
+        "emoji": "🫧",
+        "example": "A fizzy drink has tiny gas bubbles.",
+        "similarWords": ["bubbly", "sparkling"]
+      },
+      {
+        "id": "w_acid",
+        "text": "acid",
+        "meaningKo": "산, 신맛이 나는 화학 물질",
+        "emoji": "🍋",
+        "example": "Citric acid in lemons gives foods a sour taste.",
+        "similarWords": ["sour substance", "citric acid"]
+      },
+      {
+        "id": "w_flavoring",
+        "text": "flavoring",
+        "meaningKo": "맛을 내는 재료, 향료",
+        "emoji": "🍓",
+        "example": "Add fruit flavoring to make the drink taste good.",
+        "similarWords": ["taste", "flavor"]
+      },
+      {
+        "id": "w_stir",
+        "text": "stir",
+        "meaningKo": "젓다",
+        "emoji": "🥄",
+        "example": "Stir the water with a spoon.",
+        "similarWords": ["mix", "move around"]
+      },
+      {
+        "id": "w_dissolve",
+        "text": "dissolve",
+        "meaningKo": "녹다, 녹이다",
+        "emoji": "💧",
+        "example": "Sugar can dissolve in water.",
+        "similarWords": ["melt into", "mix into"]
+      },
+      {
+        "id": "w_instant",
+        "text": "instant",
+        "meaningKo": "즉각적인, 바로 일어나는",
+        "emoji": "⚡",
+        "example": "The bubbles made an instant change in the cup.",
+        "similarWords": ["quick", "right away"]
+      },
+      {
+        "id": "w_reaction",
+        "text": "reaction",
+        "meaningKo": "반응, 화학 변화",
+        "emoji": "🧪",
+        "example": "A reaction happens when baking soda and acid mix.",
+        "similarWords": ["change", "chemical change"]
+      },
+      {
+        "id": "w_experiment",
+        "text": "experiment",
+        "meaningKo": "실험",
+        "emoji": "🔬",
+        "example": "We did an experiment to make a fizzy drink.",
+        "similarWords": ["science test", "trial"]
+      }
+    ],
+    "passage": {
+      "id": "passage_fizzy_treat",
+      "title": "Let's Make a Fizzy Treat!",
+      "text": "It's a perfect day for a picnic. There is lots of yummy food, sunshine, and fun games. What would make this day more perfect? A cold glass of a fizzy drink! It could be cola, lemonade, or sparkling juice. Better yet, you could try to make your own soda. Take a look at the simple steps below. You need food-grade citric acid, baking soda, water, sugar, ice, flavorings, and a spoon. Add 1 teaspoon of citric acid to a cup of water and stir until it dissolves in the water. Add 1 teaspoon of baking soda and stir again. You should see bubbles rising to the top. Add a small amount of sugar and your favorite flavorings. Taste and add more if you like. Put some ice into the glass to make it cold. If you like your soda sweet, put in more sugar. If you want more bubbles, just add more baking soda. Bubbles formed when you added baking soda to citric acid. When baking soda and citric acid mix together, it causes an instant reaction that produces gas bubbles. Those bubbles are actually carbon dioxide gas. You can find the same bubbles when you open a can of soda. You hear a loud, fizzy noise as the bubbles rise quickly. Baking soda reacts with an acid, such as lemon juice or vinegar, to form carbon dioxide gas. The soda factory dissolves CO2 in liquid under high pressure for a fizzy taste. High pressure inside the can keeps CO2 dissolved in the liquid. When you open the can, the pressure is released. CO2 is free to escape into the air. More CO2 is dissolved in the drink under high pressure. CO2 escapes out of the drink under released pressure. CO2 is being released from the liquid.",
+      "sentences": [
+        "It's a perfect day for a picnic.",
+        "There is lots of yummy food, sunshine, and fun games.",
+        "What would make this day more perfect?",
+        "A cold glass of a fizzy drink!",
+        "It could be cola, lemonade, or sparkling juice.",
+        "Better yet, you could try to make your own soda.",
+        "Take a look at the simple steps below.",
+        "You need food-grade citric acid, baking soda, water, sugar, ice, flavorings, and a spoon.",
+        "Add 1 teaspoon of citric acid to a cup of water and stir until it dissolves in the water.",
+        "Add 1 teaspoon of baking soda and stir again.",
+        "You should see bubbles rising to the top.",
+        "Add a small amount of sugar and your favorite flavorings.",
+        "Taste and add more if you like.",
+        "Put some ice into the glass to make it cold.",
+        "If you like your soda sweet, put in more sugar.",
+        "If you want more bubbles, just add more baking soda.",
+        "Bubbles formed when you added baking soda to citric acid.",
+        "When baking soda and citric acid mix together, it causes an instant reaction that produces gas bubbles.",
+        "Those bubbles are actually carbon dioxide gas.",
+        "You can find the same bubbles when you open a can of soda.",
+        "You hear a loud, fizzy noise as the bubbles rise quickly.",
+        "Baking soda reacts with an acid, such as lemon juice or vinegar, to form carbon dioxide gas.",
+        "The soda factory dissolves CO2 in liquid under high pressure for a fizzy taste.",
+        "High pressure inside the can keeps CO2 dissolved in the liquid.",
+        "When you open the can, the pressure is released.",
+        "CO2 is free to escape into the air.",
+        "More CO2 is dissolved in the drink under high pressure.",
+        "CO2 escapes out of the drink under released pressure.",
+        "CO2 is being released from the liquid."
+      ],
+      "chunks": [],
+      "questions": [
+        {
+          "id": "q_treat_meaning",
+          "type": "multiple_choice",
+          "question": "What is the closest meaning for the word \"treat\"?",
+          "choices": ["a special gift", "a special food"],
+          "answer": "a special food"
+        },
+        {
+          "id": "q_soda_steps",
+          "type": "multiple_choice",
+          "question": "Which part lists the steps of making soda?",
+          "choices": ["What You Need", "How to Make It", "Why is It Bubbly?"],
+          "answer": "How to Make It"
+        },
+        {
+          "id": "q_open_can",
+          "type": "multiple_choice",
+          "question": "What happens when you open a can of soda?",
+          "choices": ["CO2 dissolves in the liquid.", "CO2 escapes from the liquid."],
+          "answer": "CO2 escapes from the liquid."
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "id": "s_story",
+      "type": "story_comic",
+      "params": {
+        "title": "The Fizzy Picnic Experiment",
+        "meaning": "사진 속 Build Vocabulary 단어 8개로 만든 실험 만화예요. 색칠된 단어를 누르면 영어 정의를 바로 들을 수 있어요.",
+        "words": ["fizzy", "acid", "flavoring", "stir", "dissolve", "instant", "reaction", "experiment"],
+        "wordExplanations": {
+          "fizzy": "Fizzy means having a lot of tiny gas bubbles.",
+          "acid": "An acid is a chemical substance that has a sour taste.",
+          "flavoring": "Flavoring is something added to food or drinks to give a special taste.",
+          "stir": "Stir means to mix or move something in a circle with a spoon or stick.",
+          "dissolve": "Dissolve means to become part of a liquid.",
+          "instant": "Instant means happening very quickly.",
+          "reaction": "A reaction is a chemical change that happens when substances mix together.",
+          "experiment": "An experiment is a scientific test done to learn something."
+        },
+        "wordPopups": {
+          "fizzy": {
+            "definitionEn": "Fizzy means having a lot of tiny gas bubbles.",
+            "imageAlt": "A glass of soda with many bubbles rising."
+          },
+          "acid": {
+            "definitionEn": "An acid is a chemical substance that has a sour taste.",
+            "imageAlt": "A lemon slice and a child making a sour face."
+          },
+          "flavoring": {
+            "definitionEn": "Flavoring is something added to food or drinks to give a special taste.",
+            "imageAlt": "Fruit drops going into a drink."
+          },
+          "stir": {
+            "definitionEn": "Stir means to mix or move something in a circle with a spoon or stick.",
+            "imageAlt": "A spoon moving around in a cup."
+          },
+          "dissolve": {
+            "definitionEn": "Dissolve means to become part of a liquid.",
+            "imageAlt": "White powder disappearing into water."
+          },
+          "instant": {
+            "definitionEn": "Instant means happening very quickly.",
+            "imageAlt": "A quick flash showing something happening right away."
+          },
+          "reaction": {
+            "definitionEn": "A reaction is a chemical change that happens when substances mix together.",
+            "imageAlt": "Two ingredients mixing and making bubbles."
+          },
+          "experiment": {
+            "definitionEn": "An experiment is a scientific test done to learn something.",
+            "imageAlt": "Children doing a safe science test with cups."
+          }
+        },
+        "voiceTalks": {
+          "fizzy": "Ask the student what they can see or hear in a fizzy drink.",
+          "acid": "Use lemon juice as a safe example and ask what sour means.",
+          "flavoring": "Ask which fruit flavor the student would add to soda.",
+          "stir": "Ask the student to describe the circular spoon movement.",
+          "dissolve": "Ask what happens when sugar disappears into water.",
+          "instant": "Ask for one thing that happens instantly.",
+          "reaction": "Ask what changed after the two ingredients mixed.",
+          "experiment": "Ask what question this experiment helps answer."
+        },
+        "panels": [
+          {
+            "bg": "forest",
+            "mood": "bright",
+            "zoom": { "type": "kenburns", "scale": 1.25, "originX": 45, "originY": 58 },
+            "caption": "Mina and Joon start a picnic science experiment.",
+            "sprites": [
+              { "char": "👧", "x": 28, "y": 70, "scale": 1.0, "rotate": -3, "flip": false, "anim": "sway" },
+              { "char": "👦", "x": 48, "y": 70, "scale": 1.0, "rotate": 3, "flip": true, "anim": "bounce" },
+              { "char": "🧺", "x": 70, "y": 72, "scale": 1.0, "rotate": 0, "flip": false, "anim": "none" },
+              { "char": "🔬", "x": 78, "y": 48, "scale": 0.8, "rotate": 0, "flip": false, "anim": "float" }
+            ],
+            "bubble": { "anchor": 1, "text": "Let's do an experiment!" }
+          },
+          {
+            "bg": "plain",
+            "mood": "clean",
+            "zoom": { "type": "pan", "scale": 1.2, "originX": 52, "originY": 58 },
+            "caption": "They add water, sour acid, and fruit flavoring.",
+            "sprites": [
+              { "char": "🥛", "x": 30, "y": 70, "scale": 1.0, "rotate": 0, "flip": false, "anim": "none" },
+              { "char": "🍋", "x": 50, "y": 60, "scale": 0.9, "rotate": -8, "flip": false, "anim": "float" },
+              { "char": "🍓", "x": 68, "y": 60, "scale": 0.9, "rotate": 8, "flip": false, "anim": "float" },
+              { "char": "💧", "x": 46, "y": 40, "scale": 0.7, "rotate": 0, "flip": false, "anim": "jump" }
+            ],
+            "bubble": { "anchor": 0, "text": "Lemon acid is sour!" }
+          },
+          {
+            "bg": "room",
+            "mood": "focused",
+            "zoom": { "type": "pushin", "scale": 1.3, "originX": 50, "originY": 62 },
+            "caption": "Mina stirs until the powder can dissolve.",
+            "sprites": [
+              { "char": "👧", "x": 30, "y": 68, "scale": 1.1, "rotate": 0, "flip": false, "anim": "sway" },
+              { "char": "🥤", "x": 54, "y": 70, "scale": 1.1, "rotate": 0, "flip": false, "anim": "none" },
+              { "char": "🥄", "x": 54, "y": 55, "scale": 0.9, "rotate": -18, "flip": false, "anim": "spin" },
+              { "char": "✨", "x": 70, "y": 42, "scale": 0.7, "rotate": 0, "flip": false, "anim": "float" }
+            ],
+            "bubble": { "anchor": 0, "text": "Stir, stir, stir!" }
+          },
+          {
+            "bg": "sky",
+            "mood": "surprised",
+            "climax": true,
+            "fx": "focus",
+            "zoom": { "type": "shakezoom", "scale": 1.35, "originX": 55, "originY": 58 },
+            "sfx": [
+              { "text": "Fizz!", "x": 70, "y": 30, "size": 12, "rotate": -8, "color": "#38bdf8" }
+            ],
+            "caption": "An instant reaction makes the drink fizzy.",
+            "sprites": [
+              { "char": "👦", "x": 28, "y": 70, "scale": 1.1, "rotate": -4, "flip": false, "anim": "jump" },
+              { "char": "🥤", "x": 52, "y": 72, "scale": 1.2, "rotate": 0, "flip": false, "anim": "bounce" },
+              { "char": "🫧", "x": 55, "y": 43, "scale": 1.0, "rotate": 0, "flip": false, "anim": "float" },
+              { "char": "⚡", "x": 76, "y": 44, "scale": 0.8, "rotate": 8, "flip": false, "anim": "shiver" }
+            ],
+            "bubble": { "anchor": 0, "text": "That was instant!" }
+          },
+          {
+            "bg": "room",
+            "mood": "curious",
+            "zoom": { "type": "pan", "scale": 1.25, "originX": 58, "originY": 62 },
+            "caption": "They watch the reaction and talk about gas bubbles.",
+            "sprites": [
+              { "char": "🧪", "x": 28, "y": 65, "scale": 1.0, "rotate": -8, "flip": false, "anim": "shiver" },
+              { "char": "🫧", "x": 48, "y": 42, "scale": 1.1, "rotate": 0, "flip": false, "anim": "float" },
+              { "char": "💭", "x": 68, "y": 36, "scale": 0.8, "rotate": 0, "flip": false, "anim": "float" },
+              { "char": "👧", "x": 76, "y": 70, "scale": 1.0, "rotate": 0, "flip": true, "anim": "sway" }
+            ],
+            "bubble": { "anchor": 3, "text": "The reaction makes bubbles!" }
+          },
+          {
+            "bg": "forest",
+            "mood": "happy",
+            "zoom": { "type": "kenburns", "scale": 1.25, "originX": 52, "originY": 58 },
+            "caption": "Their fizzy treat is ready for the picnic.",
+            "sprites": [
+              { "char": "👧", "x": 28, "y": 70, "scale": 1.0, "rotate": -4, "flip": false, "anim": "bounce" },
+              { "char": "👦", "x": 48, "y": 70, "scale": 1.0, "rotate": 4, "flip": true, "anim": "bounce" },
+              { "char": "🥤", "x": 66, "y": 70, "scale": 1.1, "rotate": 0, "flip": false, "anim": "float" },
+              { "char": "🌞", "x": 78, "y": 28, "scale": 0.8, "rotate": 0, "flip": false, "anim": "none" }
+            ],
+            "bubble": { "anchor": 1, "text": "Our fizzy treat is done!" }
+          }
+        ]
+      }
+    },
+    {
+      "id": "s_passage",
+      "type": "passage_read",
+      "params": {
+        "trackLabel": "Track 12",
+        "title": "Let's Make a Fizzy Treat!",
+        "coverVisual": "🥤",
+        "curiosityQuestion": "Why does a homemade soda become fizzy?",
+        "defaultChunkSetId": "short",
+        "processSteps": [
+          {
+            "id": "picnic",
+            "label": "Picnic day",
+            "caption": "A fizzy drink can make a picnic feel more special.",
+            "visual": "🧺"
+          },
+          {
+            "id": "citric_acid",
+            "label": "Citric acid",
+            "caption": "Citric acid mixes into water first.",
+            "visual": "🍋"
+          },
+          {
+            "id": "baking_soda",
+            "label": "Baking soda",
+            "caption": "Baking soda reacts with the acid.",
+            "visual": "🥄"
+          },
+          {
+            "id": "bubbles",
+            "label": "Bubbles",
+            "caption": "The reaction makes carbon dioxide bubbles.",
+            "visual": "🫧"
+          },
+          {
+            "id": "flavor",
+            "label": "Flavor",
+            "caption": "Sugar and fruit flavorings make the drink tasty.",
+            "visual": "🍓"
+          },
+          {
+            "id": "pressure",
+            "label": "Pressure",
+            "caption": "In canned soda, pressure keeps CO2 in the liquid.",
+            "visual": "🥫"
+          }
+        ],
+        "exploreItems": [
+          {
+            "id": "fizzy_drink",
+            "label": "fizzy drink",
+            "sentenceIds": ["s4", "s21"],
+            "searchContext": "A fizzy drink has bubbles that rise quickly and make a fizzy sound.",
+            "parentPrompt": "Give parent-child conversation questions about what a fizzy drink looks, sounds, and feels like.",
+            "visual": "🥤"
+          },
+          {
+            "id": "citric_acid",
+            "label": "citric acid",
+            "sentenceIds": ["s8", "s9", "s17", "s18"],
+            "searchContext": "Citric acid is a safe food-grade acid used in some drinks and candies; lemon juice and vinegar are acids too.",
+            "parentPrompt": "Explain citric acid to a child using lemons and sour taste as examples.",
+            "visual": "🍋"
+          },
+          {
+            "id": "baking_soda",
+            "label": "baking soda",
+            "sentenceIds": ["s8", "s10", "s16", "s17", "s18", "s22"],
+            "searchContext": "Baking soda reacts with an acid and can make carbon dioxide gas bubbles.",
+            "parentPrompt": "Suggest a safe parent-led way to observe baking soda reacting with lemon juice or vinegar.",
+            "visual": "🥄"
+          },
+          {
+            "id": "carbon_dioxide",
+            "label": "carbon dioxide",
+            "sentenceIds": ["s19", "s22", "s23", "s24", "s26"],
+            "searchContext": "Carbon dioxide gas is the gas that makes soda bubbles.",
+            "parentPrompt": "Explain carbon dioxide bubbles in soda in simple words for a child.",
+            "visual": "🫧"
+          },
+          {
+            "id": "high_pressure",
+            "label": "high pressure",
+            "sentenceIds": ["s23", "s24", "s25", "s27", "s28"],
+            "searchContext": "Soda factories dissolve CO2 in liquid under high pressure; opening the can releases the pressure.",
+            "parentPrompt": "Recommend kid-friendly video search terms for how carbonation works in soda cans.",
+            "visual": "🥫"
+          }
+        ],
+        "paragraphs": [
+          {
+            "id": "p1",
+            "title": "Picnic and Soda",
+            "overlookQuestion": "What would make the picnic day more perfect?",
+            "overlookHintKo": "소풍날에 무엇이 있으면 더 완벽하다고 했는지 찾아보세요.",
+            "sentences": [
+              {
+                "id": "s1",
+                "text": "It's a perfect day for a picnic.",
+                "chunks": [
+                  {
+                    "id": "s1_c1",
+                    "text": "It's a perfect day",
+                    "role": "setting",
+                    "decodeHint": "먼저 어떤 날인지 잡습니다.",
+                    "meaningKo": "완벽한 날이에요"
+                  },
+                  {
+                    "id": "s1_c2",
+                    "text": "for a picnic.",
+                    "role": "purpose",
+                    "decodeHint": "for는 목적이나 용도를 알려줍니다.",
+                    "meaningKo": "소풍을 하기에"
+                  }
+                ]
+              },
+              {
+                "id": "s2",
+                "text": "There is lots of yummy food, sunshine, and fun games.",
+                "chunks": [
+                  {
+                    "id": "s2_c1",
+                    "text": "There is lots of",
+                    "role": "existence",
+                    "decodeHint": "There is는 '있다'로 시작합니다.",
+                    "meaningKo": "많이 있어요"
+                  },
+                  {
+                    "id": "s2_c2",
+                    "text": "yummy food, sunshine, and fun games.",
+                    "role": "list",
+                    "decodeHint": "쉼표와 and로 이어진 목록입니다.",
+                    "meaningKo": "맛있는 음식, 햇빛, 재미있는 게임이"
+                  }
+                ]
+              },
+              {
+                "id": "s3",
+                "text": "What would make this day more perfect?",
+                "chunks": [
+                  {
+                    "id": "s3_c1",
+                    "text": "What would make",
+                    "role": "question frame",
+                    "decodeHint": "무엇이 만들까? 라는 질문 틀입니다.",
+                    "meaningKo": "무엇이 만들까요"
+                  },
+                  {
+                    "id": "s3_c2",
+                    "text": "this day more perfect?",
+                    "role": "result",
+                    "decodeHint": "more perfect는 '더 완벽하게'입니다.",
+                    "meaningKo": "이 날을 더 완벽하게"
+                  }
+                ]
+              },
+              {
+                "id": "s4",
+                "text": "A cold glass of a fizzy drink!",
+                "chunks": [
+                  {
+                    "id": "s4_c1",
+                    "text": "A cold glass",
+                    "role": "thing",
+                    "decodeHint": "차가운 한 잔을 떠올립니다.",
+                    "meaningKo": "차가운 한 잔"
+                  },
+                  {
+                    "id": "s4_c2",
+                    "text": "of a fizzy drink!",
+                    "role": "what kind",
+                    "decodeHint": "of 뒤가 어떤 음료인지 알려줍니다.",
+                    "meaningKo": "톡톡거리는 음료의"
+                  }
+                ]
+              },
+              {
+                "id": "s5",
+                "text": "It could be cola, lemonade, or sparkling juice.",
+                "chunks": [
+                  {
+                    "id": "s5_c1",
+                    "text": "It could be",
+                    "role": "possibility",
+                    "decodeHint": "could be는 '~일 수도 있다'입니다.",
+                    "meaningKo": "그것은 될 수 있어요"
+                  },
+                  {
+                    "id": "s5_c2",
+                    "text": "cola, lemonade, or sparkling juice.",
+                    "role": "examples",
+                    "decodeHint": "or는 여러 예시 중 하나를 연결합니다.",
+                    "meaningKo": "콜라, 레모네이드, 탄산 주스가"
+                  }
+                ]
+              },
+              {
+                "id": "s6",
+                "text": "Better yet, you could try to make your own soda.",
+                "chunks": [
+                  {
+                    "id": "s6_c1",
+                    "text": "Better yet,",
+                    "role": "better idea",
+                    "decodeHint": "더 좋은 생각을 꺼내는 표현입니다.",
+                    "meaningKo": "더 좋은 것은"
+                  },
+                  {
+                    "id": "s6_c2",
+                    "text": "you could try to make",
+                    "role": "action",
+                    "decodeHint": "try to make는 '만들어 보려고 하다'입니다.",
+                    "meaningKo": "너는 만들어 볼 수 있어요"
+                  },
+                  {
+                    "id": "s6_c3",
+                    "text": "your own soda.",
+                    "role": "object",
+                    "decodeHint": "your own은 '너만의'라는 뜻입니다.",
+                    "meaningKo": "너만의 소다를"
+                  }
+                ]
+              },
+              {
+                "id": "s7",
+                "text": "Take a look at the simple steps below.",
+                "chunks": [
+                  {
+                    "id": "s7_c1",
+                    "text": "Take a look at",
+                    "role": "command",
+                    "decodeHint": "살펴보라는 부드러운 명령입니다.",
+                    "meaningKo": "살펴보세요"
+                  },
+                  {
+                    "id": "s7_c2",
+                    "text": "the simple steps below.",
+                    "role": "object",
+                    "decodeHint": "below는 아래에 있는 내용을 가리킵니다.",
+                    "meaningKo": "아래의 간단한 단계들을"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "title": "What You Need",
+            "overlookQuestion": "What ingredients and tools do you need?",
+            "overlookHintKo": "필요한 재료와 도구를 목록으로 찾아보세요.",
+            "sentences": [
+              {
+                "id": "s8",
+                "text": "You need food-grade citric acid, baking soda, water, sugar, ice, flavorings, and a spoon.",
+                "chunks": [
+                  {
+                    "id": "s8_c1",
+                    "text": "You need",
+                    "role": "main action",
+                    "decodeHint": "필요한 것을 소개합니다.",
+                    "meaningKo": "너는 필요해요"
+                  },
+                  {
+                    "id": "s8_c2",
+                    "text": "food-grade citric acid, baking soda, water, sugar, ice, flavorings,",
+                    "role": "ingredients",
+                    "decodeHint": "재료 목록입니다.",
+                    "meaningKo": "식품용 구연산, 베이킹소다, 물, 설탕, 얼음, 향료가"
+                  },
+                  {
+                    "id": "s8_c3",
+                    "text": "and a spoon.",
+                    "role": "tool",
+                    "decodeHint": "마지막 도구가 and로 붙습니다.",
+                    "meaningKo": "그리고 숟가락이"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p3",
+            "title": "How to Make It",
+            "overlookQuestion": "Which ingredient makes more bubbles?",
+            "overlookHintKo": "거품을 더 만들고 싶으면 무엇을 더 넣으라고 했는지 보세요.",
+            "sentences": [
+              {
+                "id": "s9",
+                "text": "Add 1 teaspoon of citric acid to a cup of water and stir until it dissolves in the water.",
+                "chunks": [
+                  {
+                    "id": "s9_c1",
+                    "text": "Add 1 teaspoon of citric acid",
+                    "role": "step action",
+                    "decodeHint": "무엇을 넣는지 먼저 읽습니다.",
+                    "meaningKo": "구연산 1티스푼을 넣으세요"
+                  },
+                  {
+                    "id": "s9_c2",
+                    "text": "to a cup of water",
+                    "role": "where",
+                    "decodeHint": "to는 넣는 위치를 알려줍니다.",
+                    "meaningKo": "물 한 컵에"
+                  },
+                  {
+                    "id": "s9_c3",
+                    "text": "and stir until it dissolves in the water.",
+                    "role": "next action",
+                    "decodeHint": "until은 '~할 때까지'입니다.",
+                    "meaningKo": "그리고 물에 녹을 때까지 저으세요"
+                  }
+                ]
+              },
+              {
+                "id": "s10",
+                "text": "Add 1 teaspoon of baking soda and stir again.",
+                "chunks": [
+                  {
+                    "id": "s10_c1",
+                    "text": "Add 1 teaspoon of baking soda",
+                    "role": "step action",
+                    "decodeHint": "두 번째로 넣는 재료입니다.",
+                    "meaningKo": "베이킹소다 1티스푼을 넣으세요"
+                  },
+                  {
+                    "id": "s10_c2",
+                    "text": "and stir again.",
+                    "role": "next action",
+                    "decodeHint": "again은 다시라는 뜻입니다.",
+                    "meaningKo": "그리고 다시 저으세요"
+                  }
+                ]
+              },
+              {
+                "id": "s11",
+                "text": "You should see bubbles rising to the top.",
+                "chunks": [
+                  {
+                    "id": "s11_c1",
+                    "text": "You should see",
+                    "role": "expected result",
+                    "decodeHint": "should see는 보게 될 것이라는 뜻입니다.",
+                    "meaningKo": "너는 보게 될 거예요"
+                  },
+                  {
+                    "id": "s11_c2",
+                    "text": "bubbles rising to the top.",
+                    "role": "what happens",
+                    "decodeHint": "rising은 위로 올라가는 동작입니다.",
+                    "meaningKo": "거품들이 위로 올라오는 것을"
+                  }
+                ]
+              },
+              {
+                "id": "s12",
+                "text": "Add a small amount of sugar and your favorite flavorings.",
+                "chunks": [
+                  {
+                    "id": "s12_c1",
+                    "text": "Add a small amount of sugar",
+                    "role": "step action",
+                    "decodeHint": "a small amount of는 '소량의'입니다.",
+                    "meaningKo": "소량의 설탕을 넣으세요"
+                  },
+                  {
+                    "id": "s12_c2",
+                    "text": "and your favorite flavorings.",
+                    "role": "extra item",
+                    "decodeHint": "좋아하는 향료도 같이 넣습니다.",
+                    "meaningKo": "그리고 좋아하는 향료를"
+                  }
+                ]
+              },
+              {
+                "id": "s13",
+                "text": "Taste and add more if you like.",
+                "chunks": [
+                  {
+                    "id": "s13_c1",
+                    "text": "Taste and add more",
+                    "role": "step action",
+                    "decodeHint": "맛보고 더 넣는 동작입니다.",
+                    "meaningKo": "맛보고 더 넣으세요"
+                  },
+                  {
+                    "id": "s13_c2",
+                    "text": "if you like.",
+                    "role": "condition",
+                    "decodeHint": "if는 조건입니다.",
+                    "meaningKo": "원한다면"
+                  }
+                ]
+              },
+              {
+                "id": "s14",
+                "text": "Put some ice into the glass to make it cold.",
+                "chunks": [
+                  {
+                    "id": "s14_c1",
+                    "text": "Put some ice into the glass",
+                    "role": "step action",
+                    "decodeHint": "얼음을 어디에 넣는지 봅니다.",
+                    "meaningKo": "얼음을 유리잔에 넣으세요"
+                  },
+                  {
+                    "id": "s14_c2",
+                    "text": "to make it cold.",
+                    "role": "purpose",
+                    "decodeHint": "to는 목적을 알려줍니다.",
+                    "meaningKo": "그것을 차갑게 만들기 위해"
+                  }
+                ]
+              },
+              {
+                "id": "s15",
+                "text": "If you like your soda sweet, put in more sugar.",
+                "chunks": [
+                  {
+                    "id": "s15_c1",
+                    "text": "If you like your soda sweet,",
+                    "role": "condition",
+                    "decodeHint": "if절이 먼저 나옵니다.",
+                    "meaningKo": "소다를 달게 좋아한다면"
+                  },
+                  {
+                    "id": "s15_c2",
+                    "text": "put in more sugar.",
+                    "role": "advice",
+                    "decodeHint": "조건 뒤에 할 일이 나옵니다.",
+                    "meaningKo": "설탕을 더 넣으세요"
+                  }
+                ]
+              },
+              {
+                "id": "s16",
+                "text": "If you want more bubbles, just add more baking soda.",
+                "chunks": [
+                  {
+                    "id": "s16_c1",
+                    "text": "If you want more bubbles,",
+                    "role": "condition",
+                    "decodeHint": "원하는 결과가 먼저 나옵니다.",
+                    "meaningKo": "거품을 더 원한다면"
+                  },
+                  {
+                    "id": "s16_c2",
+                    "text": "just add more baking soda.",
+                    "role": "advice",
+                    "decodeHint": "just는 간단히 하라는 느낌입니다.",
+                    "meaningKo": "그냥 베이킹소다를 더 넣으세요"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p4",
+            "title": "Why Is It Bubbly?",
+            "overlookQuestion": "What gas makes the bubbles?",
+            "overlookHintKo": "거품의 정체가 어떤 기체인지 찾아보세요.",
+            "sentences": [
+              {
+                "id": "s17",
+                "text": "Bubbles formed when you added baking soda to citric acid.",
+                "chunks": [
+                  {
+                    "id": "s17_c1",
+                    "text": "Bubbles formed",
+                    "role": "result",
+                    "decodeHint": "결과가 먼저 나옵니다.",
+                    "meaningKo": "거품이 생겼어요"
+                  },
+                  {
+                    "id": "s17_c2",
+                    "text": "when you added baking soda to citric acid.",
+                    "role": "time",
+                    "decodeHint": "when은 언제 그런 일이 생겼는지 말합니다.",
+                    "meaningKo": "베이킹소다를 구연산에 넣었을 때"
+                  }
+                ]
+              },
+              {
+                "id": "s18",
+                "text": "When baking soda and citric acid mix together, it causes an instant reaction that produces gas bubbles.",
+                "chunks": [
+                  {
+                    "id": "s18_c1",
+                    "text": "When baking soda and citric acid mix together,",
+                    "role": "condition",
+                    "decodeHint": "두 물질이 섞이는 조건입니다.",
+                    "meaningKo": "베이킹소다와 구연산이 함께 섞이면"
+                  },
+                  {
+                    "id": "s18_c2",
+                    "text": "it causes an instant reaction",
+                    "role": "result",
+                    "decodeHint": "cause는 어떤 결과를 일으킨다는 뜻입니다.",
+                    "meaningKo": "그것은 즉각적인 반응을 일으켜요"
+                  },
+                  {
+                    "id": "s18_c3",
+                    "text": "that produces gas bubbles.",
+                    "role": "details",
+                    "decodeHint": "that은 앞의 reaction을 설명합니다.",
+                    "meaningKo": "기체 거품을 만드는"
+                  }
+                ]
+              },
+              {
+                "id": "s19",
+                "text": "Those bubbles are actually carbon dioxide gas.",
+                "chunks": [
+                  {
+                    "id": "s19_c1",
+                    "text": "Those bubbles are actually",
+                    "role": "identity",
+                    "decodeHint": "거품의 정체를 알려줍니다.",
+                    "meaningKo": "그 거품들은 사실"
+                  },
+                  {
+                    "id": "s19_c2",
+                    "text": "carbon dioxide gas.",
+                    "role": "answer",
+                    "decodeHint": "carbon dioxide는 이산화탄소입니다.",
+                    "meaningKo": "이산화탄소 기체예요"
+                  }
+                ]
+              },
+              {
+                "id": "s20",
+                "text": "You can find the same bubbles when you open a can of soda.",
+                "chunks": [
+                  {
+                    "id": "s20_c1",
+                    "text": "You can find the same bubbles",
+                    "role": "main idea",
+                    "decodeHint": "같은 거품을 어디서 보는지 이어서 봅니다.",
+                    "meaningKo": "같은 거품을 찾을 수 있어요"
+                  },
+                  {
+                    "id": "s20_c2",
+                    "text": "when you open a can of soda.",
+                    "role": "time",
+                    "decodeHint": "소다 캔을 열 때입니다.",
+                    "meaningKo": "소다 캔을 열 때"
+                  }
+                ]
+              },
+              {
+                "id": "s21",
+                "text": "You hear a loud, fizzy noise as the bubbles rise quickly.",
+                "chunks": [
+                  {
+                    "id": "s21_c1",
+                    "text": "You hear a loud, fizzy noise",
+                    "role": "sense",
+                    "decodeHint": "듣는 소리를 묘사합니다.",
+                    "meaningKo": "크고 톡톡거리는 소리를 들어요"
+                  },
+                  {
+                    "id": "s21_c2",
+                    "text": "as the bubbles rise quickly.",
+                    "role": "when",
+                    "decodeHint": "as는 동시에 일어나는 일을 말합니다.",
+                    "meaningKo": "거품이 빠르게 올라오면서"
+                  }
+                ]
+              },
+              {
+                "id": "s22",
+                "text": "Baking soda reacts with an acid, such as lemon juice or vinegar, to form carbon dioxide gas.",
+                "chunks": [
+                  {
+                    "id": "s22_c1",
+                    "text": "Baking soda reacts with an acid,",
+                    "role": "science action",
+                    "decodeHint": "reacts with는 '~와 반응한다'입니다.",
+                    "meaningKo": "베이킹소다는 산과 반응해요"
+                  },
+                  {
+                    "id": "s22_c2",
+                    "text": "such as lemon juice or vinegar,",
+                    "role": "examples",
+                    "decodeHint": "such as는 예시를 소개합니다.",
+                    "meaningKo": "레몬즙이나 식초 같은"
+                  },
+                  {
+                    "id": "s22_c3",
+                    "text": "to form carbon dioxide gas.",
+                    "role": "purpose/result",
+                    "decodeHint": "to form은 만들어진 결과를 보여줍니다.",
+                    "meaningKo": "이산화탄소 기체를 만들어요"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p5",
+            "title": "Read a Diagram: Bubbles in Soda",
+            "overlookQuestion": "What happens to CO2 when you open a soda can?",
+            "overlookHintKo": "캔을 열면 압력과 CO2가 어떻게 변하는지 순서대로 보세요.",
+            "sentences": [
+              {
+                "id": "s23",
+                "text": "The soda factory dissolves CO2 in liquid under high pressure for a fizzy taste.",
+                "chunks": [
+                  {
+                    "id": "s23_c1",
+                    "text": "The soda factory dissolves CO2",
+                    "role": "factory action",
+                    "decodeHint": "공장이 CO2를 어떻게 하는지 봅니다.",
+                    "meaningKo": "소다 공장은 CO2를 녹여요"
+                  },
+                  {
+                    "id": "s23_c2",
+                    "text": "in liquid under high pressure",
+                    "role": "where/how",
+                    "decodeHint": "in liquid와 under high pressure를 묶어 읽습니다.",
+                    "meaningKo": "높은 압력 아래 액체 속에"
+                  },
+                  {
+                    "id": "s23_c3",
+                    "text": "for a fizzy taste.",
+                    "role": "purpose",
+                    "decodeHint": "for는 목적입니다.",
+                    "meaningKo": "톡 쏘는 맛을 위해"
+                  }
+                ]
+              },
+              {
+                "id": "s24",
+                "text": "High pressure inside the can keeps CO2 dissolved in the liquid.",
+                "chunks": [
+                  {
+                    "id": "s24_c1",
+                    "text": "High pressure inside the can",
+                    "role": "subject",
+                    "decodeHint": "주어가 길지만 '캔 안의 높은 압력'입니다.",
+                    "meaningKo": "캔 안의 높은 압력은"
+                  },
+                  {
+                    "id": "s24_c2",
+                    "text": "keeps CO2 dissolved in the liquid.",
+                    "role": "effect",
+                    "decodeHint": "keeps는 어떤 상태로 유지한다는 뜻입니다.",
+                    "meaningKo": "CO2가 액체 속에 녹아 있게 유지해요"
+                  }
+                ]
+              },
+              {
+                "id": "s25",
+                "text": "When you open the can, the pressure is released.",
+                "chunks": [
+                  {
+                    "id": "s25_c1",
+                    "text": "When you open the can,",
+                    "role": "time",
+                    "decodeHint": "캔을 열 때입니다.",
+                    "meaningKo": "캔을 열면"
+                  },
+                  {
+                    "id": "s25_c2",
+                    "text": "the pressure is released.",
+                    "role": "result",
+                    "decodeHint": "released는 풀려난다는 뜻입니다.",
+                    "meaningKo": "압력이 풀려요"
+                  }
+                ]
+              },
+              {
+                "id": "s26",
+                "text": "CO2 is free to escape into the air.",
+                "chunks": [
+                  {
+                    "id": "s26_c1",
+                    "text": "CO2 is free",
+                    "role": "state",
+                    "decodeHint": "free는 자유롭게 된 상태입니다.",
+                    "meaningKo": "CO2는 자유로워져요"
+                  },
+                  {
+                    "id": "s26_c2",
+                    "text": "to escape into the air.",
+                    "role": "action",
+                    "decodeHint": "escape는 빠져나가다입니다.",
+                    "meaningKo": "공기 중으로 빠져나갈 수 있게"
+                  }
+                ]
+              },
+              {
+                "id": "s27",
+                "text": "More CO2 is dissolved in the drink under high pressure.",
+                "chunks": [
+                  {
+                    "id": "s27_c1",
+                    "text": "More CO2 is dissolved",
+                    "role": "diagram fact",
+                    "decodeHint": "더 많은 CO2가 녹아 있다는 뜻입니다.",
+                    "meaningKo": "더 많은 CO2가 녹아 있어요"
+                  },
+                  {
+                    "id": "s27_c2",
+                    "text": "in the drink under high pressure.",
+                    "role": "condition",
+                    "decodeHint": "높은 압력 아래 음료 속입니다.",
+                    "meaningKo": "높은 압력 아래 음료 속에"
+                  }
+                ]
+              },
+              {
+                "id": "s28",
+                "text": "CO2 escapes out of the drink under released pressure.",
+                "chunks": [
+                  {
+                    "id": "s28_c1",
+                    "text": "CO2 escapes out of the drink",
+                    "role": "diagram action",
+                    "decodeHint": "CO2가 음료 밖으로 빠져나갑니다.",
+                    "meaningKo": "CO2가 음료 밖으로 빠져나가요"
+                  },
+                  {
+                    "id": "s28_c2",
+                    "text": "under released pressure.",
+                    "role": "condition",
+                    "decodeHint": "압력이 풀린 상태입니다.",
+                    "meaningKo": "압력이 풀린 상태에서"
+                  }
+                ]
+              },
+              {
+                "id": "s29",
+                "text": "CO2 is being released from the liquid.",
+                "chunks": [
+                  {
+                    "id": "s29_c1",
+                    "text": "CO2 is being released",
+                    "role": "diagram action",
+                    "decodeHint": "be being p.p.는 지금 진행 중인 수동 표현입니다.",
+                    "meaningKo": "CO2가 방출되고 있어요"
+                  },
+                  {
+                    "id": "s29_c2",
+                    "text": "from the liquid.",
+                    "role": "source",
+                    "decodeHint": "어디에서 나오는지 말합니다.",
+                    "meaningKo": "액체에서"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "s_quiz",
+      "type": "simple_question",
+      "params": {
+        "questionIds": ["q_treat_meaning", "q_soda_steps", "q_open_can"]
+      }
+    }
+  ]
+}
