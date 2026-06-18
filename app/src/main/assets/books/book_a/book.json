@@ -8,6 +8,7 @@
     { "unitId": "u01_restaurant", "title": "At a Restaurant", "file": "units/u01_restaurant.json" },
     { "unitId": "u02_butter", "title": "How Butter Is Made", "file": "units/u02_butter.json" },
     { "unitId": "u03_relay_race", "title": "The Relay Race Mix-Up", "file": "units/u03_relay_race.json" },
-    { "unitId": "u04_fizzy_treat", "title": "Let's Make a Fizzy Treat!", "file": "units/u04_fizzy_treat.json" }
+    { "unitId": "u04_fizzy_treat", "title": "Let's Make a Fizzy Treat!", "file": "units/u04_fizzy_treat.json" },
+    { "unitId": "ant3_234687", "title": "Ant City", "file": "units/ant3_234687.json" }
   ]
 }

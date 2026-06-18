@@ -1,8 +1,12 @@
 package com.seoin.emojienglish.master
 
+import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
+import android.database.Cursor
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import android.util.Base64
 import android.webkit.WebView
 import androidx.lifecycle.ViewModel
@@ -17,7 +21,10 @@ import com.seoin.emojienglish.voice.WebViewPictureGateway
 import com.seoin.emojienglish.voice.WebViewVoiceGateway
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.delay
@@ -75,6 +82,7 @@ class AuthoringViewModel @Inject constructor(
 
     private var passagePhotoUris: List<Uri> = emptyList()
     private var wordPhotoUris: List<Uri> = emptyList()
+    private var activeStepJob: Job? = null
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; prettyPrint = true }
 
@@ -86,6 +94,20 @@ class AuthoringViewModel @Inject constructor(
     private data class PassageJsonBatch(
         val startNumber: Int,
         val sentences: List<String>,
+    )
+
+    private data class PassageDownloadResult(
+        val downloads: List<String>,
+        val finalJsonText: String,
+    )
+
+    private data class ImageMeta(
+        val uri: Uri,
+        val id: Long,
+        val modified: Long,
+        val bucketId: String?,
+        val relativePath: String?,
+        val displayName: String?,
     )
 
     init {
@@ -203,6 +225,60 @@ class AuthoringViewModel @Inject constructor(
         }
     }
 
+    fun addPassagePhotoRange(uris: List<Uri>) {
+        addPhotoRange(uris, isPassage = true)
+    }
+
+    fun addWordPhotoRange(uris: List<Uri>) {
+        addPhotoRange(uris, isPassage = false)
+    }
+
+    fun showPhotoRangePermissionDenied() {
+        _state.update { it.copy(error = "사진 범위 선택은 사진 읽기 권한이 필요합니다.") }
+    }
+
+    private fun addPhotoRange(anchors: List<Uri>, isPassage: Boolean) {
+        if (_state.value.running) return
+        if (anchors.size != 2) {
+            _state.update { it.copy(error = "범위 선택은 시작/끝 사진 2장을 골라야 합니다.") }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(error = null, status = "사진 범위 찾는 중…") }
+            runCatching {
+                withContext(Dispatchers.IO) { resolvePhotoRange(anchors) }
+            }.onSuccess { range ->
+                if (isPassage) {
+                    val before = passagePhotoUris.size
+                    val merged = mergePhotoUris(passagePhotoUris, range)
+                    passagePhotoUris = merged
+                    val added = merged.size - before
+                    _state.update {
+                        it.copy(
+                            passagePhotoCount = merged.size,
+                            error = null,
+                            status = "지문사진 범위 ${range.size}장 확인 · 누적 ${merged.size}장(${added.coerceAtLeast(0)}장 추가).",
+                        )
+                    }
+                } else {
+                    val before = wordPhotoUris.size
+                    val merged = mergePhotoUris(wordPhotoUris, range)
+                    wordPhotoUris = merged
+                    val added = merged.size - before
+                    _state.update {
+                        it.copy(
+                            wordPhotoCount = merged.size,
+                            error = null,
+                            status = "단어사진 범위 ${range.size}장 확인 · 누적 ${merged.size}장(${added.coerceAtLeast(0)}장 추가).",
+                        )
+                    }
+                }
+            }.onFailure { e ->
+                _state.update { it.copy(error = e.message ?: "사진 범위 선택 실패") }
+            }
+        }
+    }
+
     fun setBookId(v: String) = _state.update { it.copy(bookId = slugId(v).ifBlank { "book_a" }) }
     fun setBookTitle(v: String) = _state.update { it.copy(bookTitle = v) }
     fun setUnitId(v: String) = _state.update { it.copy(unitId = slugId(v)) }
@@ -309,17 +385,18 @@ class AuthoringViewModel @Inject constructor(
                 }
                 if (sentences.isEmpty()) error("문장 추출 실패.")
                 _state.update { it.copy(sentences = sentences, status = "자동 ① 지문 문장 ${sentences.size}개 → 지문 JSON 생성 중…") }
-                if (TEMP_STOP_AFTER_PASSAGE_JSON_DOWNLOAD) {
-                    val downloads = downloadPassageParamsFilesForReview(sentences, s)
+                if (PASSAGE_JSON_USE_DOWNLOAD_FLOW) {
+                    val downloadResult = downloadPassageParamsFilesForReview(sentences, s)
+                    passageParams = parsePassageParams(downloadResult.finalJsonText)
                     _state.update {
                         it.copy(
                             sentences = sentences,
-                            status = "지문 JSON 다운로드 확인 완료(${downloads.size}개). 임시 설정으로 단원 저장/다음 단계는 여기서 중단했습니다.",
+                            status = "지문 JSON 다운로드 확인 완료(${downloadResult.downloads.size}개) → 단어/그림 생성 계속 진행 중…",
                         )
                     }
-                    return@runStep
+                } else {
+                    passageParams = generatePassageParams(sentences, s)
                 }
-                passageParams = generatePassageParams(sentences, s)
             }
 
             var words: List<String> = emptyList()
@@ -341,31 +418,30 @@ class AuthoringViewModel @Inject constructor(
             }
 
             if (storyParams != null) {
-                val side = gridSide(words.size)
-                prepareFreshChat("auto-grid-image")
-                val beforeImages = gateway.largeAssistantImageCount()
-                if (!gateway.sendOnly(gridPrompt(words, side))) {
-                    error("그리드 그림 요청 전송 실패(로그인/작성창 확인).")
-                }
-                val bytes = awaitGridImageBytes(beforeImages + 1)
-                saveImageDownload(s, GRID_FILE, bytes)
-                writer.writeImage(s.bookId, s.unitId, GRID_FILE, bytes)
-                lessonRepo.refresh()
+                val imageBytes = requestAndSaveGridImage(words, s, "auto-grid-image")
                 _state.update {
-                    it.copy(status = "전체 자동 완료: ${unit.steps.size}개 스텝 + grid.png 저장됨(${bytes.size}B). 책에서 바로 확인하세요.")
+                    it.copy(status = "전체 자동 완료: ${unit.steps.size}개 스텝 + grid.png 저장됨(${imageBytes.size}B). 책에서 바로 확인하세요.")
                 }
             }
+        }
+    }
+
+    fun cancelCurrentWork() {
+        val job = activeStepJob
+        if (job?.isActive == true) {
+            _state.update { it.copy(status = "중지 요청됨…", error = null) }
+            job.cancel(CancellationException("manual authoring stop"))
         }
     }
 
     fun runResponseMenuProbe() {
         val current = _state.value
         if (current.running) return
-        runStep("Pro 응답 완료 감지 테스트…") {
+        runStep("높음 응답 완료 감지 테스트…") {
             prepareFreshChat("response-menu-probe")
-            val proSelected = gateway.selectProExpansionMode()
+            val highSelected = gateway.selectHighMode()
             _state.update {
-                it.copy(status = "대기테스트: Pro 확장=${if (proSelected) "선택됨" else "미확인"} · 더미 요청 전송 중…")
+                it.copy(status = "대기테스트: 높음=${if (highSelected) "선택됨" else "미확인"} · 더미 요청 전송 중…")
             }
             val response = gateway.query(
                 "Give a compact but thoughtful JSON design plan for a child-friendly English passage reader. " +
@@ -396,18 +472,15 @@ class AuthoringViewModel @Inject constructor(
             if (sentences.isEmpty()) error("문장 추출 실패.")
             _state.update { it.copy(sentences = sentences, status = "자동 ① 문장 ${sentences.size}개 → 지문 JSON 생성 중…") }
 
-            if (TEMP_STOP_AFTER_PASSAGE_JSON_DOWNLOAD) {
-                val downloads = downloadPassageParamsFilesForReview(sentences, s)
+            val params = if (PASSAGE_JSON_USE_DOWNLOAD_FLOW) {
+                val downloadResult = downloadPassageParamsFilesForReview(sentences, s)
                 _state.update {
-                    it.copy(
-                        sentences = sentences,
-                        status = "지문 JSON 다운로드 확인 완료(${downloads.size}개). 임시 설정으로 passage_read 저장은 중단했습니다.",
-                    )
+                    it.copy(sentences = sentences, status = "지문 JSON 다운로드 확인 완료(${downloadResult.downloads.size}개) → passage_read 저장 중…")
                 }
-                return@runStep
+                parsePassageParams(downloadResult.finalJsonText)
+            } else {
+                generatePassageParams(sentences, s)
             }
-
-            val params = generatePassageParams(sentences, s)
             val unit = savePassageUnit(params, sentences, s)
             _state.update {
                 it.copy(
@@ -432,8 +505,12 @@ class AuthoringViewModel @Inject constructor(
                 it.copy(
                     savedUnit = true,
                     unitJsonPreview = json.encodeToString(LessonUnit.serializer(), unit),
-                    status = "저장됨 → 앱에 바로 보입니다. 이제 ‘③ 그림(그리드)’.",
+                    status = "저장됨 → 그리드 그림 자동 생성/저장 중…",
                 )
+            }
+            val imageBytes = requestAndSaveGridImage(s.words, s, "json-grid-image")
+            _state.update {
+                it.copy(status = "단어 콘텐츠 완료: story_comic + grid.png 저장됨(${imageBytes.size}B). 책에서 바로 확인하세요.")
             }
         }
     }
@@ -445,14 +522,15 @@ class AuthoringViewModel @Inject constructor(
         val s = ensureUnitId(current)
         if (s.sentences.isEmpty()) { _state.update { it.copy(error = "먼저 문장을 추출하세요(사진/텍스트).") }; return }
         runStep("② 지문 JSON 생성 요청 → 청크 수신 준비… (${s.sentences.size}개 문장)") {
-            if (TEMP_STOP_AFTER_PASSAGE_JSON_DOWNLOAD) {
-                val downloads = downloadPassageParamsFilesForReview(s.sentences, s)
+            val params = if (PASSAGE_JSON_USE_DOWNLOAD_FLOW) {
+                val downloadResult = downloadPassageParamsFilesForReview(s.sentences, s)
                 _state.update {
-                    it.copy(status = "지문 JSON 다운로드 확인 완료(${downloads.size}개). 임시 설정으로 passage_read 저장은 중단했습니다.")
+                    it.copy(status = "지문 JSON 다운로드 확인 완료(${downloadResult.downloads.size}개) → passage_read 저장 중…")
                 }
-                return@runStep
+                parsePassageParams(downloadResult.finalJsonText)
+            } else {
+                generatePassageParams(s.sentences, s)
             }
-            val params = generatePassageParams(s.sentences, s)
             val unit = savePassageUnit(params, s.sentences, s)
             _state.update {
                 it.copy(
@@ -480,8 +558,12 @@ class AuthoringViewModel @Inject constructor(
                 it.copy(
                     savedUnit = true,
                     unitJsonPreview = json.encodeToString(LessonUnit.serializer(), unit),
-                    status = "청크 방식으로 저장됨 → 앱에 바로 보입니다.",
+                    status = "청크 방식으로 저장됨 → 그리드 그림 자동 생성/저장 중…",
                 )
+            }
+            val imageBytes = requestAndSaveGridImage(s.words, s, "chunk-grid-image")
+            _state.update {
+                it.copy(status = "청크 단어 콘텐츠 완료: story_comic + grid.png 저장됨(${imageBytes.size}B). 책에서 바로 확인하세요.")
             }
         }
     }
@@ -498,15 +580,11 @@ class AuthoringViewModel @Inject constructor(
         if (current.running || current.words.isEmpty()) return
         val s = ensureUnitId(current)
         val side = gridSide(s.words.size)
-        runStep("③ 그리드 그림 생성 요청 중… (${side}×$side, grid.png)") {
-            prepareFreshChat("manual-grid-image")
-            if (!gateway.sendOnly(gridPrompt(s.words, side))) {
-                error(gateway.lastQueryFailureMessage("그리드 그림 요청"))
-            }
+        runStep("③ 그리드 그림 생성/저장 중… (${side}×$side, grid.png)") {
+            val imageBytes = requestAndSaveGridImage(s.words, s, "manual-grid-image")
             _state.update {
                 it.copy(
-                    status = "그리드 그림 요청 완료. 생성된 이미지를 grid.png 로 받아 " +
-                        "images/${s.unitId}/grid.png 에 두면 칸별로 바로 표시됩니다.",
+                    status = "grid.png 자동 저장됨(${imageBytes.size}B) → 칸별로 바로 표시됩니다.",
                 )
             }
         }
@@ -539,6 +617,25 @@ class AuthoringViewModel @Inject constructor(
                 context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
             }
             val jsonText = extractJson(text) ?: text
+            if (looksLikePassageParams(jsonText)) {
+                val params = parsePassageParams(jsonText)
+                val unit = LessonUnit(
+                    unitId = s.unitId,
+                    title = s.unitTitle.ifBlank { params["title"]?.jsonPrimitive?.contentOrNull ?: s.unitId },
+                    content = LessonContent(),
+                    steps = listOf(StepDef(id = "s_passage", type = "passage_read", params = params)),
+                )
+                writer.writeUnit(bookId = s.bookId, bookTitle = s.bookTitle, unit = unit)
+                lessonRepo.refresh()
+                _state.update {
+                    it.copy(
+                        savedUnit = true,
+                        unitJsonPreview = json.encodeToString(LessonUnit.serializer(), unit),
+                        status = "가져온 지문 JSON 저장됨 → 앱에 바로 보입니다.",
+                    )
+                }
+                return@runStep
+            }
             val words = parseWordsFromParams(jsonText).ifEmpty { s.words }
             val params = enrichStoryParams(jsonText, words, s)
             val unit = LessonUnit(
@@ -582,15 +679,23 @@ class AuthoringViewModel @Inject constructor(
     }.getOrDefault(emptyList())
 
     private fun runStep(startStatus: String, block: suspend () -> Unit) {
-        viewModelScope.launch {
+        if (activeStepJob?.isActive == true) return
+        val job = viewModelScope.launch {
             _state.update { it.copy(running = true, error = null, status = startStatus) }
             try {
                 block()
+            } catch (e: CancellationException) {
+                _state.update { it.copy(error = null, status = "작업이 중지됐습니다.") }
+                throw e
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message ?: "오류") }
             } finally {
                 _state.update { it.copy(running = false) }
             }
+        }
+        activeStepJob = job
+        job.invokeOnCompletion {
+            if (activeStepJob === job) activeStepJob = null
         }
     }
 
@@ -723,6 +828,7 @@ class AuthoringViewModel @Inject constructor(
 
     private suspend fun generateStoryParams(words: List<String>, s: State): JsonObject {
         prepareFreshChat("story-json")
+        requireAuthoringMode("만화 JSON 생성")
         val before = gateway.assistantMarker()
         if (!gateway.sendOnly(storyPrompt(words))) {
             throw IllegalStateException("JSON 요청 전송 실패(로그인/작성창 확인).")
@@ -734,14 +840,15 @@ class AuthoringViewModel @Inject constructor(
 
     private suspend fun generatePassageParams(sentences: List<String>, s: State): JsonObject {
         prepareFreshChat("passage-json")
+        requireAuthoringMode("지문 JSON 생성")
         val before = gateway.assistantMarker()
         if (!gateway.sendOnly(passagePrompt(sentences, s))) {
             throw IllegalStateException("지문 JSON 요청 전송 실패(로그인/작성창 확인).")
         }
-        val jsonText = runCatching { awaitPassageJsonChunk(before, attempts = 24) }.getOrElse { firstError ->
+        val jsonText = runCatching { awaitPassageJsonChunk(before) }.getOrElse { firstError ->
             val retryBefore = gateway.assistantMarker()
             if (!gateway.sendOnly(passageRetryPrompt(sentences, s))) throw firstError
-            runCatching { awaitPassageJsonChunk(retryBefore, attempts = 18) }.getOrElse {
+            runCatching { awaitPassageJsonChunk(retryBefore) }.getOrElse {
                 return fallbackPassageParams(sentences, s)
             }
         }
@@ -750,33 +857,75 @@ class AuthoringViewModel @Inject constructor(
             .getOrElse { throw IllegalStateException("지문 JSON 파싱 실패: ${it.message}") }
     }
 
-    private suspend fun downloadPassageParamsFilesForReview(sentences: List<String>, s: State): List<String> {
+    private suspend fun downloadPassageParamsFilesForReview(sentences: List<String>, s: State): PassageDownloadResult {
         val batches = splitPassageJsonBatches(sentences)
         val results = mutableListOf<String>()
+        var finalJsonText: String? = null
         val finalBaseName = downloadName(s, "passage_params").removeSuffix(".json")
         batches.forEachIndexed { index, batch ->
             prepareFreshChat("passage-json-download-${index + 1}")
-            val proSelected = gateway.selectProExpansionMode()
+            val highSelected = gateway.selectHighMode()
+            if (!highSelected) {
+                error("지문 JSON 파일 요청 ${index + 1}/${batches.size} 전에 ChatGPT '높음' 모드를 선택하지 못했습니다. 모델 메뉴에서 '높음'이 보이는지 확인하세요.")
+            }
             val isFinal = index == batches.lastIndex
             val partBaseName = if (isFinal) finalBaseName else "${finalBaseName}_part_${index + 1}"
             _state.update {
                 it.copy(
-                    status = "지문 JSON 파일 요청 ${index + 1}/${batches.size} · Pro 확장=${if (proSelected) "선택됨" else "미확인"}",
+                    status = "지문 JSON 파일 요청 ${index + 1}/${batches.size} · 높음 대기 중 · 생성 버튼을 다시 누르면 중지",
                 )
             }
-            val resp = gateway.query(passageDownloadPrompt(batch, s, index + 1, batches.size, partBaseName, isFinal))
+            val resp = gateway.query(
+                passageDownloadPrompt(batch, s, index + 1, batches.size, partBaseName, isFinal),
+                timeoutMs = null,
+            )
                 ?: error(gateway.lastQueryFailureMessage("지문 JSON 파일 요청 ${index + 1}/${batches.size}"))
-            val download = gateway.requestAssistantDownload(partBaseName, wantsImage = false)
+            val download = gateway.requestAssistantDownload(partBaseName, wantsImage = false, timeoutMs = null)
+            val downloadedJson = if (download.contains("confirmed=true")) {
+                gateway.readDownloadedText(download)
+                    ?.let { extractJson(it) ?: it.trim() }
+                    ?.takeIf(::looksLikePassageParams)
+            } else {
+                null
+            }
             if (!download.contains("confirmed=true")) {
-                val jsonText = extractJson(resp) ?: resp.trim()
-                gateway.saveTextToDownloads("$partBaseName.json", jsonText, "application/json")
+                val jsonText = extractJson(resp)
+                if (jsonText != null && looksLikePassageParams(jsonText)) {
+                    gateway.saveTextToDownloads("$partBaseName.json", jsonText, "application/json")
+                    if (isFinal) finalJsonText = jsonText
+                } else {
+                    error(
+                        "지문 JSON 파일 요청 ${index + 1}/${batches.size} 다운로드 확인 실패. " +
+                            "ChatGPT 응답이 파일 링크나 passage_read JSON이 아니었습니다.",
+                    )
+                }
+            } else if (isFinal) {
+                finalJsonText = downloadedJson
+                    ?: extractJson(resp)?.takeIf(::looksLikePassageParams)
+                    ?: error(
+                        "최종 지문 JSON 다운로드는 확인됐지만 앱이 JSON 내용을 읽지 못했습니다. " +
+                            "다운로드 파일이 완전히 저장됐는지 확인하세요.",
+                    )
             }
             results += "$partBaseName.json :: $download"
             _state.update {
                 it.copy(status = "지문 JSON 다운로드 확인 ${index + 1}/${batches.size}: $partBaseName.json")
             }
         }
-        return results
+        return PassageDownloadResult(
+            downloads = results,
+            finalJsonText = finalJsonText ?: error("최종 지문 JSON이 비어 있습니다."),
+        )
+    }
+
+    private fun parsePassageParams(jsonText: String): JsonObject =
+        runCatching { json.parseToJsonElement(jsonText).jsonObject }
+            .getOrElse { throw IllegalStateException("지문 JSON 파싱 실패: ${it.message}") }
+
+    private suspend fun requireAuthoringMode(action: String) {
+        if (!gateway.selectHighMode()) {
+            error("$action 전에 ChatGPT '높음' 모드를 선택하지 못했습니다. 모델 메뉴에서 '높음'이 보이는지 확인하세요.")
+        }
     }
 
     private fun splitPassageJsonBatches(sentences: List<String>): List<PassageJsonBatch> {
@@ -857,14 +1006,32 @@ class AuthoringViewModel @Inject constructor(
         return unit
     }
 
+    private suspend fun requestAndSaveGridImage(words: List<String>, s: State, chatReason: String): ByteArray {
+        val side = gridSide(words.size)
+        _state.update { it.copy(status = "③ 그리드 그림 생성 요청 중… (${side}×$side, grid.png)") }
+        prepareFreshChat(chatReason)
+        val beforeImages = gateway.largeAssistantImageCount()
+        if (!gateway.sendOnly(gridPrompt(words, side))) {
+            error(gateway.lastQueryFailureMessage("그리드 그림 요청"))
+        }
+        val bytes = awaitGridImageBytes(beforeImages + 1)
+        saveImageDownload(s, GRID_FILE, bytes)
+        writer.writeImage(s.bookId, s.unitId, GRID_FILE, bytes)
+        lessonRepo.refresh()
+        return bytes
+    }
+
     private suspend fun awaitGridImageBytes(minImageCount: Int): ByteArray {
         for (i in 1..60) {
             delay(if (i == 1) 6000 else 3000)
-            _state.update { it.copy(status = "자동 ③ 그리드 그림 확인 중… $i/60") }
+            _state.update { it.copy(status = "자동 ③ 그리드 완료 메뉴 확인 중… $i/60") }
+            if (!gateway.generatedImageActionsReady(minImageCount)) continue
+            delay(IMAGE_ACTION_MENU_SETTLE_MS)
+            _state.update { it.copy(status = "자동 ③ 그리드 완료 감지 → 저장 중…") }
             val dataUrl = gateway.captureLastImageDataUrl(minImageCount) ?: continue
             return decodeImageDataUrl(dataUrl)
         }
-        throw IllegalStateException("그리드 그림을 자동으로 못 가져옴. 화면에 그림이 보이면 ‘저장’ 버튼으로 다시 시도하세요.")
+        throw IllegalStateException("그리드 그림 완료 메뉴를 자동으로 못 찾음. 그림 아래 복사/좋음 메뉴가 보이면 ‘저장’ 버튼으로 다시 시도하세요.")
     }
 
     private fun decodeImageDataUrl(dataUrl: String): ByteArray {
@@ -877,9 +1044,9 @@ class AuthoringViewModel @Inject constructor(
 
     private suspend fun awaitStoryJsonChunk(before: AuthoringWebGateway.AssistantMarker): String {
         val requiredCount = before.count + 1
-        for (i in 1..45) {
-            delay(if (i == 1) 2500 else 1800)
-            _state.update { it.copy(status = "② JSON 청크 확인 중… $i/45") }
+        for (i in 1..STORY_JSON_CHUNK_ATTEMPTS) {
+            delay(if (i == 1) JSON_CHUNK_FIRST_DELAY_MS else JSON_CHUNK_RETRY_DELAY_MS)
+            _state.update { it.copy(status = "② JSON 청크 확인 중… $i/$STORY_JSON_CHUNK_ATTEMPTS") }
             val captured = gateway.captureLastAssistantJsonChunked(requiredCount, before) ?: continue
             val jsonText = extractJson(captured) ?: captured.trim()
             if (looksLikeStoryParams(jsonText)) return jsonText
@@ -889,11 +1056,11 @@ class AuthoringViewModel @Inject constructor(
 
     private suspend fun awaitPassageJsonChunk(
         before: AuthoringWebGateway.AssistantMarker,
-        attempts: Int = 45,
+        attempts: Int = PASSAGE_JSON_CHUNK_ATTEMPTS,
     ): String {
         val requiredCount = before.count + 1
         for (i in 1..attempts) {
-            delay(if (i == 1) 2500 else 1800)
+            delay(if (i == 1) JSON_CHUNK_FIRST_DELAY_MS else JSON_CHUNK_RETRY_DELAY_MS)
             _state.update { it.copy(status = "② 지문 JSON 청크 확인 중… $i/$attempts") }
             val captured = gateway.captureLastAssistantJsonChunked(requiredCount, before) ?: continue
             val jsonText = extractJson(captured) ?: captured.trim()
@@ -1238,6 +1405,119 @@ class AuthoringViewModel @Inject constructor(
         error("사진 첨부 실패($result). 다시 시도하세요.")
     }
 
+    private fun resolvePhotoRange(anchors: List<Uri>): List<Uri> {
+        return try {
+            val first = readImageMeta(anchors[0]) ?: error("첫 번째 사진 정보를 읽지 못했습니다.")
+            val second = readImageMeta(anchors[1]) ?: error("두 번째 사진 정보를 읽지 못했습니다.")
+            val useRelativePath = first.relativePath?.takeIf { it.isNotBlank() } == second.relativePath?.takeIf { it.isNotBlank() }
+            val useBucket = first.bucketId?.takeIf { it.isNotBlank() } == second.bucketId?.takeIf { it.isNotBlank() }
+            if (!useRelativePath && !useBucket) {
+                error("선택한 두 사진이 같은 폴더/앨범에 있지 않습니다.")
+            }
+            val minModified = minOf(first.modified, second.modified)
+            val maxModified = maxOf(first.modified, second.modified)
+            val projection = imageProjection()
+            val dateColumn = MediaStore.Images.Media.DATE_MODIFIED
+            val idColumn = MediaStore.Images.Media._ID
+            val selectionParts = mutableListOf("$dateColumn BETWEEN ? AND ?")
+            val selectionArgs = mutableListOf(minModified.toString(), maxModified.toString())
+            if (useRelativePath && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                selectionParts += "${MediaStore.Images.Media.RELATIVE_PATH} = ?"
+                selectionArgs += first.relativePath.orEmpty()
+            } else {
+                selectionParts += "${MediaStore.Images.Media.BUCKET_ID} = ?"
+                selectionArgs += first.bucketId.orEmpty()
+            }
+            val out = mutableListOf<Uri>()
+            val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            context.contentResolver.query(
+                collection,
+                projection,
+                selectionParts.joinToString(" AND "),
+                selectionArgs.toTypedArray(),
+                "$dateColumn ASC, $idColumn ASC",
+            )?.use { cursor ->
+                while (cursor.moveToNext()) {
+                    val id = cursor.longOrNull(idColumn) ?: continue
+                    out += ContentUris.withAppendedId(collection, id)
+                }
+            }
+            if (out.isEmpty()) error("같은 폴더에서 수정일 범위 사진을 찾지 못했습니다.")
+            out.distinctBy { it.toString() }
+        } catch (e: SecurityException) {
+            throw IllegalStateException("사진 라이브러리 전체 접근 권한이 필요합니다. 권한을 허용한 뒤 다시 시도하세요.")
+        }
+    }
+
+    private fun readImageMeta(uri: Uri): ImageMeta? {
+        val direct = queryImageMeta(uri)
+        if (direct != null && direct.id > 0L && direct.modified > 0L && direct.hasAlbumKey()) return direct.copy(uri = uri)
+        val mediaId = direct?.id?.takeIf { it > 0L } ?: numericIdFromUri(uri)
+        if (mediaId != null) {
+            val byId = queryImageMeta(
+                uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                selection = "${MediaStore.Images.Media._ID} = ?",
+                selectionArgs = arrayOf(mediaId.toString()),
+            )
+            if (byId != null) return byId
+        }
+        return direct?.copy(uri = uri)
+    }
+
+    private fun queryImageMeta(
+        uri: Uri,
+        selection: String? = null,
+        selectionArgs: Array<String>? = null,
+    ): ImageMeta? {
+        val projection = imageProjection()
+        context.contentResolver.query(uri, projection, selection, selectionArgs, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) return null
+            val id = cursor.longOrNull(MediaStore.Images.Media._ID) ?: numericIdFromUri(uri) ?: 0L
+            return ImageMeta(
+                uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id),
+                id = id,
+                modified = cursor.longOrNull(MediaStore.Images.Media.DATE_MODIFIED) ?: 0L,
+                bucketId = cursor.stringOrNull(MediaStore.Images.Media.BUCKET_ID),
+                relativePath = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    cursor.stringOrNull(MediaStore.Images.Media.RELATIVE_PATH)
+                } else {
+                    cursor.stringOrNull(MediaStore.Images.Media.DATA)?.substringBeforeLast('/', missingDelimiterValue = "")
+                },
+                displayName = cursor.stringOrNull(MediaStore.Images.Media.DISPLAY_NAME),
+            )
+        }
+        return null
+    }
+
+    private fun ImageMeta.hasAlbumKey(): Boolean =
+        !relativePath.isNullOrBlank() || !bucketId.isNullOrBlank()
+
+    private fun imageProjection(): Array<String> = buildList {
+        add(MediaStore.Images.Media._ID)
+        add(MediaStore.Images.Media.DATE_MODIFIED)
+        add(MediaStore.Images.Media.BUCKET_ID)
+        add(MediaStore.Images.Media.DISPLAY_NAME)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            add(MediaStore.Images.Media.RELATIVE_PATH)
+        } else {
+            @Suppress("DEPRECATION")
+            add(MediaStore.Images.Media.DATA)
+        }
+    }.toTypedArray()
+
+    private fun Cursor.longOrNull(column: String): Long? {
+        val index = getColumnIndex(column)
+        return if (index >= 0 && !isNull(index)) getLong(index) else null
+    }
+
+    private fun Cursor.stringOrNull(column: String): String? {
+        val index = getColumnIndex(column)
+        return if (index >= 0 && !isNull(index)) getString(index) else null
+    }
+
+    private fun numericIdFromUri(uri: Uri): Long? =
+        uri.pathSegments.asReversed().firstNotNullOfOrNull { it.toLongOrNull() }
+
     // ----------------------------------------------------------- helpers
 
     /** Strip code fences and pull the first balanced JSON object/array. */
@@ -1274,7 +1554,12 @@ class AuthoringViewModel @Inject constructor(
         const val PHOTO_BATCH_SIZE = 5
         const val PASSAGE_JSON_CHUNK_SENTENCES = 12
         const val PASSAGE_JSON_CHUNK_CHARS = 3_800
-        const val TEMP_STOP_AFTER_PASSAGE_JSON_DOWNLOAD = true
+        const val STORY_JSON_CHUNK_ATTEMPTS = 480
+        const val PASSAGE_JSON_CHUNK_ATTEMPTS = 480
+        const val JSON_CHUNK_FIRST_DELAY_MS = 5_000L
+        const val JSON_CHUNK_RETRY_DELAY_MS = 5_000L
+        const val IMAGE_ACTION_MENU_SETTLE_MS = 2_000L
+        const val PASSAGE_JSON_USE_DOWNLOAD_FLOW = true
         val gridKeys = setOf("imageAsset", "cell", "gridCols", "gridRows")
         const val PHOTO_WORD_PROMPT =
             "이 사진을 보고 초등학생이 배울 핵심 영어 단어를 8~14개 골라 JSON 배열로만 답해줘. " +

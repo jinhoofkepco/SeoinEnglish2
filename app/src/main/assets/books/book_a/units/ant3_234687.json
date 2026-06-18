@@ -1,0 +1,4442 @@
+{
+  "schemaVersion": 2,
+  "unitId": "ant3_234687",
+  "title": "Ant City",
+  "level": "A2",
+  "content": {},
+  "steps": [
+    {
+      "id": "s_passage",
+      "type": "passage_read",
+      "params": {
+        "title": "Ant City",
+        "trackLabel": "Shared Read",
+        "curiosityQuestion": "What do you think is hidden inside an anthill?",
+        "coverVisual": "🐜",
+        "defaultChunkSetId": "short",
+        "processSteps": [
+          {
+            "id": "step1",
+            "label": "Look",
+            "caption": "Notice the sentence shape and punctuation.",
+            "visual": "🔎"
+          },
+          {
+            "id": "step2",
+            "label": "Chunk",
+            "caption": "Read one word group at a time.",
+            "visual": "🧩"
+          },
+          {
+            "id": "step3",
+            "label": "Blend",
+            "caption": "Put the chunks together smoothly.",
+            "visual": "➡️"
+          }
+        ],
+        "exploreItems": [
+          {
+            "id": "item1",
+            "label": "anthill",
+            "sentenceIds": [
+              "s1",
+              "s3",
+              "s4",
+              "s5",
+              "s9",
+              "s43",
+              "s45",
+              "s46",
+              "s68",
+              "s69",
+              "s70"
+            ],
+            "searchContext": "ant hill, ant nest entrance, dirt mound",
+            "parentPrompt": "개미 언덕 안에는 무엇이 숨겨져 있을까?",
+            "visual": "🏠"
+          },
+          {
+            "id": "item2",
+            "label": "harvester ants",
+            "sentenceIds": [
+              "s6",
+              "s7",
+              "s8",
+              "s16",
+              "s23",
+              "s47",
+              "s51",
+              "s69"
+            ],
+            "searchContext": "harvester ants, insects, nests",
+            "parentPrompt": "왜 이 개미들을 harvester ants라고 부를까?",
+            "visual": "🐜"
+          },
+          {
+            "id": "item3",
+            "label": "tunnels and rooms",
+            "sentenceIds": [
+              "s7",
+              "s9",
+              "s10",
+              "s11",
+              "s12",
+              "s13",
+              "s24",
+              "s25",
+              "s40"
+            ],
+            "searchContext": "ant tunnels and nest rooms underground",
+            "parentPrompt": "땅속 개미집에는 어떤 길과 방이 있을까?",
+            "visual": "🕳️"
+          },
+          {
+            "id": "item4",
+            "label": "ant work",
+            "sentenceIds": [
+              "s3",
+              "s10",
+              "s12",
+              "s13",
+              "s14",
+              "s37",
+              "s38",
+              "s39"
+            ],
+            "searchContext": "worker ants jobs inside an ant nest",
+            "parentPrompt": "작은 개미들이 함께 어떤 일을 할까?",
+            "visual": "👷"
+          },
+          {
+            "id": "item5",
+            "label": "seeds and food",
+            "sentenceIds": [
+              "s15",
+              "s16",
+              "s17",
+              "s18",
+              "s19",
+              "s20",
+              "s21",
+              "s22",
+              "s23",
+              "s46",
+              "s47",
+              "s48",
+              "s54",
+              "s55",
+              "s60",
+              "s61",
+              "s62",
+              "s63"
+            ],
+            "searchContext": "harvester ants seeds food sharing",
+            "parentPrompt": "개미들은 찾은 먹이를 어떻게 나누고 보관할까?",
+            "visual": "🌱"
+          },
+          {
+            "id": "item6",
+            "label": "queen and eggs",
+            "sentenceIds": [
+              "s24",
+              "s25",
+              "s26",
+              "s27",
+              "s28",
+              "s29",
+              "s30",
+              "s31",
+              "s32",
+              "s33",
+              "s34",
+              "s35",
+              "s36"
+            ],
+            "searchContext": "queen ant eggs larvae pupae worker ants life cycle",
+            "parentPrompt": "여왕개미와 알은 개미 도시에서 왜 중요할까?",
+            "visual": "👑"
+          },
+          {
+            "id": "item7",
+            "label": "digging builders",
+            "sentenceIds": [
+              "s40",
+              "s41",
+              "s42",
+              "s43",
+              "s44",
+              "s45"
+            ],
+            "searchContext": "ants digging tunnels anthill building",
+            "parentPrompt": "작은 개미들이 어떻게 큰 개미 언덕을 만들까?",
+            "visual": "⛏️"
+          },
+          {
+            "id": "item8",
+            "label": "bite and sting",
+            "sentenceIds": [
+              "s49",
+              "s50",
+              "s51"
+            ],
+            "searchContext": "ants bite sting protect nest",
+            "parentPrompt": "개미집을 방해하면 왜 조심해야 할까?",
+            "visual": "⚠️"
+          },
+          {
+            "id": "item9",
+            "label": "ant antennas",
+            "sentenceIds": [
+              "s52",
+              "s53"
+            ],
+            "searchContext": "ants antennas touch smell find food",
+            "parentPrompt": "개미의 더듬이는 먹이를 찾을 때 어떻게 도울까?",
+            "visual": "📡"
+          },
+          {
+            "id": "item10",
+            "label": "ant strength",
+            "sentenceIds": [
+              "s56",
+              "s57",
+              "s58",
+              "s59"
+            ],
+            "searchContext": "ants strength carrying weight teamwork",
+            "parentPrompt": "개미가 자기 몸보다 무거운 것을 들 수 있다면 어떤 느낌일까?",
+            "visual": "💪"
+          },
+          {
+            "id": "item11",
+            "label": "many ant kinds",
+            "sentenceIds": [
+              "s64",
+              "s65",
+              "s66",
+              "s67",
+              "s68",
+              "s69",
+              "s70",
+              "s71",
+              "s72",
+              "s73"
+            ],
+            "searchContext": "different kinds of ants nests habitats",
+            "parentPrompt": "개미 종류가 많으면 집을 짓는 방법도 어떻게 달라질까?",
+            "visual": "🌎"
+          },
+          {
+            "id": "item12",
+            "label": "ant cities anywhere",
+            "sentenceIds": [
+              "s74",
+              "s75",
+              "s76",
+              "s77",
+              "s78"
+            ],
+            "searchContext": "ants live almost anywhere ant colonies buildings ships",
+            "parentPrompt": "개미 도시는 어디에서 찾을 수 있을까?",
+            "visual": "🏙️"
+          }
+        ],
+        "paragraphs": [
+          {
+            "id": "p1",
+            "title": "Watching the Ant Hill",
+            "overlookQuestion": "What do the ants seem to be doing on the hill?",
+            "overlookHintKo": "개미들이 언덕 위에서 어떻게 움직이는지 먼저 살펴봐요.",
+            "sentences": [
+              {
+                "id": "s1",
+                "text": "Have you seen ants busy running over a hill of dirt?",
+                "chunks": [
+                  {
+                    "id": "s1_c1",
+                    "text": "Have you seen",
+                    "startChar": 0,
+                    "endChar": 13,
+                    "role": "action",
+                    "decodeHint": "Have는 /hæv/, seen은 긴 e 소리로 읽어요.",
+                    "meaningKo": "본 적 있나요",
+                    "exploreIds": []
+                  },
+                  {
+                    "id": "s1_c2",
+                    "text": "ants busy running",
+                    "startChar": 14,
+                    "endChar": 31,
+                    "role": "subject",
+                    "decodeHint": "ants의 ts를 붙여 읽고, running은 run-ning으로 나눠요.",
+                    "meaningKo": "바쁘게 달리는 개미들",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  },
+                  {
+                    "id": "s1_c3",
+                    "text": "over a hill",
+                    "startChar": 32,
+                    "endChar": 43,
+                    "role": "place",
+                    "decodeHint": "over는 o-ver 두 박자, hill은 짧은 i 소리예요.",
+                    "meaningKo": "언덕 위로",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  },
+                  {
+                    "id": "s1_c4",
+                    "text": "of dirt?",
+                    "startChar": 44,
+                    "endChar": 52,
+                    "role": "object",
+                    "decodeHint": "dirt의 ir은 한 소리처럼 /ər/에 가깝게 읽어요.",
+                    "meaningKo": "흙으로 된",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s2",
+                "text": "They may look like they are just running around.",
+                "chunks": [
+                  {
+                    "id": "s2_c1",
+                    "text": "They",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "They의 ey는 긴 a처럼 읽어요.",
+                    "meaningKo": "그들은",
+                    "exploreIds": []
+                  },
+                  {
+                    "id": "s2_c2",
+                    "text": "may look like",
+                    "startChar": 5,
+                    "endChar": 18,
+                    "role": "action",
+                    "decodeHint": "may는 긴 a, look은 oo를 짧게 읽어요.",
+                    "meaningKo": "~처럼 보일지도 몰라요",
+                    "exploreIds": []
+                  },
+                  {
+                    "id": "s2_c3",
+                    "text": "they are just running",
+                    "startChar": 19,
+                    "endChar": 40,
+                    "role": "action",
+                    "decodeHint": "just의 j 소리와 running의 -ing을 또렷하게 읽어요.",
+                    "meaningKo": "그들이 그저 달리고 있는",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  },
+                  {
+                    "id": "s2_c4",
+                    "text": "around.",
+                    "startChar": 41,
+                    "endChar": 48,
+                    "role": "place",
+                    "decodeHint": "around는 a-round 두 부분으로 나눠 읽어요.",
+                    "meaningKo": "이리저리",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s3",
+                "text": "But the ants built that hill to live in, and each ant has work to do.",
+                "chunks": [
+                  {
+                    "id": "s3_c1",
+                    "text": "But",
+                    "startChar": 0,
+                    "endChar": 3,
+                    "role": "linker",
+                    "decodeHint": "But의 u는 짧은 u 소리예요.",
+                    "meaningKo": "하지만",
+                    "exploreIds": []
+                  },
+                  {
+                    "id": "s3_c2",
+                    "text": "the ants built that hill",
+                    "startChar": 4,
+                    "endChar": 28,
+                    "role": "action",
+                    "decodeHint": "built는 b-ui-lt로 보이지만 /bilt/처럼 짧게 읽어요.",
+                    "meaningKo": "그 개미들이 그 언덕을 지었어요",
+                    "exploreIds": [
+                      "item1",
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s3_c3",
+                    "text": "to live in,",
+                    "startChar": 29,
+                    "endChar": 40,
+                    "role": "place",
+                    "decodeHint": "live의 i는 짧은 i 소리, 쉼표에서 살짝 쉬어요.",
+                    "meaningKo": "그 안에 살기 위해",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  },
+                  {
+                    "id": "s3_c4",
+                    "text": "and each ant",
+                    "startChar": 41,
+                    "endChar": 53,
+                    "role": "subject",
+                    "decodeHint": "each는 ea가 긴 e 소리예요.",
+                    "meaningKo": "그리고 각각의 개미는",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s3_c5",
+                    "text": "has work to do.",
+                    "startChar": 54,
+                    "endChar": 69,
+                    "role": "action",
+                    "decodeHint": "work의 or는 /ər/ 소리에 가깝고, do는 긴 oo 소리예요.",
+                    "meaningKo": "해야 할 일이 있어요",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s4",
+                "text": "Some ants may disappear into a small hole in the hill.",
+                "chunks": [
+                  {
+                    "id": "s4_c1",
+                    "text": "Some ants",
+                    "startChar": 0,
+                    "endChar": 9,
+                    "role": "subject",
+                    "decodeHint": "Some은 짧은 u처럼, ants의 끝 ts를 붙여 읽어요.",
+                    "meaningKo": "몇몇 개미들은",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  },
+                  {
+                    "id": "s4_c2",
+                    "text": "may disappear",
+                    "startChar": 10,
+                    "endChar": 23,
+                    "role": "action",
+                    "decodeHint": "disappear는 dis-ap-pear로 나눠 읽어요.",
+                    "meaningKo": "사라질지도 몰라요",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  },
+                  {
+                    "id": "s4_c3",
+                    "text": "into a small hole",
+                    "startChar": 24,
+                    "endChar": 41,
+                    "role": "place",
+                    "decodeHint": "into는 in-to, hole은 끝 e 때문에 긴 o예요.",
+                    "meaningKo": "작은 구멍 안으로",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  },
+                  {
+                    "id": "s4_c4",
+                    "text": "in the hill.",
+                    "startChar": 42,
+                    "endChar": 54,
+                    "role": "place",
+                    "decodeHint": "hill은 짧은 i 소리로 읽어요.",
+                    "meaningKo": "언덕 속에 있는",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s5",
+                "text": "The hole is the door to their nest.",
+                "chunks": [
+                  {
+                    "id": "s5_c1",
+                    "text": "The hole",
+                    "startChar": 0,
+                    "endChar": 8,
+                    "role": "subject",
+                    "decodeHint": "The는 다음 말에 붙여 부드럽게 읽고, hole은 긴 o예요.",
+                    "meaningKo": "그 구멍은",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  },
+                  {
+                    "id": "s5_c2",
+                    "text": "is the door",
+                    "startChar": 9,
+                    "endChar": 20,
+                    "role": "action",
+                    "decodeHint": "door의 oo는 /or/처럼 길게 읽어요.",
+                    "meaningKo": "문이에요",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  },
+                  {
+                    "id": "s5_c3",
+                    "text": "to their nest.",
+                    "startChar": 21,
+                    "endChar": 35,
+                    "role": "place",
+                    "decodeHint": "their는 th 소리를 혀끝으로, nest는 짧은 e예요.",
+                    "meaningKo": "그들의 집으로 가는",
+                    "exploreIds": [
+                      "item1",
+                      "item3"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "title": "Inside the Nest",
+            "overlookQuestion": "What is under the hill?",
+            "overlookHintKo": "개미 언덕 아래에 있는 방과 터널을 떠올리며 읽어 봐요.",
+            "sentences": [
+              {
+                "id": "s6",
+                "text": "These are harvester ants.",
+                "chunks": [
+                  {
+                    "id": "s6_c1",
+                    "text": "These",
+                    "startChar": 0,
+                    "endChar": 5,
+                    "role": "subject",
+                    "decodeHint": "These는 th 소리 뒤에 긴 e 소리예요.",
+                    "meaningKo": "이것들은",
+                    "exploreIds": [
+                      "item2"
+                    ]
+                  },
+                  {
+                    "id": "s6_c2",
+                    "text": "are harvester ants.",
+                    "startChar": 6,
+                    "endChar": 25,
+                    "role": "object",
+                    "decodeHint": "harvester는 har-ves-ter로 나눠 읽어요.",
+                    "meaningKo": "수확개미예요",
+                    "exploreIds": [
+                      "item2"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s7",
+                "text": "Their nest is made of lots of rooms and tunnels.",
+                "chunks": [
+                  {
+                    "id": "s7_c1",
+                    "text": "Their nest",
+                    "startChar": 0,
+                    "endChar": 10,
+                    "role": "subject",
+                    "decodeHint": "Their는 th 소리로 시작하고, nest는 짧은 e예요.",
+                    "meaningKo": "그들의 집은",
+                    "exploreIds": [
+                      "item2",
+                      "item3"
+                    ]
+                  },
+                  {
+                    "id": "s7_c2",
+                    "text": "is made of",
+                    "startChar": 11,
+                    "endChar": 21,
+                    "role": "action",
+                    "decodeHint": "made는 끝 e 때문에 긴 a 소리예요.",
+                    "meaningKo": "~로 만들어져 있어요",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  },
+                  {
+                    "id": "s7_c3",
+                    "text": "lots of rooms",
+                    "startChar": 22,
+                    "endChar": 35,
+                    "role": "object",
+                    "decodeHint": "lots of는 이어 읽고, rooms는 oo를 길게 읽어요.",
+                    "meaningKo": "많은 방들",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  },
+                  {
+                    "id": "s7_c4",
+                    "text": "and tunnels.",
+                    "startChar": 36,
+                    "endChar": 48,
+                    "role": "object",
+                    "decodeHint": "tunnels는 tun-nels 두 부분으로 나눠 읽어요.",
+                    "meaningKo": "그리고 터널들",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s8",
+                "text": "These little insects made them all.",
+                "chunks": [
+                  {
+                    "id": "s8_c1",
+                    "text": "These little insects",
+                    "startChar": 0,
+                    "endChar": 20,
+                    "role": "subject",
+                    "decodeHint": "little은 lit-tle, insects는 in-sects로 나눠 읽어요.",
+                    "meaningKo": "이 작은 곤충들이",
+                    "exploreIds": [
+                      "item2"
+                    ]
+                  },
+                  {
+                    "id": "s8_c2",
+                    "text": "made",
+                    "startChar": 21,
+                    "endChar": 25,
+                    "role": "action",
+                    "decodeHint": "made는 끝 e 때문에 긴 a 소리예요.",
+                    "meaningKo": "만들었어요",
+                    "exploreIds": [
+                      "item2"
+                    ]
+                  },
+                  {
+                    "id": "s8_c3",
+                    "text": "them all.",
+                    "startChar": 26,
+                    "endChar": 35,
+                    "role": "object",
+                    "decodeHint": "them의 th를 부드럽게 읽고 all은 길게 읽어요.",
+                    "meaningKo": "그것들을 모두",
+                    "exploreIds": [
+                      "item2",
+                      "item3"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s9",
+                "text": "Underneath the hill there may be miles of tunnels and hundreds of rooms.",
+                "chunks": [
+                  {
+                    "id": "s9_c1",
+                    "text": "Underneath the hill",
+                    "startChar": 0,
+                    "endChar": 19,
+                    "role": "place",
+                    "decodeHint": "Underneath는 un-der-neath로 나눠 읽어요.",
+                    "meaningKo": "그 언덕 아래에는",
+                    "exploreIds": [
+                      "item1",
+                      "item3"
+                    ]
+                  },
+                  {
+                    "id": "s9_c2",
+                    "text": "there may be",
+                    "startChar": 20,
+                    "endChar": 32,
+                    "role": "action",
+                    "decodeHint": "there의 th와 may의 긴 a를 확인해요.",
+                    "meaningKo": "~이 있을지도 몰라요",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  },
+                  {
+                    "id": "s9_c3",
+                    "text": "miles of tunnels",
+                    "startChar": 33,
+                    "endChar": 49,
+                    "role": "object",
+                    "decodeHint": "miles는 긴 i, tunnels는 tun-nels로 나눠요.",
+                    "meaningKo": "몇 마일이나 되는 터널들",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  },
+                  {
+                    "id": "s9_c4",
+                    "text": "and hundreds of rooms.",
+                    "startChar": 50,
+                    "endChar": 72,
+                    "role": "object",
+                    "decodeHint": "hundreds는 hun-dreds로 나누고 rooms는 oo를 길게 읽어요.",
+                    "meaningKo": "그리고 수백 개의 방들",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s10",
+                "text": "The floors are worn smooth by thousands of ant feet.",
+                "chunks": [
+                  {
+                    "id": "s10_c1",
+                    "text": "The floors",
+                    "startChar": 0,
+                    "endChar": 10,
+                    "role": "subject",
+                    "decodeHint": "floors는 fl-로 시작하고 oo는 /or/처럼 읽어요.",
+                    "meaningKo": "바닥들은",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  },
+                  {
+                    "id": "s10_c2",
+                    "text": "are worn smooth",
+                    "startChar": 11,
+                    "endChar": 26,
+                    "role": "action",
+                    "decodeHint": "worn은 /worn/, smooth는 sm 소리로 시작해요.",
+                    "meaningKo": "매끈하게 닳아 있어요",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  },
+                  {
+                    "id": "s10_c3",
+                    "text": "by thousands of ant feet.",
+                    "startChar": 27,
+                    "endChar": 52,
+                    "role": "object",
+                    "decodeHint": "thousands는 thou-sands, feet는 긴 e 소리예요.",
+                    "meaningKo": "수천 개의 개미 발에 의해",
+                    "exploreIds": [
+                      "item3",
+                      "item4"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s11",
+                "text": "It is dark inside the nest.",
+                "chunks": [
+                  {
+                    "id": "s11_c1",
+                    "text": "It",
+                    "startChar": 0,
+                    "endChar": 2,
+                    "role": "subject",
+                    "decodeHint": "It은 짧은 i 소리로 읽어요.",
+                    "meaningKo": "그곳은",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  },
+                  {
+                    "id": "s11_c2",
+                    "text": "is dark",
+                    "startChar": 3,
+                    "endChar": 10,
+                    "role": "action",
+                    "decodeHint": "dark의 ar는 길게 입을 열어 읽어요.",
+                    "meaningKo": "어두워요",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  },
+                  {
+                    "id": "s11_c3",
+                    "text": "inside the nest.",
+                    "startChar": 11,
+                    "endChar": 27,
+                    "role": "place",
+                    "decodeHint": "inside는 in-side, nest는 짧은 e예요.",
+                    "meaningKo": "집 안쪽은",
+                    "exploreIds": [
+                      "item3"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s12",
+                "text": "But the ants stay cozy.",
+                "chunks": [
+                  {
+                    "id": "s12_c1",
+                    "text": "But",
+                    "startChar": 0,
+                    "endChar": 3,
+                    "role": "linker",
+                    "decodeHint": "But의 u는 짧은 u 소리예요.",
+                    "meaningKo": "하지만",
+                    "exploreIds": []
+                  },
+                  {
+                    "id": "s12_c2",
+                    "text": "the ants",
+                    "startChar": 4,
+                    "endChar": 12,
+                    "role": "subject",
+                    "decodeHint": "ants 끝의 ts 소리를 붙여 읽어요.",
+                    "meaningKo": "그 개미들은",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s12_c3",
+                    "text": "stay cozy.",
+                    "startChar": 13,
+                    "endChar": 23,
+                    "role": "action",
+                    "decodeHint": "stay는 st 소리와 긴 a, cozy는 co-zy로 나눠요.",
+                    "meaningKo": "포근하게 지내요",
+                    "exploreIds": [
+                      "item3",
+                      "item4"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p3",
+            "title": "Work and Food in the Ant City",
+            "overlookQuestion": "What jobs do worker ants do with food?",
+            "overlookHintKo": "일개미들이 먹이를 가져오고 나누고 저장하는 흐름을 살펴봐요.",
+            "sentences": [
+              {
+                "id": "s13",
+                "text": "In the rooms of the nest, worker ants do many different kinds of work.",
+                "chunks": [
+                  {
+                    "id": "s13_c1",
+                    "text": "In the rooms of the nest,",
+                    "startChar": 0,
+                    "endChar": 25,
+                    "role": "place",
+                    "decodeHint": "rooms는 oo를 길게, nest는 짧은 e로 읽어요.",
+                    "meaningKo": "그 집의 방들 안에서",
+                    "exploreIds": [
+                      "item3",
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s13_c2",
+                    "text": "worker ants",
+                    "startChar": 26,
+                    "endChar": 37,
+                    "role": "subject",
+                    "decodeHint": "worker는 work-er로 나누고 ants의 ts를 붙여요.",
+                    "meaningKo": "일개미들이",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s13_c3",
+                    "text": "do",
+                    "startChar": 38,
+                    "endChar": 40,
+                    "role": "action",
+                    "decodeHint": "do는 긴 oo 소리예요.",
+                    "meaningKo": "해요",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s13_c4",
+                    "text": "many different kinds",
+                    "startChar": 41,
+                    "endChar": 61,
+                    "role": "object",
+                    "decodeHint": "different는 dif-fer-ent로 나눠 읽어요.",
+                    "meaningKo": "여러 가지 종류를",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s13_c5",
+                    "text": "of work.",
+                    "startChar": 62,
+                    "endChar": 70,
+                    "role": "object",
+                    "decodeHint": "work의 or 소리를 확인해요.",
+                    "meaningKo": "일의",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s14",
+                "text": "It is like a city, a busy city of ants.",
+                "chunks": [
+                  {
+                    "id": "s14_c1",
+                    "text": "It",
+                    "startChar": 0,
+                    "endChar": 2,
+                    "role": "subject",
+                    "decodeHint": "It은 짧은 i 소리예요.",
+                    "meaningKo": "그것은",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s14_c2",
+                    "text": "is like a city,",
+                    "startChar": 3,
+                    "endChar": 18,
+                    "role": "action",
+                    "decodeHint": "like는 긴 i, city는 ci-ty로 나눠요.",
+                    "meaningKo": "도시와 같아요",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s14_c3",
+                    "text": "a busy city",
+                    "startChar": 19,
+                    "endChar": 30,
+                    "role": "object",
+                    "decodeHint": "busy는 bu-sy 두 박자로 읽어요.",
+                    "meaningKo": "바쁜 도시",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s14_c4",
+                    "text": "of ants.",
+                    "startChar": 31,
+                    "endChar": 39,
+                    "role": "object",
+                    "decodeHint": "ants 끝의 ts를 붙여 읽어요.",
+                    "meaningKo": "개미들의",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s15",
+                "text": "Some ants have brought in food to the ant city.",
+                "chunks": [
+                  {
+                    "id": "s15_c1",
+                    "text": "Some ants",
+                    "startChar": 0,
+                    "endChar": 9,
+                    "role": "subject",
+                    "decodeHint": "Some은 짧은 u처럼, ants의 ts를 붙여요.",
+                    "meaningKo": "몇몇 개미들은",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s15_c2",
+                    "text": "have brought in",
+                    "startChar": 10,
+                    "endChar": 25,
+                    "role": "action",
+                    "decodeHint": "brought는 br 소리로 시작하고 ought를 한 덩어리로 읽어요.",
+                    "meaningKo": "가져왔어요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s15_c3",
+                    "text": "food",
+                    "startChar": 26,
+                    "endChar": 30,
+                    "role": "object",
+                    "decodeHint": "food의 oo는 길게 읽어요.",
+                    "meaningKo": "먹이를",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s15_c4",
+                    "text": "to the ant city.",
+                    "startChar": 31,
+                    "endChar": 47,
+                    "role": "place",
+                    "decodeHint": "city는 ci-ty로 나눠요.",
+                    "meaningKo": "개미 도시로",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s16",
+                "text": "These harvester ants like seeds.",
+                "chunks": [
+                  {
+                    "id": "s16_c1",
+                    "text": "These harvester ants",
+                    "startChar": 0,
+                    "endChar": 20,
+                    "role": "subject",
+                    "decodeHint": "These는 긴 e, harvester는 har-ves-ter로 나눠요.",
+                    "meaningKo": "이 수확개미들은",
+                    "exploreIds": [
+                      "item2",
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s16_c2",
+                    "text": "like",
+                    "startChar": 21,
+                    "endChar": 25,
+                    "role": "action",
+                    "decodeHint": "like는 끝 e 때문에 긴 i 소리예요.",
+                    "meaningKo": "좋아해요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s16_c3",
+                    "text": "seeds.",
+                    "startChar": 26,
+                    "endChar": 32,
+                    "role": "object",
+                    "decodeHint": "seeds의 ee는 긴 e예요.",
+                    "meaningKo": "씨앗을",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s17",
+                "text": "A worker ant cracks the husks off the seeds.",
+                "chunks": [
+                  {
+                    "id": "s17_c1",
+                    "text": "A worker ant",
+                    "startChar": 0,
+                    "endChar": 12,
+                    "role": "subject",
+                    "decodeHint": "worker는 work-er, ant는 짧은 a예요.",
+                    "meaningKo": "한 일개미가",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s17_c2",
+                    "text": "cracks",
+                    "startChar": 13,
+                    "endChar": 19,
+                    "role": "action",
+                    "decodeHint": "cracks는 cr로 시작하고 끝 ks를 붙여요.",
+                    "meaningKo": "깨뜨려요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s17_c3",
+                    "text": "the husks",
+                    "startChar": 20,
+                    "endChar": 29,
+                    "role": "object",
+                    "decodeHint": "husks는 짧은 u와 끝 sks를 확인해요.",
+                    "meaningKo": "껍질을",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s17_c4",
+                    "text": "off the seeds.",
+                    "startChar": 30,
+                    "endChar": 44,
+                    "role": "object",
+                    "decodeHint": "off는 짧은 o, seeds는 긴 e예요.",
+                    "meaningKo": "씨앗에서 떼어",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s18",
+                "text": "Another worker will take the husks outside to throw away.",
+                "chunks": [
+                  {
+                    "id": "s18_c1",
+                    "text": "Another worker",
+                    "startChar": 0,
+                    "endChar": 14,
+                    "role": "subject",
+                    "decodeHint": "Another는 a-no-ther로 나눠요.",
+                    "meaningKo": "또 다른 일개미는",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s18_c2",
+                    "text": "will take",
+                    "startChar": 15,
+                    "endChar": 24,
+                    "role": "action",
+                    "decodeHint": "take는 끝 e 때문에 긴 a예요.",
+                    "meaningKo": "가져갈 거예요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s18_c3",
+                    "text": "the husks",
+                    "startChar": 25,
+                    "endChar": 34,
+                    "role": "object",
+                    "decodeHint": "husks 끝의 sks를 천천히 붙여요.",
+                    "meaningKo": "그 껍질을",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s18_c4",
+                    "text": "outside",
+                    "startChar": 35,
+                    "endChar": 42,
+                    "role": "place",
+                    "decodeHint": "outside는 out-side로 나눠요.",
+                    "meaningKo": "밖으로",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s18_c5",
+                    "text": "to throw away.",
+                    "startChar": 43,
+                    "endChar": 57,
+                    "role": "action",
+                    "decodeHint": "throw의 th와 ow를 확인해요.",
+                    "meaningKo": "버리기 위해",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s19",
+                "text": "The ants chew the seeds to get the juices out.",
+                "chunks": [
+                  {
+                    "id": "s19_c1",
+                    "text": "The ants",
+                    "startChar": 0,
+                    "endChar": 8,
+                    "role": "subject",
+                    "decodeHint": "ants 끝의 ts를 또렷하게 읽어요.",
+                    "meaningKo": "그 개미들은",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s19_c2",
+                    "text": "chew the seeds",
+                    "startChar": 9,
+                    "endChar": 23,
+                    "role": "action",
+                    "decodeHint": "chew는 ch로 시작하고 seeds는 긴 e예요.",
+                    "meaningKo": "씨앗을 씹어요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s19_c3",
+                    "text": "to get",
+                    "startChar": 24,
+                    "endChar": 30,
+                    "role": "action",
+                    "decodeHint": "get은 짧은 e 소리예요.",
+                    "meaningKo": "얻기 위해",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s19_c4",
+                    "text": "the juices out.",
+                    "startChar": 31,
+                    "endChar": 46,
+                    "role": "object",
+                    "decodeHint": "juices는 jui-ces로 나눠요.",
+                    "meaningKo": "즙을 밖으로",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s20",
+                "text": "Then they feed the juices to the other ants.",
+                "chunks": [
+                  {
+                    "id": "s20_c1",
+                    "text": "Then",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "time",
+                    "decodeHint": "Then은 th 소리로 시작해요.",
+                    "meaningKo": "그런 다음",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s20_c2",
+                    "text": "they",
+                    "startChar": 5,
+                    "endChar": 9,
+                    "role": "subject",
+                    "decodeHint": "they의 ey는 긴 a처럼 읽어요.",
+                    "meaningKo": "그들은",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s20_c3",
+                    "text": "feed the juices",
+                    "startChar": 10,
+                    "endChar": 25,
+                    "role": "action",
+                    "decodeHint": "feed는 긴 e, juices는 jui-ces로 나눠요.",
+                    "meaningKo": "즙을 먹여요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s20_c4",
+                    "text": "to the other ants.",
+                    "startChar": 26,
+                    "endChar": 44,
+                    "role": "object",
+                    "decodeHint": "other의 th와 ants의 ts를 확인해요.",
+                    "meaningKo": "다른 개미들에게",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s21",
+                "text": "Other workers store seeds for the ants to eat another time.",
+                "chunks": [
+                  {
+                    "id": "s21_c1",
+                    "text": "Other workers",
+                    "startChar": 0,
+                    "endChar": 13,
+                    "role": "subject",
+                    "decodeHint": "Other는 o-ther, workers는 work-ers로 나눠요.",
+                    "meaningKo": "다른 일개미들은",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s21_c2",
+                    "text": "store seeds",
+                    "startChar": 14,
+                    "endChar": 25,
+                    "role": "action",
+                    "decodeHint": "store는 긴 o, seeds는 긴 e예요.",
+                    "meaningKo": "씨앗을 저장해요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s21_c3",
+                    "text": "for the ants",
+                    "startChar": 26,
+                    "endChar": 38,
+                    "role": "object",
+                    "decodeHint": "ants 끝의 ts를 붙여요.",
+                    "meaningKo": "개미들을 위해",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s21_c4",
+                    "text": "to eat",
+                    "startChar": 39,
+                    "endChar": 45,
+                    "role": "action",
+                    "decodeHint": "eat의 ea는 긴 e예요.",
+                    "meaningKo": "먹도록",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s21_c5",
+                    "text": "another time.",
+                    "startChar": 46,
+                    "endChar": 59,
+                    "role": "time",
+                    "decodeHint": "another는 a-no-ther로 나눠요.",
+                    "meaningKo": "다른 때에",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s22",
+                "text": "Not all ants store food.",
+                "chunks": [
+                  {
+                    "id": "s22_c1",
+                    "text": "Not all ants",
+                    "startChar": 0,
+                    "endChar": 12,
+                    "role": "subject",
+                    "decodeHint": "Not은 짧은 o, ants의 ts를 붙여요.",
+                    "meaningKo": "모든 개미가",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s22_c2",
+                    "text": "store",
+                    "startChar": 13,
+                    "endChar": 18,
+                    "role": "action",
+                    "decodeHint": "store는 긴 o 소리예요.",
+                    "meaningKo": "저장하는 것은 아니에요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s22_c3",
+                    "text": "food.",
+                    "startChar": 19,
+                    "endChar": 24,
+                    "role": "object",
+                    "decodeHint": "food의 oo는 길게 읽어요.",
+                    "meaningKo": "먹이를",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s23",
+                "text": "But harvester ants do.",
+                "chunks": [
+                  {
+                    "id": "s23_c1",
+                    "text": "But",
+                    "startChar": 0,
+                    "endChar": 3,
+                    "role": "linker",
+                    "decodeHint": "But의 u는 짧은 u예요.",
+                    "meaningKo": "하지만",
+                    "exploreIds": []
+                  },
+                  {
+                    "id": "s23_c2",
+                    "text": "harvester ants",
+                    "startChar": 4,
+                    "endChar": 18,
+                    "role": "subject",
+                    "decodeHint": "harvester는 har-ves-ter로 나눠요.",
+                    "meaningKo": "수확개미들은",
+                    "exploreIds": [
+                      "item2",
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s23_c3",
+                    "text": "do.",
+                    "startChar": 19,
+                    "endChar": 22,
+                    "role": "action",
+                    "decodeHint": "do는 긴 oo 소리예요.",
+                    "meaningKo": "그래요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s24",
+                "text": "In one room of the nest, a queen ant lays eggs.",
+                "chunks": [
+                  {
+                    "id": "s24_c1",
+                    "text": "In one room of the nest,",
+                    "startChar": 0,
+                    "endChar": 24,
+                    "role": "place",
+                    "decodeHint": "room은 긴 oo, nest는 짧은 e예요.",
+                    "meaningKo": "그 집의 한 방에서",
+                    "exploreIds": [
+                      "item3",
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s24_c2",
+                    "text": "a queen ant",
+                    "startChar": 25,
+                    "endChar": 36,
+                    "role": "subject",
+                    "decodeHint": "queen의 ee는 긴 e예요.",
+                    "meaningKo": "여왕개미가",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s24_c3",
+                    "text": "lays",
+                    "startChar": 37,
+                    "endChar": 41,
+                    "role": "action",
+                    "decodeHint": "lays는 ay가 긴 a예요.",
+                    "meaningKo": "낳아요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s24_c4",
+                    "text": "eggs.",
+                    "startChar": 42,
+                    "endChar": 47,
+                    "role": "object",
+                    "decodeHint": "eggs는 짧은 e와 끝 gs를 붙여요.",
+                    "meaningKo": "알을",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p4",
+            "title": "The Queen and Growing Ants",
+            "overlookQuestion": "How do eggs become more ants?",
+            "overlookHintKo": "여왕개미, 알, 애벌레, 번데기, 어른 개미의 순서를 생각하며 읽어 봐요.",
+            "sentences": [
+              {
+                "id": "s25",
+                "text": "Workers carry the eggs away to other rooms to take care of them.",
+                "chunks": [
+                  {
+                    "id": "s25_c1",
+                    "text": "Workers",
+                    "startChar": 0,
+                    "endChar": 7,
+                    "role": "subject",
+                    "decodeHint": "Workers는 work-ers로 나눠요.",
+                    "meaningKo": "일개미들은",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s25_c2",
+                    "text": "carry the eggs away",
+                    "startChar": 8,
+                    "endChar": 27,
+                    "role": "action",
+                    "decodeHint": "carry는 car-ry, away는 a-way로 읽어요.",
+                    "meaningKo": "알을 옮겨요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s25_c3",
+                    "text": "to other rooms",
+                    "startChar": 28,
+                    "endChar": 42,
+                    "role": "place",
+                    "decodeHint": "other의 th와 rooms의 oo를 확인해요.",
+                    "meaningKo": "다른 방들로",
+                    "exploreIds": [
+                      "item3",
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s25_c4",
+                    "text": "to take care of them.",
+                    "startChar": 43,
+                    "endChar": 64,
+                    "role": "action",
+                    "decodeHint": "take는 긴 a, care는 긴 air처럼 읽어요.",
+                    "meaningKo": "돌보기 위해",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s26",
+                "text": "Each ant city has to have at least one queen.",
+                "chunks": [
+                  {
+                    "id": "s26_c1",
+                    "text": "Each ant city",
+                    "startChar": 0,
+                    "endChar": 13,
+                    "role": "subject",
+                    "decodeHint": "Each는 긴 e, city는 ci-ty로 나눠요.",
+                    "meaningKo": "각 개미 도시는",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s26_c2",
+                    "text": "has to have",
+                    "startChar": 14,
+                    "endChar": 25,
+                    "role": "action",
+                    "decodeHint": "has와 have는 짧은 a예요.",
+                    "meaningKo": "가지고 있어야 해요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s26_c3",
+                    "text": "at least one queen.",
+                    "startChar": 26,
+                    "endChar": 45,
+                    "role": "object",
+                    "decodeHint": "least와 queen은 긴 e 소리예요.",
+                    "meaningKo": "적어도 한 여왕을",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s27",
+                "text": "Without a queen there would be no ant city.",
+                "chunks": [
+                  {
+                    "id": "s27_c1",
+                    "text": "Without a queen",
+                    "startChar": 0,
+                    "endChar": 15,
+                    "role": "linker",
+                    "decodeHint": "Without은 with-out으로 나눠요.",
+                    "meaningKo": "여왕이 없다면",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s27_c2",
+                    "text": "there would be",
+                    "startChar": 16,
+                    "endChar": 30,
+                    "role": "action",
+                    "decodeHint": "there의 th와 would의 묵음 l을 확인해요.",
+                    "meaningKo": "있을 거예요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s27_c3",
+                    "text": "no ant city.",
+                    "startChar": 31,
+                    "endChar": 43,
+                    "role": "object",
+                    "decodeHint": "city는 ci-ty로 나눠요.",
+                    "meaningKo": "개미 도시가 없어요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s28",
+                "text": "All the other ants in the ant city grow from the eggs the queen lays.",
+                "chunks": [
+                  {
+                    "id": "s28_c1",
+                    "text": "All the other ants",
+                    "startChar": 0,
+                    "endChar": 18,
+                    "role": "subject",
+                    "decodeHint": "other의 th와 ants의 ts를 확인해요.",
+                    "meaningKo": "다른 모든 개미들은",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s28_c2",
+                    "text": "in the ant city",
+                    "startChar": 19,
+                    "endChar": 34,
+                    "role": "place",
+                    "decodeHint": "city는 ci-ty 두 박자예요.",
+                    "meaningKo": "개미 도시 안에서",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s28_c3",
+                    "text": "grow from",
+                    "startChar": 35,
+                    "endChar": 44,
+                    "role": "action",
+                    "decodeHint": "grow는 긴 o 소리예요.",
+                    "meaningKo": "~에서 자라요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s28_c4",
+                    "text": "the eggs",
+                    "startChar": 45,
+                    "endChar": 53,
+                    "role": "object",
+                    "decodeHint": "eggs는 짧은 e예요.",
+                    "meaningKo": "그 알들",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s28_c5",
+                    "text": "the queen lays.",
+                    "startChar": 54,
+                    "endChar": 69,
+                    "role": "action",
+                    "decodeHint": "queen은 긴 e, lays는 긴 a예요.",
+                    "meaningKo": "여왕이 낳은",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s29",
+                "text": "At first the tiny eggs grow into larvae.",
+                "chunks": [
+                  {
+                    "id": "s29_c1",
+                    "text": "At first",
+                    "startChar": 0,
+                    "endChar": 8,
+                    "role": "time",
+                    "decodeHint": "first의 ir을 한 소리처럼 읽어요.",
+                    "meaningKo": "처음에는",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s29_c2",
+                    "text": "the tiny eggs",
+                    "startChar": 9,
+                    "endChar": 22,
+                    "role": "subject",
+                    "decodeHint": "tiny는 ti-ny로 나눠요.",
+                    "meaningKo": "작은 알들이",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s29_c3",
+                    "text": "grow into",
+                    "startChar": 23,
+                    "endChar": 32,
+                    "role": "action",
+                    "decodeHint": "grow는 긴 o, into는 in-to예요.",
+                    "meaningKo": "~로 자라요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s29_c4",
+                    "text": "larvae.",
+                    "startChar": 33,
+                    "endChar": 40,
+                    "role": "object",
+                    "decodeHint": "larvae는 lar-vae로 나눠 천천히 읽어요.",
+                    "meaningKo": "애벌레로",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s30",
+                "text": "The worker ants feed the larvae and lick them clean so they will grow well.",
+                "chunks": [
+                  {
+                    "id": "s30_c1",
+                    "text": "The worker ants",
+                    "startChar": 0,
+                    "endChar": 15,
+                    "role": "subject",
+                    "decodeHint": "worker는 work-er, ants의 ts를 붙여요.",
+                    "meaningKo": "일개미들은",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s30_c2",
+                    "text": "feed the larvae",
+                    "startChar": 16,
+                    "endChar": 31,
+                    "role": "action",
+                    "decodeHint": "feed는 긴 e, larvae는 lar-vae로 나눠요.",
+                    "meaningKo": "애벌레에게 먹이를 줘요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s30_c3",
+                    "text": "and lick them clean",
+                    "startChar": 32,
+                    "endChar": 51,
+                    "role": "action",
+                    "decodeHint": "lick은 짧은 i, clean은 긴 e예요.",
+                    "meaningKo": "깨끗이 핥아요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s30_c4",
+                    "text": "so they will grow well.",
+                    "startChar": 52,
+                    "endChar": 75,
+                    "role": "linker",
+                    "decodeHint": "grow는 긴 o, well은 짧은 e예요.",
+                    "meaningKo": "잘 자라도록",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s31",
+                "text": "The larvae grow into pupae.",
+                "chunks": [
+                  {
+                    "id": "s31_c1",
+                    "text": "The larvae",
+                    "startChar": 0,
+                    "endChar": 10,
+                    "role": "subject",
+                    "decodeHint": "larvae는 lar-vae로 나눠 읽어요.",
+                    "meaningKo": "그 애벌레들은",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s31_c2",
+                    "text": "grow into",
+                    "startChar": 11,
+                    "endChar": 20,
+                    "role": "action",
+                    "decodeHint": "grow는 긴 o 소리예요.",
+                    "meaningKo": "~로 자라요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s31_c3",
+                    "text": "pupae.",
+                    "startChar": 21,
+                    "endChar": 27,
+                    "role": "object",
+                    "decodeHint": "pupae는 pu-pae로 나눠요.",
+                    "meaningKo": "번데기로",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s32",
+                "text": "The workers keep grooming the pupae until they grow into adults.",
+                "chunks": [
+                  {
+                    "id": "s32_c1",
+                    "text": "The workers",
+                    "startChar": 0,
+                    "endChar": 11,
+                    "role": "subject",
+                    "decodeHint": "workers는 work-ers로 나눠요.",
+                    "meaningKo": "일개미들은",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s32_c2",
+                    "text": "keep grooming",
+                    "startChar": 12,
+                    "endChar": 25,
+                    "role": "action",
+                    "decodeHint": "keep은 긴 e, grooming은 groom-ing으로 나눠요.",
+                    "meaningKo": "계속 손질해요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s32_c3",
+                    "text": "the pupae",
+                    "startChar": 26,
+                    "endChar": 35,
+                    "role": "object",
+                    "decodeHint": "pupae는 pu-pae로 나눠요.",
+                    "meaningKo": "그 번데기들을",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s32_c4",
+                    "text": "until they grow",
+                    "startChar": 36,
+                    "endChar": 51,
+                    "role": "time",
+                    "decodeHint": "until은 un-til, grow는 긴 o예요.",
+                    "meaningKo": "자랄 때까지",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s32_c5",
+                    "text": "into adults.",
+                    "startChar": 52,
+                    "endChar": 64,
+                    "role": "object",
+                    "decodeHint": "adults는 a-dults로 나눠요.",
+                    "meaningKo": "어른 개미로",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s33",
+                "text": "The queen ant lays thousands and thousands of eggs.",
+                "chunks": [
+                  {
+                    "id": "s33_c1",
+                    "text": "The queen ant",
+                    "startChar": 0,
+                    "endChar": 13,
+                    "role": "subject",
+                    "decodeHint": "queen의 ee는 긴 e예요.",
+                    "meaningKo": "여왕개미는",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s33_c2",
+                    "text": "lays",
+                    "startChar": 14,
+                    "endChar": 18,
+                    "role": "action",
+                    "decodeHint": "lays는 ay가 긴 a예요.",
+                    "meaningKo": "낳아요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s33_c3",
+                    "text": "thousands and thousands",
+                    "startChar": 19,
+                    "endChar": 42,
+                    "role": "object",
+                    "decodeHint": "thousands는 thou-sands로 나눠요.",
+                    "meaningKo": "수천수천 개의",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s33_c4",
+                    "text": "of eggs.",
+                    "startChar": 43,
+                    "endChar": 51,
+                    "role": "object",
+                    "decodeHint": "eggs는 짧은 e예요.",
+                    "meaningKo": "알을",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s34",
+                "text": "Most of the eggs grow into worker ants.",
+                "chunks": [
+                  {
+                    "id": "s34_c1",
+                    "text": "Most of the eggs",
+                    "startChar": 0,
+                    "endChar": 16,
+                    "role": "subject",
+                    "decodeHint": "Most는 긴 o, eggs는 짧은 e예요.",
+                    "meaningKo": "대부분의 알들은",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s34_c2",
+                    "text": "grow into",
+                    "startChar": 17,
+                    "endChar": 26,
+                    "role": "action",
+                    "decodeHint": "grow는 긴 o예요.",
+                    "meaningKo": "~로 자라요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s34_c3",
+                    "text": "worker ants.",
+                    "startChar": 27,
+                    "endChar": 39,
+                    "role": "object",
+                    "decodeHint": "worker는 work-er, ants의 ts를 붙여요.",
+                    "meaningKo": "일개미로",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s35",
+                "text": "There may be only one queen ant in an ant city, but there can be many thousands of workers.",
+                "chunks": [
+                  {
+                    "id": "s35_c1",
+                    "text": "There may be",
+                    "startChar": 0,
+                    "endChar": 12,
+                    "role": "action",
+                    "decodeHint": "There의 th와 may의 긴 a를 확인해요.",
+                    "meaningKo": "~이 있을 수 있어요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s35_c2",
+                    "text": "only one queen ant",
+                    "startChar": 13,
+                    "endChar": 31,
+                    "role": "object",
+                    "decodeHint": "queen은 긴 e예요.",
+                    "meaningKo": "한 여왕개미만",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s35_c3",
+                    "text": "in an ant city,",
+                    "startChar": 32,
+                    "endChar": 47,
+                    "role": "place",
+                    "decodeHint": "city는 ci-ty, 쉼표에서 쉬어요.",
+                    "meaningKo": "한 개미 도시 안에",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s35_c4",
+                    "text": "but there can be",
+                    "startChar": 48,
+                    "endChar": 64,
+                    "role": "linker",
+                    "decodeHint": "but의 짧은 u와 there의 th를 읽어요.",
+                    "meaningKo": "하지만 있을 수 있어요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s35_c5",
+                    "text": "many thousands of workers.",
+                    "startChar": 65,
+                    "endChar": 91,
+                    "role": "object",
+                    "decodeHint": "thousands와 workers를 나눠 읽어요.",
+                    "meaningKo": "수천 마리의 일개미들이",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s36",
+                "text": "The queen doesn’t tell the workers what to do.",
+                "chunks": [
+                  {
+                    "id": "s36_c1",
+                    "text": "The queen",
+                    "startChar": 0,
+                    "endChar": 9,
+                    "role": "subject",
+                    "decodeHint": "queen의 ee는 긴 e예요.",
+                    "meaningKo": "여왕은",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s36_c2",
+                    "text": "doesn’t tell",
+                    "startChar": 10,
+                    "endChar": 22,
+                    "role": "action",
+                    "decodeHint": "doesn’t는 does-n’t처럼 나눠요.",
+                    "meaningKo": "말해 주지 않아요",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s36_c3",
+                    "text": "the workers",
+                    "startChar": 23,
+                    "endChar": 34,
+                    "role": "object",
+                    "decodeHint": "workers는 work-ers로 나눠요.",
+                    "meaningKo": "일개미들에게",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  },
+                  {
+                    "id": "s36_c4",
+                    "text": "what to do.",
+                    "startChar": 35,
+                    "endChar": 46,
+                    "role": "object",
+                    "decodeHint": "what의 wh와 do의 긴 oo를 확인해요.",
+                    "meaningKo": "무엇을 할지",
+                    "exploreIds": [
+                      "item6"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p5",
+            "title": "Workers Build and Search",
+            "overlookQuestion": "How do worker ants keep the ant city alive?",
+            "overlookHintKo": "일개미들이 함께 일하고 집을 넓히고 먹이를 찾는 장면을 떠올려 봐요.",
+            "sentences": [
+              {
+                "id": "s37",
+                "text": "But the workers are busy.",
+                "chunks": [
+                  {
+                    "id": "s37_c1",
+                    "text": "But",
+                    "startChar": 0,
+                    "endChar": 3,
+                    "role": "linker",
+                    "decodeHint": "But의 u는 짧은 u예요.",
+                    "meaningKo": "하지만",
+                    "exploreIds": []
+                  },
+                  {
+                    "id": "s37_c2",
+                    "text": "the workers",
+                    "startChar": 4,
+                    "endChar": 15,
+                    "role": "subject",
+                    "decodeHint": "workers는 work-ers로 나눠요.",
+                    "meaningKo": "일개미들은",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s37_c3",
+                    "text": "are busy.",
+                    "startChar": 16,
+                    "endChar": 25,
+                    "role": "action",
+                    "decodeHint": "busy는 bu-sy로 나눠요.",
+                    "meaningKo": "바빠요",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s38",
+                "text": "Each ant has work to do.",
+                "chunks": [
+                  {
+                    "id": "s38_c1",
+                    "text": "Each ant",
+                    "startChar": 0,
+                    "endChar": 8,
+                    "role": "subject",
+                    "decodeHint": "Each는 긴 e, ant는 짧은 a예요.",
+                    "meaningKo": "각 개미는",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s38_c2",
+                    "text": "has",
+                    "startChar": 9,
+                    "endChar": 12,
+                    "role": "action",
+                    "decodeHint": "has는 짧은 a예요.",
+                    "meaningKo": "가지고 있어요",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s38_c3",
+                    "text": "work to do.",
+                    "startChar": 13,
+                    "endChar": 24,
+                    "role": "object",
+                    "decodeHint": "work의 or와 do의 긴 oo를 확인해요.",
+                    "meaningKo": "해야 할 일을",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s39",
+                "text": "Ants work together to keep the whole ant city alive.",
+                "chunks": [
+                  {
+                    "id": "s39_c1",
+                    "text": "Ants",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "Ants 끝의 ts를 붙여요.",
+                    "meaningKo": "개미들은",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s39_c2",
+                    "text": "work together",
+                    "startChar": 5,
+                    "endChar": 18,
+                    "role": "action",
+                    "decodeHint": "together는 to-geth-er로 나눠요.",
+                    "meaningKo": "함께 일해요",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s39_c3",
+                    "text": "to keep",
+                    "startChar": 19,
+                    "endChar": 26,
+                    "role": "action",
+                    "decodeHint": "keep의 ee는 긴 e예요.",
+                    "meaningKo": "지키기 위해",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s39_c4",
+                    "text": "the whole ant city",
+                    "startChar": 27,
+                    "endChar": 45,
+                    "role": "object",
+                    "decodeHint": "whole은 긴 o, city는 ci-ty예요.",
+                    "meaningKo": "전체 개미 도시를",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s39_c5",
+                    "text": "alive.",
+                    "startChar": 46,
+                    "endChar": 52,
+                    "role": "object",
+                    "decodeHint": "alive는 a-live로 나눠요.",
+                    "meaningKo": "살아 있게",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s40",
+                "text": "Workers make the nest bigger by digging new rooms and tunnels.",
+                "chunks": [
+                  {
+                    "id": "s40_c1",
+                    "text": "Workers",
+                    "startChar": 0,
+                    "endChar": 7,
+                    "role": "subject",
+                    "decodeHint": "Workers는 work-ers로 나눠요.",
+                    "meaningKo": "일개미들은",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s40_c2",
+                    "text": "make the nest bigger",
+                    "startChar": 8,
+                    "endChar": 28,
+                    "role": "action",
+                    "decodeHint": "make는 긴 a, bigger는 big-ger예요.",
+                    "meaningKo": "집을 더 크게 만들어요",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s40_c3",
+                    "text": "by digging",
+                    "startChar": 29,
+                    "endChar": 39,
+                    "role": "action",
+                    "decodeHint": "digging은 dig-ging으로 나눠요.",
+                    "meaningKo": "파서",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s40_c4",
+                    "text": "new rooms and tunnels.",
+                    "startChar": 40,
+                    "endChar": 62,
+                    "role": "object",
+                    "decodeHint": "rooms는 긴 oo, tunnels는 tun-nels예요.",
+                    "meaningKo": "새 방들과 터널들을",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s41",
+                "text": "They use their feet to dig like tiny dogs.",
+                "chunks": [
+                  {
+                    "id": "s41_c1",
+                    "text": "They",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "They의 ey는 긴 a처럼 읽어요.",
+                    "meaningKo": "그들은",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s41_c2",
+                    "text": "use their feet",
+                    "startChar": 5,
+                    "endChar": 19,
+                    "role": "action",
+                    "decodeHint": "use는 긴 u, feet는 긴 e예요.",
+                    "meaningKo": "발을 써요",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s41_c3",
+                    "text": "to dig",
+                    "startChar": 20,
+                    "endChar": 26,
+                    "role": "action",
+                    "decodeHint": "dig는 짧은 i예요.",
+                    "meaningKo": "파기 위해",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s41_c4",
+                    "text": "like tiny dogs.",
+                    "startChar": 27,
+                    "endChar": 42,
+                    "role": "object",
+                    "decodeHint": "like는 긴 i, tiny는 ti-ny예요.",
+                    "meaningKo": "작은 개들처럼",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s42",
+                "text": "Workers pick up pieces of dirt in their jaws and “beards” and carry them outside.",
+                "chunks": [
+                  {
+                    "id": "s42_c1",
+                    "text": "Workers",
+                    "startChar": 0,
+                    "endChar": 7,
+                    "role": "subject",
+                    "decodeHint": "Workers는 work-ers로 나눠요.",
+                    "meaningKo": "일개미들은",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s42_c2",
+                    "text": "pick up pieces of dirt",
+                    "startChar": 8,
+                    "endChar": 30,
+                    "role": "action",
+                    "decodeHint": "pieces는 pie-ces, dirt의 ir을 확인해요.",
+                    "meaningKo": "흙 조각을 집어요",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s42_c3",
+                    "text": "in their jaws and “beards”",
+                    "startChar": 31,
+                    "endChar": 57,
+                    "role": "place",
+                    "decodeHint": "jaws의 aw와 beards의 ear 소리를 확인해요.",
+                    "meaningKo": "턱과 ‘수염’에",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s42_c4",
+                    "text": "and carry them",
+                    "startChar": 58,
+                    "endChar": 72,
+                    "role": "action",
+                    "decodeHint": "carry는 car-ry로 나눠요.",
+                    "meaningKo": "그리고 그것들을 날라요",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s42_c5",
+                    "text": "outside.",
+                    "startChar": 73,
+                    "endChar": 81,
+                    "role": "place",
+                    "decodeHint": "outside는 out-side로 나눠요.",
+                    "meaningKo": "밖으로",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s43",
+                "text": "Dirt from the digging is what makes the anthill.",
+                "chunks": [
+                  {
+                    "id": "s43_c1",
+                    "text": "Dirt from the digging",
+                    "startChar": 0,
+                    "endChar": 21,
+                    "role": "subject",
+                    "decodeHint": "dirt의 ir, digging의 dig-ging을 확인해요.",
+                    "meaningKo": "파낸 흙은",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s43_c2",
+                    "text": "is what makes",
+                    "startChar": 22,
+                    "endChar": 35,
+                    "role": "action",
+                    "decodeHint": "what은 wh, makes는 긴 a 뒤 ks예요.",
+                    "meaningKo": "~을 만드는 것이에요",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s43_c3",
+                    "text": "the anthill.",
+                    "startChar": 36,
+                    "endChar": 48,
+                    "role": "object",
+                    "decodeHint": "anthill은 ant-hill로 나눠요.",
+                    "meaningKo": "개미 언덕을",
+                    "exploreIds": [
+                      "item1",
+                      "item7"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s44",
+                "text": "Ants are great diggers and builders.",
+                "chunks": [
+                  {
+                    "id": "s44_c1",
+                    "text": "Ants",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "Ants 끝의 ts를 붙여요.",
+                    "meaningKo": "개미들은",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s44_c2",
+                    "text": "are",
+                    "startChar": 5,
+                    "endChar": 8,
+                    "role": "action",
+                    "decodeHint": "are는 /ar/처럼 길게 읽어요.",
+                    "meaningKo": "~이에요",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s44_c3",
+                    "text": "great diggers and builders.",
+                    "startChar": 9,
+                    "endChar": 36,
+                    "role": "object",
+                    "decodeHint": "great는 긴 a, diggers와 builders는 -ers를 확인해요.",
+                    "meaningKo": "훌륭한 파는 이이자 짓는 이들",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s45",
+                "text": "Imagine all the tiny pieces of dirt it takes to build a hill two feet high.",
+                "chunks": [
+                  {
+                    "id": "s45_c1",
+                    "text": "Imagine",
+                    "startChar": 0,
+                    "endChar": 7,
+                    "role": "action",
+                    "decodeHint": "Imagine은 im-ag-ine으로 나눠요.",
+                    "meaningKo": "상상해 보세요",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s45_c2",
+                    "text": "all the tiny pieces of dirt",
+                    "startChar": 8,
+                    "endChar": 35,
+                    "role": "object",
+                    "decodeHint": "tiny는 ti-ny, pieces는 pie-ces예요.",
+                    "meaningKo": "그 모든 작은 흙 조각들을",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s45_c3",
+                    "text": "it takes",
+                    "startChar": 36,
+                    "endChar": 44,
+                    "role": "action",
+                    "decodeHint": "takes는 긴 a 뒤 ks예요.",
+                    "meaningKo": "필요한",
+                    "exploreIds": [
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s45_c4",
+                    "text": "to build a hill",
+                    "startChar": 45,
+                    "endChar": 60,
+                    "role": "action",
+                    "decodeHint": "build는 /bild/처럼 짧은 i예요.",
+                    "meaningKo": "언덕을 짓기 위해",
+                    "exploreIds": [
+                      "item1",
+                      "item7"
+                    ]
+                  },
+                  {
+                    "id": "s45_c5",
+                    "text": "two feet high.",
+                    "startChar": 61,
+                    "endChar": 75,
+                    "role": "object",
+                    "decodeHint": "feet의 ee는 긴 e예요.",
+                    "meaningKo": "2피트 높이의",
+                    "exploreIds": [
+                      "item1",
+                      "item7"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s46",
+                "text": "Out around the harvester anthill, workers look for food.",
+                "chunks": [
+                  {
+                    "id": "s46_c1",
+                    "text": "Out around the harvester anthill,",
+                    "startChar": 0,
+                    "endChar": 33,
+                    "role": "place",
+                    "decodeHint": "Out은 /au/, around는 a-round로 나눠요.",
+                    "meaningKo": "수확개미 언덕 주변에서",
+                    "exploreIds": [
+                      "item1",
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s46_c2",
+                    "text": "workers",
+                    "startChar": 34,
+                    "endChar": 41,
+                    "role": "subject",
+                    "decodeHint": "workers는 work-ers로 나눠요.",
+                    "meaningKo": "일개미들이",
+                    "exploreIds": [
+                      "item4"
+                    ]
+                  },
+                  {
+                    "id": "s46_c3",
+                    "text": "look for",
+                    "startChar": 42,
+                    "endChar": 50,
+                    "role": "action",
+                    "decodeHint": "look은 oo를 짧게 읽어요.",
+                    "meaningKo": "찾아요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s46_c4",
+                    "text": "food.",
+                    "startChar": 51,
+                    "endChar": 56,
+                    "role": "object",
+                    "decodeHint": "food의 oo는 길게 읽어요.",
+                    "meaningKo": "먹이를",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s47",
+                "text": "Harvester ants mostly eat seeds.",
+                "chunks": [
+                  {
+                    "id": "s47_c1",
+                    "text": "Harvester ants",
+                    "startChar": 0,
+                    "endChar": 14,
+                    "role": "subject",
+                    "decodeHint": "Harvester는 har-ves-ter로 나눠요.",
+                    "meaningKo": "수확개미들은",
+                    "exploreIds": [
+                      "item2",
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s47_c2",
+                    "text": "mostly eat",
+                    "startChar": 15,
+                    "endChar": 25,
+                    "role": "action",
+                    "decodeHint": "mostly는 most-ly, eat은 긴 e예요.",
+                    "meaningKo": "주로 먹어요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s47_c3",
+                    "text": "seeds.",
+                    "startChar": 26,
+                    "endChar": 32,
+                    "role": "object",
+                    "decodeHint": "seeds의 ee는 긴 e예요.",
+                    "meaningKo": "씨앗을",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s48",
+                "text": "But sometimes they eat insects, too.",
+                "chunks": [
+                  {
+                    "id": "s48_c1",
+                    "text": "But sometimes",
+                    "startChar": 0,
+                    "endChar": 13,
+                    "role": "linker",
+                    "decodeHint": "sometimes는 some-times로 나눠요.",
+                    "meaningKo": "하지만 때때로",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s48_c2",
+                    "text": "they",
+                    "startChar": 14,
+                    "endChar": 18,
+                    "role": "subject",
+                    "decodeHint": "they의 ey는 긴 a처럼 읽어요.",
+                    "meaningKo": "그들은",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s48_c3",
+                    "text": "eat",
+                    "startChar": 19,
+                    "endChar": 22,
+                    "role": "action",
+                    "decodeHint": "eat은 긴 e예요.",
+                    "meaningKo": "먹어요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s48_c4",
+                    "text": "insects, too.",
+                    "startChar": 23,
+                    "endChar": 36,
+                    "role": "object",
+                    "decodeHint": "insects는 in-sects, too는 긴 oo예요.",
+                    "meaningKo": "곤충도",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p6",
+            "title": "Safety, Antennas, and Strength",
+            "overlookQuestion": "How do ants protect themselves and work together?",
+            "overlookHintKo": "개미가 물거나 쏘는 이유, 더듬이, 힘을 생각하며 읽어 봐요.",
+            "sentences": [
+              {
+                "id": "s49",
+                "text": "Ants can bite and sting other insects to capture them or to protect themselves.",
+                "chunks": [
+                  {
+                    "id": "s49_c1",
+                    "text": "Ants",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "Ants 끝의 ts를 붙여요.",
+                    "meaningKo": "개미들은",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s49_c2",
+                    "text": "can bite and sting",
+                    "startChar": 5,
+                    "endChar": 23,
+                    "role": "action",
+                    "decodeHint": "bite는 긴 i, sting은 짧은 i예요.",
+                    "meaningKo": "물고 쏠 수 있어요",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s49_c3",
+                    "text": "other insects",
+                    "startChar": 24,
+                    "endChar": 37,
+                    "role": "object",
+                    "decodeHint": "insects는 in-sects로 나눠요.",
+                    "meaningKo": "다른 곤충들을",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s49_c4",
+                    "text": "to capture them",
+                    "startChar": 38,
+                    "endChar": 53,
+                    "role": "action",
+                    "decodeHint": "capture는 cap-ture로 나눠요.",
+                    "meaningKo": "잡기 위해",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s49_c5",
+                    "text": "or to protect themselves.",
+                    "startChar": 54,
+                    "endChar": 79,
+                    "role": "action",
+                    "decodeHint": "protect는 pro-tect, themselves는 them-selves로 나눠요.",
+                    "meaningKo": "또는 스스로를 보호하기 위해",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s50",
+                "text": "Be careful, because some kinds of ants can bite or sting you, too.",
+                "chunks": [
+                  {
+                    "id": "s50_c1",
+                    "text": "Be careful,",
+                    "startChar": 0,
+                    "endChar": 11,
+                    "role": "action",
+                    "decodeHint": "careful은 care-ful로 나눠요.",
+                    "meaningKo": "조심하세요",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s50_c2",
+                    "text": "because",
+                    "startChar": 12,
+                    "endChar": 19,
+                    "role": "linker",
+                    "decodeHint": "because는 be-cause로 나눠요.",
+                    "meaningKo": "왜냐하면",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s50_c3",
+                    "text": "some kinds of ants",
+                    "startChar": 20,
+                    "endChar": 38,
+                    "role": "subject",
+                    "decodeHint": "kinds와 ants 끝소리를 확인해요.",
+                    "meaningKo": "몇몇 종류의 개미들이",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s50_c4",
+                    "text": "can bite or sting",
+                    "startChar": 39,
+                    "endChar": 56,
+                    "role": "action",
+                    "decodeHint": "bite는 긴 i, sting은 짧은 i예요.",
+                    "meaningKo": "물거나 쏠 수 있어요",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s50_c5",
+                    "text": "you, too.",
+                    "startChar": 57,
+                    "endChar": 66,
+                    "role": "object",
+                    "decodeHint": "too는 긴 oo 소리예요.",
+                    "meaningKo": "당신도",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s51",
+                "text": "Harvester ants will bite or sting if you disturb their nest.",
+                "chunks": [
+                  {
+                    "id": "s51_c1",
+                    "text": "Harvester ants",
+                    "startChar": 0,
+                    "endChar": 14,
+                    "role": "subject",
+                    "decodeHint": "Harvester는 har-ves-ter로 나눠요.",
+                    "meaningKo": "수확개미들은",
+                    "exploreIds": [
+                      "item2",
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s51_c2",
+                    "text": "will bite or sting",
+                    "startChar": 15,
+                    "endChar": 33,
+                    "role": "action",
+                    "decodeHint": "bite는 긴 i, sting은 짧은 i예요.",
+                    "meaningKo": "물거나 쏠 거예요",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s51_c3",
+                    "text": "if you disturb",
+                    "startChar": 34,
+                    "endChar": 48,
+                    "role": "linker",
+                    "decodeHint": "disturb는 dis-turb로 나눠요.",
+                    "meaningKo": "만약 방해한다면",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  },
+                  {
+                    "id": "s51_c4",
+                    "text": "their nest.",
+                    "startChar": 49,
+                    "endChar": 60,
+                    "role": "object",
+                    "decodeHint": "their의 th와 nest의 짧은 e를 확인해요.",
+                    "meaningKo": "그들의 집을",
+                    "exploreIds": [
+                      "item8"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s52",
+                "text": "Ants use their antennas to help them find food.",
+                "chunks": [
+                  {
+                    "id": "s52_c1",
+                    "text": "Ants",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "Ants 끝의 ts를 붙여요.",
+                    "meaningKo": "개미들은",
+                    "exploreIds": [
+                      "item9"
+                    ]
+                  },
+                  {
+                    "id": "s52_c2",
+                    "text": "use their antennas",
+                    "startChar": 5,
+                    "endChar": 23,
+                    "role": "action",
+                    "decodeHint": "antennas는 an-ten-nas로 나눠요.",
+                    "meaningKo": "더듬이를 사용해요",
+                    "exploreIds": [
+                      "item9"
+                    ]
+                  },
+                  {
+                    "id": "s52_c3",
+                    "text": "to help them",
+                    "startChar": 24,
+                    "endChar": 36,
+                    "role": "action",
+                    "decodeHint": "help는 짧은 e예요.",
+                    "meaningKo": "도와주기 위해",
+                    "exploreIds": [
+                      "item9"
+                    ]
+                  },
+                  {
+                    "id": "s52_c4",
+                    "text": "find food.",
+                    "startChar": 37,
+                    "endChar": 47,
+                    "role": "action",
+                    "decodeHint": "find는 긴 i, food는 긴 oo예요.",
+                    "meaningKo": "먹이를 찾도록",
+                    "exploreIds": [
+                      "item5",
+                      "item9"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s53",
+                "text": "They touch and smell with their antennas.",
+                "chunks": [
+                  {
+                    "id": "s53_c1",
+                    "text": "They",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "They의 ey는 긴 a처럼 읽어요.",
+                    "meaningKo": "그들은",
+                    "exploreIds": [
+                      "item9"
+                    ]
+                  },
+                  {
+                    "id": "s53_c2",
+                    "text": "touch and smell",
+                    "startChar": 5,
+                    "endChar": 20,
+                    "role": "action",
+                    "decodeHint": "touch는 짧은 u, smell은 짧은 e예요.",
+                    "meaningKo": "만지고 냄새 맡아요",
+                    "exploreIds": [
+                      "item9"
+                    ]
+                  },
+                  {
+                    "id": "s53_c3",
+                    "text": "with their antennas.",
+                    "startChar": 21,
+                    "endChar": 41,
+                    "role": "object",
+                    "decodeHint": "antennas는 an-ten-nas로 나눠요.",
+                    "meaningKo": "더듬이로",
+                    "exploreIds": [
+                      "item9"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s54",
+                "text": "If one ant finds food, others follow.",
+                "chunks": [
+                  {
+                    "id": "s54_c1",
+                    "text": "If one ant",
+                    "startChar": 0,
+                    "endChar": 10,
+                    "role": "linker",
+                    "decodeHint": "one은 w 소리로 시작하고 ant는 짧은 a예요.",
+                    "meaningKo": "한 개미가",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s54_c2",
+                    "text": "finds food,",
+                    "startChar": 11,
+                    "endChar": 22,
+                    "role": "action",
+                    "decodeHint": "finds는 긴 i, food는 긴 oo예요.",
+                    "meaningKo": "먹이를 찾으면",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s54_c3",
+                    "text": "others",
+                    "startChar": 23,
+                    "endChar": 29,
+                    "role": "subject",
+                    "decodeHint": "others의 th를 부드럽게 읽어요.",
+                    "meaningKo": "다른 개미들이",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s54_c4",
+                    "text": "follow.",
+                    "startChar": 30,
+                    "endChar": 37,
+                    "role": "action",
+                    "decodeHint": "follow는 fol-low로 나눠요.",
+                    "meaningKo": "따라가요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s55",
+                "text": "Soon there will be a lot of ants carrying away lunch.",
+                "chunks": [
+                  {
+                    "id": "s55_c1",
+                    "text": "Soon",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "time",
+                    "decodeHint": "Soon의 oo는 긴 소리예요.",
+                    "meaningKo": "곧",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s55_c2",
+                    "text": "there will be",
+                    "startChar": 5,
+                    "endChar": 18,
+                    "role": "action",
+                    "decodeHint": "there의 th와 will의 짧은 i를 확인해요.",
+                    "meaningKo": "있을 거예요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s55_c3",
+                    "text": "a lot of ants",
+                    "startChar": 19,
+                    "endChar": 32,
+                    "role": "subject",
+                    "decodeHint": "lot은 짧은 o, ants의 ts를 붙여요.",
+                    "meaningKo": "많은 개미들이",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s55_c4",
+                    "text": "carrying away lunch.",
+                    "startChar": 33,
+                    "endChar": 53,
+                    "role": "action",
+                    "decodeHint": "carrying은 car-ry-ing, away는 a-way로 나눠요.",
+                    "meaningKo": "점심을 나르고 있는",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s56",
+                "text": "If one ant can’t carry something, others may help.",
+                "chunks": [
+                  {
+                    "id": "s56_c1",
+                    "text": "If one ant",
+                    "startChar": 0,
+                    "endChar": 10,
+                    "role": "linker",
+                    "decodeHint": "one은 w 소리로 시작하고 ant는 짧은 a예요.",
+                    "meaningKo": "한 개미가",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s56_c2",
+                    "text": "can’t carry something,",
+                    "startChar": 11,
+                    "endChar": 33,
+                    "role": "action",
+                    "decodeHint": "can’t의 t와 carry의 car-ry를 확인해요.",
+                    "meaningKo": "무언가를 나를 수 없다면",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s56_c3",
+                    "text": "others",
+                    "startChar": 34,
+                    "endChar": 40,
+                    "role": "subject",
+                    "decodeHint": "others의 th를 부드럽게 읽어요.",
+                    "meaningKo": "다른 개미들이",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s56_c4",
+                    "text": "may help.",
+                    "startChar": 41,
+                    "endChar": 50,
+                    "role": "action",
+                    "decodeHint": "may는 긴 a, help는 짧은 e예요.",
+                    "meaningKo": "도울지도 몰라요",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s57",
+                "text": "But each worker ant is strong.",
+                "chunks": [
+                  {
+                    "id": "s57_c1",
+                    "text": "But",
+                    "startChar": 0,
+                    "endChar": 3,
+                    "role": "linker",
+                    "decodeHint": "But의 u는 짧은 u예요.",
+                    "meaningKo": "하지만",
+                    "exploreIds": []
+                  },
+                  {
+                    "id": "s57_c2",
+                    "text": "each worker ant",
+                    "startChar": 4,
+                    "endChar": 19,
+                    "role": "subject",
+                    "decodeHint": "each는 긴 e, worker는 work-er로 나눠요.",
+                    "meaningKo": "각 일개미는",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s57_c3",
+                    "text": "is strong.",
+                    "startChar": 20,
+                    "endChar": 30,
+                    "role": "action",
+                    "decodeHint": "strong은 str 소리로 시작해요.",
+                    "meaningKo": "강해요",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s58",
+                "text": "An ant can lift as much as fifty times its own weight.",
+                "chunks": [
+                  {
+                    "id": "s58_c1",
+                    "text": "An ant",
+                    "startChar": 0,
+                    "endChar": 6,
+                    "role": "subject",
+                    "decodeHint": "ant는 짧은 a로 읽어요.",
+                    "meaningKo": "한 개미는",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s58_c2",
+                    "text": "can lift",
+                    "startChar": 7,
+                    "endChar": 15,
+                    "role": "action",
+                    "decodeHint": "lift는 짧은 i예요.",
+                    "meaningKo": "들 수 있어요",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s58_c3",
+                    "text": "as much as",
+                    "startChar": 16,
+                    "endChar": 26,
+                    "role": "linker",
+                    "decodeHint": "much는 짧은 u예요.",
+                    "meaningKo": "~만큼",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s58_c4",
+                    "text": "fifty times",
+                    "startChar": 27,
+                    "endChar": 38,
+                    "role": "object",
+                    "decodeHint": "fifty는 fif-ty로 나눠요.",
+                    "meaningKo": "50배",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s58_c5",
+                    "text": "its own weight.",
+                    "startChar": 39,
+                    "endChar": 54,
+                    "role": "object",
+                    "decodeHint": "weight의 eigh는 긴 a 소리예요.",
+                    "meaningKo": "자기 몸무게의",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s59",
+                "text": "If people could lift like that, we could each lift a car.",
+                "chunks": [
+                  {
+                    "id": "s59_c1",
+                    "text": "If people",
+                    "startChar": 0,
+                    "endChar": 9,
+                    "role": "linker",
+                    "decodeHint": "people은 peo-ple로 나눠요.",
+                    "meaningKo": "사람들이",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s59_c2",
+                    "text": "could lift like that,",
+                    "startChar": 10,
+                    "endChar": 31,
+                    "role": "action",
+                    "decodeHint": "could의 l은 묵음, lift는 짧은 i예요.",
+                    "meaningKo": "그렇게 들 수 있다면",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s59_c3",
+                    "text": "we",
+                    "startChar": 32,
+                    "endChar": 34,
+                    "role": "subject",
+                    "decodeHint": "we는 긴 e 소리예요.",
+                    "meaningKo": "우리는",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s59_c4",
+                    "text": "could each lift",
+                    "startChar": 35,
+                    "endChar": 50,
+                    "role": "action",
+                    "decodeHint": "could의 l은 묵음, each는 긴 e예요.",
+                    "meaningKo": "각자 들 수 있어요",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  },
+                  {
+                    "id": "s59_c5",
+                    "text": "a car.",
+                    "startChar": 51,
+                    "endChar": 57,
+                    "role": "object",
+                    "decodeHint": "car의 ar는 길게 읽어요.",
+                    "meaningKo": "차 한 대를",
+                    "exploreIds": [
+                      "item10"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s60",
+                "text": "The workers carry the food back to the ant city.",
+                "chunks": [
+                  {
+                    "id": "s60_c1",
+                    "text": "The workers",
+                    "startChar": 0,
+                    "endChar": 11,
+                    "role": "subject",
+                    "decodeHint": "workers는 work-ers로 나눠요.",
+                    "meaningKo": "그 일개미들은",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s60_c2",
+                    "text": "carry",
+                    "startChar": 12,
+                    "endChar": 17,
+                    "role": "action",
+                    "decodeHint": "carry는 car-ry로 나눠요.",
+                    "meaningKo": "날라요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s60_c3",
+                    "text": "the food",
+                    "startChar": 18,
+                    "endChar": 26,
+                    "role": "object",
+                    "decodeHint": "food의 oo는 길게 읽어요.",
+                    "meaningKo": "먹이를",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s60_c4",
+                    "text": "back to the ant city.",
+                    "startChar": 27,
+                    "endChar": 48,
+                    "role": "place",
+                    "decodeHint": "back은 짧은 a, city는 ci-ty예요.",
+                    "meaningKo": "개미 도시로 돌아가",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p7",
+            "title": "Many Ant Cities Anywhere",
+            "overlookQuestion": "Where can different kinds of ants make their cities?",
+            "overlookHintKo": "개미 종류마다 집을 만드는 곳이 어떻게 다른지 살펴봐요.",
+            "sentences": [
+              {
+                "id": "s61",
+                "text": "Ants share the food they find.",
+                "chunks": [
+                  {
+                    "id": "s61_c1",
+                    "text": "Ants",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "Ants 끝의 ts를 붙여요.",
+                    "meaningKo": "개미들은",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s61_c2",
+                    "text": "share",
+                    "startChar": 5,
+                    "endChar": 10,
+                    "role": "action",
+                    "decodeHint": "share는 sh 소리로 시작해요.",
+                    "meaningKo": "나눠요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s61_c3",
+                    "text": "the food",
+                    "startChar": 11,
+                    "endChar": 19,
+                    "role": "object",
+                    "decodeHint": "food의 oo는 길게 읽어요.",
+                    "meaningKo": "먹이를",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s61_c4",
+                    "text": "they find.",
+                    "startChar": 20,
+                    "endChar": 30,
+                    "role": "action",
+                    "decodeHint": "they는 긴 a처럼, find는 긴 i예요.",
+                    "meaningKo": "그들이 찾은",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s62",
+                "text": "Ants eat many foods.",
+                "chunks": [
+                  {
+                    "id": "s62_c1",
+                    "text": "Ants",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "Ants 끝의 ts를 붙여요.",
+                    "meaningKo": "개미들은",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s62_c2",
+                    "text": "eat",
+                    "startChar": 5,
+                    "endChar": 8,
+                    "role": "action",
+                    "decodeHint": "eat은 긴 e 소리예요.",
+                    "meaningKo": "먹어요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s62_c3",
+                    "text": "many foods.",
+                    "startChar": 9,
+                    "endChar": 20,
+                    "role": "object",
+                    "decodeHint": "many는 man-y, foods의 oo는 길게 읽어요.",
+                    "meaningKo": "많은 먹이를",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s63",
+                "text": "But different kinds of ants like different foods.",
+                "chunks": [
+                  {
+                    "id": "s63_c1",
+                    "text": "But",
+                    "startChar": 0,
+                    "endChar": 3,
+                    "role": "linker",
+                    "decodeHint": "But의 u는 짧은 u예요.",
+                    "meaningKo": "하지만",
+                    "exploreIds": []
+                  },
+                  {
+                    "id": "s63_c2",
+                    "text": "different kinds of ants",
+                    "startChar": 4,
+                    "endChar": 27,
+                    "role": "subject",
+                    "decodeHint": "different는 dif-fer-ent, ants의 ts를 붙여요.",
+                    "meaningKo": "다른 종류의 개미들은",
+                    "exploreIds": [
+                      "item5",
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s63_c3",
+                    "text": "like",
+                    "startChar": 28,
+                    "endChar": 32,
+                    "role": "action",
+                    "decodeHint": "like는 긴 i 소리예요.",
+                    "meaningKo": "좋아해요",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  },
+                  {
+                    "id": "s63_c4",
+                    "text": "different foods.",
+                    "startChar": 33,
+                    "endChar": 49,
+                    "role": "object",
+                    "decodeHint": "different는 dif-fer-ent로 나눠요.",
+                    "meaningKo": "다른 먹이를",
+                    "exploreIds": [
+                      "item5"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s64",
+                "text": "There are over 10,000 kinds of ants.",
+                "chunks": [
+                  {
+                    "id": "s64_c1",
+                    "text": "There are",
+                    "startChar": 0,
+                    "endChar": 9,
+                    "role": "action",
+                    "decodeHint": "There의 th와 are의 ar를 확인해요.",
+                    "meaningKo": "있어요",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s64_c2",
+                    "text": "over 10,000",
+                    "startChar": 10,
+                    "endChar": 21,
+                    "role": "object",
+                    "decodeHint": "over는 o-ver로 나눠요.",
+                    "meaningKo": "만 개가 넘는",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s64_c3",
+                    "text": "kinds of ants.",
+                    "startChar": 22,
+                    "endChar": 36,
+                    "role": "object",
+                    "decodeHint": "kinds와 ants 끝소리를 확인해요.",
+                    "meaningKo": "종류의 개미들이",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s65",
+                "text": "The different kinds of ants have found many ways to make their cities, so they can live in many kinds of places.",
+                "chunks": [
+                  {
+                    "id": "s65_c1",
+                    "text": "The different kinds of ants",
+                    "startChar": 0,
+                    "endChar": 27,
+                    "role": "subject",
+                    "decodeHint": "different는 dif-fer-ent, kinds와 ants 끝소리를 확인해요.",
+                    "meaningKo": "여러 종류의 개미들은",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s65_c2",
+                    "text": "have found",
+                    "startChar": 28,
+                    "endChar": 38,
+                    "role": "action",
+                    "decodeHint": "found는 ou를 한 덩어리로 읽어요.",
+                    "meaningKo": "찾아냈어요",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s65_c3",
+                    "text": "many ways",
+                    "startChar": 39,
+                    "endChar": 48,
+                    "role": "object",
+                    "decodeHint": "many는 man-y, ways는 긴 a 소리예요.",
+                    "meaningKo": "많은 방법을",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s65_c4",
+                    "text": "to make their cities,",
+                    "startChar": 49,
+                    "endChar": 70,
+                    "role": "action",
+                    "decodeHint": "make는 긴 a, cities는 cit-ies로 나눠요.",
+                    "meaningKo": "그들의 도시를 만들기 위한",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s65_c5",
+                    "text": "so they can live in many kinds of places.",
+                    "startChar": 71,
+                    "endChar": 112,
+                    "role": "linker",
+                    "decodeHint": "places는 pla-ces, live는 짧은 i예요.",
+                    "meaningKo": "그래서 많은 곳에서 살 수 있도록",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s66",
+                "text": "Janitor ants make their nests in hollowed-out tree twigs.",
+                "chunks": [
+                  {
+                    "id": "s66_c1",
+                    "text": "Janitor ants",
+                    "startChar": 0,
+                    "endChar": 12,
+                    "role": "subject",
+                    "decodeHint": "Janitor는 jan-i-tor로 나눠요.",
+                    "meaningKo": "청소부개미들은",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s66_c2",
+                    "text": "make",
+                    "startChar": 13,
+                    "endChar": 17,
+                    "role": "action",
+                    "decodeHint": "make는 긴 a 소리예요.",
+                    "meaningKo": "만들어요",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s66_c3",
+                    "text": "their nests",
+                    "startChar": 18,
+                    "endChar": 29,
+                    "role": "object",
+                    "decodeHint": "their의 th와 nests 끝 sts를 확인해요.",
+                    "meaningKo": "그들의 집을",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s66_c4",
+                    "text": "in hollowed-out tree twigs.",
+                    "startChar": 30,
+                    "endChar": 57,
+                    "role": "place",
+                    "decodeHint": "hollowed-out은 hol-lowed-out으로 나눠요.",
+                    "meaningKo": "속이 빈 나뭇가지 안에",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s67",
+                "text": "The soldier janitor ant—a kind of worker ant—has a big, plug-shaped head it can use for a door.",
+                "chunks": [
+                  {
+                    "id": "s67_c1",
+                    "text": "The soldier janitor ant—a kind of worker ant—",
+                    "startChar": 0,
+                    "endChar": 45,
+                    "role": "subject",
+                    "decodeHint": "soldier와 janitor를 나누고 대시에서 살짝 쉬어요.",
+                    "meaningKo": "병정 청소부개미는",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s67_c2",
+                    "text": "has",
+                    "startChar": 45,
+                    "endChar": 48,
+                    "role": "action",
+                    "decodeHint": "has는 짧은 a예요.",
+                    "meaningKo": "가지고 있어요",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s67_c3",
+                    "text": "a big, plug-shaped head",
+                    "startChar": 49,
+                    "endChar": 72,
+                    "role": "object",
+                    "decodeHint": "plug-shaped는 plug-shaped로 끊어 읽어요.",
+                    "meaningKo": "크고 마개 모양인 머리를",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s67_c4",
+                    "text": "it can use",
+                    "startChar": 73,
+                    "endChar": 83,
+                    "role": "action",
+                    "decodeHint": "use는 긴 u 소리예요.",
+                    "meaningKo": "그것이 쓸 수 있는",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s67_c5",
+                    "text": "for a door.",
+                    "startChar": 84,
+                    "endChar": 95,
+                    "role": "object",
+                    "decodeHint": "door는 /or/ 소리로 길게 읽어요.",
+                    "meaningKo": "문으로",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s68",
+                "text": "Many kinds of ants make hills or mounds.",
+                "chunks": [
+                  {
+                    "id": "s68_c1",
+                    "text": "Many kinds of ants",
+                    "startChar": 0,
+                    "endChar": 18,
+                    "role": "subject",
+                    "decodeHint": "Many는 man-y, kinds와 ants 끝소리를 확인해요.",
+                    "meaningKo": "많은 종류의 개미들은",
+                    "exploreIds": [
+                      "item1",
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s68_c2",
+                    "text": "make",
+                    "startChar": 19,
+                    "endChar": 23,
+                    "role": "action",
+                    "decodeHint": "make는 긴 a예요.",
+                    "meaningKo": "만들어요",
+                    "exploreIds": [
+                      "item1",
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s68_c3",
+                    "text": "hills or mounds.",
+                    "startChar": 24,
+                    "endChar": 40,
+                    "role": "object",
+                    "decodeHint": "hills는 짧은 i, mounds는 ou 소리예요.",
+                    "meaningKo": "언덕이나 둔덕을",
+                    "exploreIds": [
+                      "item1",
+                      "item11"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s69",
+                "text": "If you haven’t seen harvester anthills, maybe you’ve seen the round-topped hills that formica ants make.",
+                "chunks": [
+                  {
+                    "id": "s69_c1",
+                    "text": "If you haven’t seen",
+                    "startChar": 0,
+                    "endChar": 19,
+                    "role": "linker",
+                    "decodeHint": "haven’t는 have-n’t로 나누고 seen은 긴 e예요.",
+                    "meaningKo": "만약 본 적이 없다면",
+                    "exploreIds": [
+                      "item1",
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s69_c2",
+                    "text": "harvester anthills,",
+                    "startChar": 20,
+                    "endChar": 39,
+                    "role": "object",
+                    "decodeHint": "harvester는 har-ves-ter, anthills는 ant-hills예요.",
+                    "meaningKo": "수확개미 언덕을",
+                    "exploreIds": [
+                      "item1",
+                      "item2"
+                    ]
+                  },
+                  {
+                    "id": "s69_c3",
+                    "text": "maybe you’ve seen",
+                    "startChar": 40,
+                    "endChar": 57,
+                    "role": "action",
+                    "decodeHint": "maybe는 may-be, you’ve는 짧게 붙여요.",
+                    "meaningKo": "아마 보았을 거예요",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s69_c4",
+                    "text": "the round-topped hills",
+                    "startChar": 58,
+                    "endChar": 80,
+                    "role": "object",
+                    "decodeHint": "round-topped는 round-topped로 끊어 읽어요.",
+                    "meaningKo": "둥근 꼭대기의 언덕을",
+                    "exploreIds": [
+                      "item1",
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s69_c5",
+                    "text": "that formica ants make.",
+                    "startChar": 81,
+                    "endChar": 104,
+                    "role": "action",
+                    "decodeHint": "formica는 for-mi-ca로 나눠요.",
+                    "meaningKo": "왕개미들이 만드는",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s70",
+                "text": "Sometimes they cover their hills with thatch.",
+                "chunks": [
+                  {
+                    "id": "s70_c1",
+                    "text": "Sometimes",
+                    "startChar": 0,
+                    "endChar": 9,
+                    "role": "time",
+                    "decodeHint": "Sometimes는 some-times로 나눠요.",
+                    "meaningKo": "때때로",
+                    "exploreIds": [
+                      "item1",
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s70_c2",
+                    "text": "they",
+                    "startChar": 10,
+                    "endChar": 14,
+                    "role": "subject",
+                    "decodeHint": "they의 ey는 긴 a처럼 읽어요.",
+                    "meaningKo": "그들은",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s70_c3",
+                    "text": "cover",
+                    "startChar": 15,
+                    "endChar": 20,
+                    "role": "action",
+                    "decodeHint": "cover는 cov-er로 나눠요.",
+                    "meaningKo": "덮어요",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s70_c4",
+                    "text": "their hills",
+                    "startChar": 21,
+                    "endChar": 32,
+                    "role": "object",
+                    "decodeHint": "their의 th와 hills의 짧은 i를 확인해요.",
+                    "meaningKo": "그들의 언덕을",
+                    "exploreIds": [
+                      "item1"
+                    ]
+                  },
+                  {
+                    "id": "s70_c5",
+                    "text": "with thatch.",
+                    "startChar": 33,
+                    "endChar": 45,
+                    "role": "object",
+                    "decodeHint": "thatch는 th와 짧은 a 소리예요.",
+                    "meaningKo": "짚 같은 것으로",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s71",
+                "text": "Or you may have seen pavement ants.",
+                "chunks": [
+                  {
+                    "id": "s71_c1",
+                    "text": "Or",
+                    "startChar": 0,
+                    "endChar": 2,
+                    "role": "linker",
+                    "decodeHint": "Or는 /or/처럼 길게 읽어요.",
+                    "meaningKo": "또는",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s71_c2",
+                    "text": "you",
+                    "startChar": 3,
+                    "endChar": 6,
+                    "role": "subject",
+                    "decodeHint": "you는 긴 u 소리예요.",
+                    "meaningKo": "너는",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s71_c3",
+                    "text": "may have seen",
+                    "startChar": 7,
+                    "endChar": 20,
+                    "role": "action",
+                    "decodeHint": "may는 긴 a, seen은 긴 e예요.",
+                    "meaningKo": "본 적 있을지도 몰라요",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s71_c4",
+                    "text": "pavement ants.",
+                    "startChar": 21,
+                    "endChar": 35,
+                    "role": "object",
+                    "decodeHint": "pavement는 pave-ment로 나눠요.",
+                    "meaningKo": "포장도로개미를",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s72",
+                "text": "They can live under the sidewalk.",
+                "chunks": [
+                  {
+                    "id": "s72_c1",
+                    "text": "They",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "They의 ey는 긴 a처럼 읽어요.",
+                    "meaningKo": "그들은",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s72_c2",
+                    "text": "can live",
+                    "startChar": 5,
+                    "endChar": 13,
+                    "role": "action",
+                    "decodeHint": "live는 짧은 i 소리예요.",
+                    "meaningKo": "살 수 있어요",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s72_c3",
+                    "text": "under the sidewalk.",
+                    "startChar": 14,
+                    "endChar": 33,
+                    "role": "place",
+                    "decodeHint": "sidewalk는 side-walk로 나눠요.",
+                    "meaningKo": "보도 아래에서",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s73",
+                "text": "Or carpenter ants, who build their nests in rotting wood.",
+                "chunks": [
+                  {
+                    "id": "s73_c1",
+                    "text": "Or",
+                    "startChar": 0,
+                    "endChar": 2,
+                    "role": "linker",
+                    "decodeHint": "Or는 /or/처럼 길게 읽어요.",
+                    "meaningKo": "또는",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s73_c2",
+                    "text": "carpenter ants,",
+                    "startChar": 3,
+                    "endChar": 18,
+                    "role": "subject",
+                    "decodeHint": "carpenter는 car-pen-ter로 나눠요.",
+                    "meaningKo": "목수개미들",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s73_c3",
+                    "text": "who build",
+                    "startChar": 19,
+                    "endChar": 28,
+                    "role": "action",
+                    "decodeHint": "build는 /bild/처럼 짧은 i예요.",
+                    "meaningKo": "짓는",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s73_c4",
+                    "text": "their nests",
+                    "startChar": 29,
+                    "endChar": 40,
+                    "role": "object",
+                    "decodeHint": "nests 끝의 sts를 천천히 붙여요.",
+                    "meaningKo": "그들의 집을",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  },
+                  {
+                    "id": "s73_c5",
+                    "text": "in rotting wood.",
+                    "startChar": 41,
+                    "endChar": 57,
+                    "role": "place",
+                    "decodeHint": "rotting은 rot-ting, wood는 짧은 oo예요.",
+                    "meaningKo": "썩은 나무 안에",
+                    "exploreIds": [
+                      "item11"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s74",
+                "text": "There are small ant cities with just a few ants.",
+                "chunks": [
+                  {
+                    "id": "s74_c1",
+                    "text": "There are",
+                    "startChar": 0,
+                    "endChar": 9,
+                    "role": "action",
+                    "decodeHint": "There의 th와 are의 ar를 확인해요.",
+                    "meaningKo": "있어요",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s74_c2",
+                    "text": "small ant cities",
+                    "startChar": 10,
+                    "endChar": 26,
+                    "role": "object",
+                    "decodeHint": "small의 sm, cities는 cit-ies로 나눠요.",
+                    "meaningKo": "작은 개미 도시들이",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s74_c3",
+                    "text": "with just a few ants.",
+                    "startChar": 27,
+                    "endChar": 48,
+                    "role": "object",
+                    "decodeHint": "few는 긴 u, ants의 ts를 붙여요.",
+                    "meaningKo": "몇 마리의 개미만 있는",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s75",
+                "text": "There are big ant cities with many, many ants.",
+                "chunks": [
+                  {
+                    "id": "s75_c1",
+                    "text": "There are",
+                    "startChar": 0,
+                    "endChar": 9,
+                    "role": "action",
+                    "decodeHint": "There의 th와 are의 ar를 확인해요.",
+                    "meaningKo": "있어요",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s75_c2",
+                    "text": "big ant cities",
+                    "startChar": 10,
+                    "endChar": 24,
+                    "role": "object",
+                    "decodeHint": "big은 짧은 i, cities는 cit-ies로 나눠요.",
+                    "meaningKo": "큰 개미 도시들이",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s75_c3",
+                    "text": "with many, many ants.",
+                    "startChar": 25,
+                    "endChar": 46,
+                    "role": "object",
+                    "decodeHint": "many는 man-y, ants의 ts를 붙여요.",
+                    "meaningKo": "아주 많은 개미가 있는",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s76",
+                "text": "Ants have been found at the tops of the highest buildings and on ships at sea.",
+                "chunks": [
+                  {
+                    "id": "s76_c1",
+                    "text": "Ants",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "Ants 끝의 ts를 붙여요.",
+                    "meaningKo": "개미들은",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s76_c2",
+                    "text": "have been found",
+                    "startChar": 5,
+                    "endChar": 20,
+                    "role": "action",
+                    "decodeHint": "been은 짧은 i처럼, found는 ou 소리예요.",
+                    "meaningKo": "발견되어 왔어요",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s76_c3",
+                    "text": "at the tops",
+                    "startChar": 21,
+                    "endChar": 32,
+                    "role": "place",
+                    "decodeHint": "tops 끝의 ps를 붙여요.",
+                    "meaningKo": "꼭대기에서",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s76_c4",
+                    "text": "of the highest buildings",
+                    "startChar": 33,
+                    "endChar": 57,
+                    "role": "place",
+                    "decodeHint": "highest는 high-est, buildings는 build-ings로 나눠요.",
+                    "meaningKo": "가장 높은 건물들의",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s76_c5",
+                    "text": "and on ships at sea.",
+                    "startChar": 58,
+                    "endChar": 78,
+                    "role": "place",
+                    "decodeHint": "ships 끝의 ps와 sea의 긴 e를 확인해요.",
+                    "meaningKo": "그리고 바다의 배 위에서",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s77",
+                "text": "Ants can make their cities almost anywhere.",
+                "chunks": [
+                  {
+                    "id": "s77_c1",
+                    "text": "Ants",
+                    "startChar": 0,
+                    "endChar": 4,
+                    "role": "subject",
+                    "decodeHint": "Ants 끝의 ts를 붙여요.",
+                    "meaningKo": "개미들은",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s77_c2",
+                    "text": "can make",
+                    "startChar": 5,
+                    "endChar": 13,
+                    "role": "action",
+                    "decodeHint": "make는 긴 a 소리예요.",
+                    "meaningKo": "만들 수 있어요",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s77_c3",
+                    "text": "their cities",
+                    "startChar": 14,
+                    "endChar": 26,
+                    "role": "object",
+                    "decodeHint": "their의 th와 cities의 cit-ies를 확인해요.",
+                    "meaningKo": "그들의 도시를",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s77_c4",
+                    "text": "almost anywhere.",
+                    "startChar": 27,
+                    "endChar": 43,
+                    "role": "place",
+                    "decodeHint": "almost는 al-most, anywhere는 any-where로 나눠요.",
+                    "meaningKo": "거의 어디에나",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "s78",
+                "text": "Look around and you’ll probably find an ant city, busy with ants.",
+                "chunks": [
+                  {
+                    "id": "s78_c1",
+                    "text": "Look around",
+                    "startChar": 0,
+                    "endChar": 11,
+                    "role": "action",
+                    "decodeHint": "Look은 oo를 짧게, around는 a-round예요.",
+                    "meaningKo": "둘러보세요",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s78_c2",
+                    "text": "and you’ll probably find",
+                    "startChar": 12,
+                    "endChar": 36,
+                    "role": "action",
+                    "decodeHint": "you’ll은 짧게 붙이고, probably는 prob-a-bly로 나눠요.",
+                    "meaningKo": "그러면 아마 찾을 거예요",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s78_c3",
+                    "text": "an ant city,",
+                    "startChar": 37,
+                    "endChar": 49,
+                    "role": "object",
+                    "decodeHint": "city는 ci-ty, 쉼표에서 살짝 쉬어요.",
+                    "meaningKo": "한 개미 도시를",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  },
+                  {
+                    "id": "s78_c4",
+                    "text": "busy with ants.",
+                    "startChar": 50,
+                    "endChar": 65,
+                    "role": "object",
+                    "decodeHint": "busy는 bu-sy, ants의 ts를 붙여요.",
+                    "meaningKo": "개미들로 바쁜",
+                    "exploreIds": [
+                      "item12"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

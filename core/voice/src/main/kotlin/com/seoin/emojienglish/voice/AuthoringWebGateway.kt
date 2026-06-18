@@ -44,6 +44,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 import java.io.File
+import java.io.FileInputStream
 
 enum class AuthoringQueryFailureReason {
     SEND_FAILED, RESPONSE_TIMEOUT, ATTACH_FAILED,
@@ -266,22 +267,29 @@ class AuthoringWebGateway @Inject constructor(
     }
 
     suspend fun selectInstantMode(): Boolean = selectComposerMode("즉시")
+    suspend fun selectHighMode(): Boolean = selectComposerMode("높음", aliases = listOf("High", "high"))
 
-    suspend fun selectProExpansionMode(): Boolean = selectComposerMode("Pro 확장")
+    suspend fun selectProExpansionMode(): Boolean = selectComposerMode("Pro", aliases = listOf("Pro 확장"))
 
-    private suspend fun selectComposerMode(label: String): Boolean = withContext(Dispatchers.Main.immediate) {
+    private suspend fun selectComposerMode(
+        label: String,
+        aliases: List<String> = emptyList(),
+    ): Boolean = withContext(Dispatchers.Main.immediate) {
         ensureWebView()
         waitPageLoaded()
         if (!waitForEditor()) return@withContext false
+        val labels = (listOf(label) + aliases).distinct()
         for (attempt in 0 until MODE_SELECT_MAX_ATTEMPTS) {
-            val target = evalObj(buildComposerModeTargetJs(label))
-            Log.d(TAG, "mode select label=$label attempt=$attempt target=$target")
+            val target = evalObj(buildComposerModeTargetJs(labels))
+            Log.d(TAG, "mode select labels=${labels.joinToString("|")} attempt=$attempt target=$target")
             when (target?.optString("status")) {
                 "selected" -> return@withContext true
                 "option" -> {
                     tapTarget(target)
                     delay(1200)
-                    return@withContext true
+                    val verified = evalObj(buildComposerModeTargetJs(labels))
+                    Log.d(TAG, "mode select verify labels=${labels.joinToString("|")} target=$verified")
+                    if (verified?.optString("status") == "selected") return@withContext true
                 }
                 "toggle" -> {
                     tapTarget(target)
@@ -290,7 +298,7 @@ class AuthoringWebGateway @Inject constructor(
                 else -> delay(500)
             }
         }
-        evalObj(buildComposerModeTargetJs(label))?.optString("status") == "selected"
+        evalObj(buildComposerModeTargetJs(labels))?.optString("status") == "selected"
     }
 
     /** 다음 첨부에 쓸 사진들을 기억(네이티브 선택기 자동응답용). 웹뷰는 건드리지 않는다. */
@@ -326,8 +334,21 @@ class AuthoringWebGateway @Inject constructor(
             if (!autoUploadDelivered) {
                 val menu = evalObj(buildUploadMenuTargetJs(attempt))
                 Log.d(TAG, "attach attempt=$attempt menu=$menu")
-                if (menu?.optBoolean("found") == true) tapTarget(menu)
-                else Log.d(TAG, "attach menu fallback=${eval(buildAttachClickJs("file-input-menu-fallback"))}")
+                if (menu?.optBoolean("found") == true) {
+                    val tapSafe = menu.optBoolean("tapSafe", true)
+                    if (!tapSafe) {
+                        Log.w(TAG, "attach menu target clipped label=${menu.optString("label")} visibleH=${menu.optDouble("visibleHeight")} rect=${menu.optDouble("left")},${menu.optDouble("top")},${menu.optDouble("right")},${menu.optDouble("bottom")}")
+                    }
+                    tapTarget(menu)
+                    if (!tapSafe) {
+                        delay(350)
+                        if (!autoUploadDelivered) {
+                            Log.d(TAG, "attach clipped menu fallback=${eval(buildAttachClickJs("direct-input-menu-clipped"))}")
+                        }
+                    }
+                } else {
+                    Log.d(TAG, "attach menu fallback=${eval(buildAttachClickJs("file-input-menu-fallback"))}")
+                }
                 delay(ATTACH_MENU_PROBE_DELAY_MS)
             }
 
@@ -350,10 +371,10 @@ class AuthoringWebGateway @Inject constructor(
     // ---------------------------------------------------------------- 전송/응답
 
     /** 프롬프트 주입 → 전송 → 응답이 안정될 때까지 대기 후 마지막 어시스턴트 텍스트 반환. */
-    suspend fun query(prompt: String): String? = withContext(Dispatchers.Main.immediate) {
+    suspend fun query(prompt: String, timeoutMs: Long? = RESPONSE_TIMEOUT_MS): String? = withContext(Dispatchers.Main.immediate) {
         ensureWebView()
         waitPageLoaded()
-        Log.d(TAG, "query start promptChars=${prompt.length}")
+        Log.d(TAG, "query start promptChars=${prompt.length} timeoutMs=${timeoutMs ?: "none"}")
         if (!waitForEditor()) { lastQueryFailure = AuthoringQueryFailureReason.SEND_FAILED; return@withContext null }
         clearFailure()
         val pre = evalObj(buildSnapshotJs())
@@ -370,7 +391,8 @@ class AuthoringWebGateway @Inject constructor(
         var lastText = ""
         var lastChange = sentAt
         delay(3500)
-        while (now() - sentAt < RESPONSE_TIMEOUT_MS) {
+        val deadline = timeoutMs?.let { sentAt + it }
+        while (deadline == null || now() < deadline) {
             val snap = evalObj(buildSnapshotJs())
             if (snap != null) {
                 var text = snap.optString("lastAssistant")
@@ -381,7 +403,7 @@ class AuthoringWebGateway @Inject constructor(
                 val stop = snap.optBoolean("stopVisible")
                 val uploading = snap.optBoolean("uploadingVisible")
                 val actionsReady = snap.optBoolean("assistantActionsReady")
-                val hasNew = (count > preCount && len > 20) || len > preLen + 20 || text.length > preTail + 20
+                val hasNew = (count > preCount && len > 3) || len > preLen + 20 || text.length > preTail + 20
                 val stable = hasNew && now() - lastChange >= RESPONSE_STABLE_MS && !stop && !uploading && actionsReady
                 if (stable) {
                     Log.d(TAG, "query stable len=$len count=$count actionsReady=$actionsReady queue=${snap.optInt("domQueueDepth")} lastSource=${snap.optString("lastSource")} raf=${snap.optLong("raf")}")
@@ -463,6 +485,11 @@ class AuthoringWebGateway @Inject constructor(
         )?.optInt("count") ?: 0
     }
 
+    suspend fun generatedImageActionsReady(minImageCount: Int = 0): Boolean = withContext(Dispatchers.Main.immediate) {
+        ensureWebView()
+        evalObj(buildImageCompletionProbeJs(minImageCount))?.optBoolean("ready") == true
+    }
+
     /** 마지막 turn 에서 생성 이미지를 fetch→base64 로 직접 가져온다. */
     suspend fun captureLastImageDataUrl(minImageCount: Int = 0): String? = withContext(Dispatchers.Main.immediate) {
         ensureWebView()
@@ -513,18 +540,48 @@ class AuthoringWebGateway @Inject constructor(
             eval(buildDownloadProbeJs(baseName, wantsImage))
         }
 
-    suspend fun requestAssistantDownload(baseName: String, wantsImage: Boolean, timeoutMs: Long = 12_000L): String =
+    suspend fun requestAssistantDownload(baseName: String, wantsImage: Boolean, timeoutMs: Long? = 12_000L): String =
         withContext(Dispatchers.Main.immediate) {
             ensureWebView()
             val before = downloadSaveSeq
-            val probe = eval(buildDownloadProbeJs(baseName, wantsImage))
-            val deadline = now() + timeoutMs
-            while (downloadSaveSeq <= before && now() < deadline) delay(250)
+            val deadline = timeoutMs?.let { now() + it }
+            var probe = ""
+            while (downloadSaveSeq <= before && (deadline == null || now() < deadline)) {
+                probe = eval(buildDownloadProbeJs(baseName, wantsImage))
+                val settleUntil = now() + if (probe.contains("save-started") || probe.startsWith("clicked-download-button")) 2_000L else 900L
+                while (downloadSaveSeq <= before && now() < settleUntil && (deadline == null || now() < deadline)) {
+                    delay(250)
+                }
+            }
             val confirmed = downloadSaveSeq > before
             val summary = lastDownloadSummary
-            Log.d(TAG, "assistant download probe=$probe confirmed=$confirmed summary=$summary")
+            Log.d(TAG, "assistant download probe=$probe confirmed=$confirmed timeoutMs=${timeoutMs ?: "none"} summary=$summary")
             "probe=$probe confirmed=$confirmed summary=$summary"
     }
+
+    suspend fun readDownloadedText(downloadResult: String, timeoutMs: Long = DOWNLOAD_READ_TIMEOUT_MS): String? =
+        withContext(Dispatchers.IO) {
+            val uri = Regex("""uri=([^\s]+)""").find(downloadResult)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.let { runCatching { Uri.parse(it) }.getOrNull() }
+            if (uri != null) {
+                return@withContext runCatching {
+                    appContext.contentResolver.openInputStream(uri)?.use {
+                        it.readBytes().decodeToString()
+                    }
+                }.onFailure {
+                    Log.w(TAG, "download text read failed uri=$uri", it)
+                }.getOrNull()
+            }
+
+            val id = Regex("""downloadManagerId=(\d+)""").find(downloadResult)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.toLongOrNull()
+                ?: return@withContext null
+            readDownloadManagerText(id, timeoutMs)
+        }
 
     // ---------------------------------------------------------------- 내부
 
@@ -705,6 +762,40 @@ class AuthoringWebGateway @Inject constructor(
         }
     }
 
+    private fun readDownloadManagerText(id: Long, timeoutMs: Long): String? {
+        val manager = appContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val deadline = now() + timeoutMs
+        var lastStatus = -1
+        while (now() < deadline) {
+            manager.query(DownloadManager.Query().setFilterById(id))?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                    lastStatus = if (statusIndex >= 0) cursor.getInt(statusIndex) else -1
+                    when (lastStatus) {
+                        DownloadManager.STATUS_SUCCESSFUL -> {
+                            return runCatching {
+                                manager.openDownloadedFile(id).use { pfd ->
+                                    FileInputStream(pfd.fileDescriptor).use { it.readBytes().decodeToString() }
+                                }
+                            }.onFailure {
+                                Log.w(TAG, "download manager text read failed id=$id", it)
+                            }.getOrNull()
+                        }
+                        DownloadManager.STATUS_FAILED -> {
+                            val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                            val reason = if (reasonIndex >= 0) cursor.getInt(reasonIndex) else 0
+                            Log.w(TAG, "download manager text read failed id=$id reason=$reason")
+                            return null
+                        }
+                    }
+                }
+            }
+            Thread.sleep(500)
+        }
+        Log.w(TAG, "download manager text read timed out id=$id status=$lastStatus timeoutMs=$timeoutMs")
+        return null
+    }
+
     private fun writeDataUrlToDownloads(dataUrl: String, suggestedName: String?, mimeType: String?): Uri? {
         val comma = dataUrl.indexOf(',')
         require(comma >= 0) { "Invalid data URL" }
@@ -832,8 +923,11 @@ class AuthoringWebGateway @Inject constructor(
         if (wv.width <= 0 || wv.height <= 0) return@withContext
         val vw = obj.optDouble("vw", 1.0).coerceAtLeast(1.0)
         val vh = obj.optDouble("vh", 1.0).coerceAtLeast(1.0)
-        val x = (obj.optDouble("x", 0.0) / vw * wv.width).toFloat()
-        val y = (obj.optDouble("y", 0.0) / vh * wv.height).toFloat()
+        val cssX = obj.optDouble("tapX", obj.optDouble("x", 0.0)).coerceIn(1.0, (vw - 1.0).coerceAtLeast(1.0))
+        val cssY = obj.optDouble("tapY", obj.optDouble("y", 0.0)).coerceIn(1.0, (vh - 1.0).coerceAtLeast(1.0))
+        val x = (cssX / vw * wv.width).toFloat()
+        val y = (cssY / vh * wv.height).toFloat()
+        Log.d(TAG, "tap target label=${obj.optString("label")} css=$cssX,$cssY web=$x,$y rect=${obj.optDouble("left")},${obj.optDouble("top")},${obj.optDouble("right")},${obj.optDouble("bottom")} visible=${obj.optDouble("visibleWidth")},${obj.optDouble("visibleHeight")} safe=${obj.optBoolean("tapSafe", true)}")
         val t = SystemClock.uptimeMillis()
         val down = MotionEvent.obtain(t, t, MotionEvent.ACTION_DOWN, x, y, 0)
         runCatching { wv.dispatchTouchEvent(down) }; down.recycle()
@@ -864,18 +958,22 @@ class AuthoringWebGateway @Inject constructor(
         })();
         """.trimIndent()
 
-    private fun buildComposerModeTargetJs(label: String): String {
-        val target = jsString(label)
+    private fun buildComposerModeTargetJs(labels: List<String>): String {
+        val targets = labels
+            .filter { it.isNotBlank() }
+            .distinct()
+            .joinToString(prefix = "[", postfix = "]") { JSONObject.quote(it) }
         return "(function(){" +
-            "const target='" + target + "';" +
+            "const targets=" + targets + ";" +
             "function rectOf(el){if(!el||!el.getBoundingClientRect)return {width:0,height:0,top:0,left:0,bottom:0,right:0};const r=el.getBoundingClientRect();return {width:r.width,height:r.height,top:r.top,left:r.left,bottom:r.bottom,right:r.right};}" +
             "function visible(el){const r=rectOf(el);const s=getComputedStyle(el);return r.width>0&&r.height>0&&r.bottom>0&&r.right>0&&r.top<window.innerHeight&&r.left<window.innerWidth&&s.visibility!=='hidden'&&s.display!=='none';}" +
             "function labelOf(el){return String((el.innerText||el.ariaLabel||el.title||el.getAttribute&&el.getAttribute('aria-label')||el.textContent||'')).replace(/\\s+/g,' ').trim();}" +
-            "function hit(txt){return txt&&txt.indexOf(target)>=0;}" +
+            "function norm(txt){return String(txt||'').replace(/\\s+/g,' ').trim();}" +
+            "function hit(txt){const n=norm(txt);return targets.some(function(t){const target=norm(t);if(!target)return false;if(/^pro$/i.test(target))return /^pro$/i.test(n);return n.indexOf(target)>=0;});}" +
             "function out(status,el,extra){const r=rectOf(el);return JSON.stringify(Object.assign({status:status,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,vw:window.innerWidth,vh:window.innerHeight,label:labelOf(el)},extra||{}));}" +
             "const editor=document.querySelector('#prompt-textarea,[data-testid=\"composer-text-input\"],[data-testid=\"prompt-textarea\"],textarea,.ProseMirror,[contenteditable],[role=\"textbox\"]');" +
             "const er=rectOf(editor);" +
-            "const modeWords=/즉시|중간|높음|매우\\s*높음|Pro\\s*확장|GPT-?5\\.5|instant|medium|high|pro/i;" +
+            "const modeWords=/즉시|중간|높음|매우\\s*높음|Pro\\s*확장|\\bPro\\b|GPT-?5\\.5|instant|medium|high/i;" +
             "const controls=[...document.querySelectorAll('button,[role=\"button\"],[role=\"menuitem\"],[role=\"option\"],[data-radix-collection-item],label')].filter(visible);" +
             "const rows=controls.map(el=>({el:el,r:rectOf(el),txt:labelOf(el)})).filter(x=>x.txt);" +
             "const current=rows.filter(x=>modeWords.test(x.txt)&&x.r.top>window.innerHeight*0.70).sort((a,b)=>b.r.bottom-a.r.bottom||b.r.right-a.r.right)[0];" +
@@ -884,7 +982,7 @@ class AuthoringWebGateway @Inject constructor(
             "if(option)return out('option',option.el);" +
             "const toggle=current||rows.filter(x=>modeWords.test(x.txt)&&x.r.top>er.bottom-180).sort((a,b)=>b.r.bottom-a.r.bottom||b.r.right-a.r.right)[0];" +
             "if(toggle)return out('toggle',toggle.el);" +
-            "return JSON.stringify({status:'not-found',target:target,labels:rows.slice(-20).map(x=>x.txt).join('|')});" +
+            "return JSON.stringify({status:'not-found',targets:targets.join('|'),labels:rows.slice(-20).map(x=>x.txt).join('|')});" +
             "})();"
     }
 
@@ -1041,8 +1139,8 @@ class AuthoringWebGateway @Inject constructor(
             "else if(attempt===1){hit=(wordRows[0]||nearRows.find(x=>words.test(x.label))||nearRows[0]);}" +
             "else{hit=(wordRows[0]||nearRows[0]);}" +
             "if(!hit){return JSON.stringify({found:false,vw:window.innerWidth,vh:window.innerHeight});}" +
-            "const r=hit.r;" +
-            "return JSON.stringify({found:true,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,vw:window.innerWidth,vh:window.innerHeight,label:hit.label});" +
+            "function out(hit){const r=hit.r;const vt=Math.max(0,r.top),vb=Math.min(window.innerHeight,r.bottom),vl=Math.max(0,r.left),vr=Math.min(window.innerWidth,r.right);const visibleH=Math.max(0,vb-vt),visibleW=Math.max(0,vr-vl);const tapX=(vl+vr)/2,tapY=(vt+vb)/2;const clipped=r.top<0||r.bottom>window.innerHeight||r.left<0||r.right>window.innerWidth;const tapSafe=visibleH>=18&&visibleW>=18&&tapY>6&&tapY<window.innerHeight-6;return JSON.stringify({found:true,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,tapX:tapX,tapY:tapY,vw:window.innerWidth,vh:window.innerHeight,left:r.left,top:r.top,right:r.right,bottom:r.bottom,visibleWidth:visibleW,visibleHeight:visibleH,clipped:clipped,tapSafe:tapSafe,label:hit.label});}" +
+            "return out(hit);" +
             "})();"
 
     /** webviewtest buildUploadMenuTargetJs(mode="photo-menu", attempt) — + 메뉴의 '사진/파일' 좌표. */
@@ -1066,8 +1164,8 @@ class AuthoringWebGateway @Inject constructor(
             "const uploadRows=rows.filter(x=>words.test(x.label)&&!/\\uD30C\\uC77C\\s*\\uCD94\\uAC00\\s*\\uBC0F\\s*\\uAE30\\uD0C0|add files? and more/i.test(x.label));" +
             "let hit=photoRows[0]||fileRows[0]||uploadRows[0]||null;" +
             "if(!hit){return JSON.stringify({found:false,vw:window.innerWidth,vh:window.innerHeight});}" +
-            "const r=hit.r;" +
-            "return JSON.stringify({found:true,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,vw:window.innerWidth,vh:window.innerHeight,label:hit.label});" +
+            "function out(hit){const r=hit.r;const vt=Math.max(0,r.top),vb=Math.min(window.innerHeight,r.bottom),vl=Math.max(0,r.left),vr=Math.min(window.innerWidth,r.right);const visibleH=Math.max(0,vb-vt),visibleW=Math.max(0,vr-vl);const tapX=(vl+vr)/2,tapY=(vt+vb)/2;const clipped=r.top<0||r.bottom>window.innerHeight||r.left<0||r.right>window.innerWidth;const tapSafe=visibleH>=18&&visibleW>=18&&tapY>6&&tapY<window.innerHeight-6;return JSON.stringify({found:true,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,tapX:tapX,tapY:tapY,vw:window.innerWidth,vh:window.innerHeight,left:r.left,top:r.top,right:r.right,bottom:r.bottom,visibleWidth:visibleW,visibleHeight:visibleH,clipped:clipped,tapSafe:tapSafe,label:hit.label});}" +
+            "return out(hit);" +
             "})();"
 
     private fun buildCaptureScript(minImageCount: Int): String = """
@@ -1101,6 +1199,67 @@ class AuthoringWebGateway @Inject constructor(
             }).catch(function(e){ SeoinBridge.onImageCaptured(""); });
             return "fetching";
           } catch(e){ try{SeoinBridge.onImageCaptured("");}catch(_){} return "err"; }
+        })();
+    """.trimIndent()
+
+    private fun buildImageCompletionProbeJs(minImageCount: Int): String = """
+        (function() {
+          try {
+            const minCount=$minImageCount;
+            const root=window.__seoinLastAssistant?window.__seoinLastAssistant():null;
+            const scope=root||document;
+            const actionWords=/copy|copied|good response|bad response|like|dislike|thumb|regenerate|share|edit|download|복사|좋은|좋음|나쁜|좋아요|싫어요|공유|다시 생성|편집|다운로드/i;
+            function visible(el){
+              if(!el) return false;
+              const r=el.getBoundingClientRect();
+              const s=getComputedStyle(el);
+              return r.width>0 && r.height>0 && r.bottom>0 && r.right>0 && r.top<window.innerHeight && r.left<window.innerWidth && s.visibility!=="hidden" && s.display!=="none";
+            }
+            function label(el){
+              return [el.innerText,el.ariaLabel,el.title,el.getAttribute&&el.getAttribute("aria-label"),el.getAttribute&&el.getAttribute("data-testid")]
+                .filter(Boolean).join(" ").replace(/\s+/g," ").trim();
+            }
+            const seen=new Set();
+            const imgs=Array.from(scope.querySelectorAll("img, img[src^='blob:'], img[src^='data:']")).filter(function(i){
+              const src=i.currentSrc||i.src||""; if(!src||seen.has(src))return false; seen.add(src);
+              const r=i.getBoundingClientRect();
+              const w=i.naturalWidth||r.width||i.width||0; const h=i.naturalHeight||r.height||i.height||0;
+              return w>=120 && h>=120;
+            });
+            const canvases=Array.from(document.querySelectorAll("main canvas")).filter(function(c){
+              const r=c.getBoundingClientRect(); return (c.width||r.width)>=200 && (c.height||r.height)>=200;
+            });
+            const total=imgs.length+canvases.length;
+            function allActionButtons(){
+              const q="button,[role='button'],[aria-label],[data-testid]";
+              const fromRoot=root?Array.from(root.querySelectorAll(q)):[];
+              const fromDoc=Array.from(document.querySelectorAll(q));
+              return Array.from(new Set(fromRoot.concat(fromDoc))).filter(visible);
+            }
+            function actionNearRect(rect){
+              return allActionButtons().some(function(b){
+                const br=b.getBoundingClientRect();
+                const horizontal=br.right>=rect.left-40 && br.left<=rect.right+40;
+                const below=br.top>=rect.bottom-24 && br.top<=rect.bottom+300;
+                return horizontal && below && actionWords.test(label(b));
+              });
+            }
+            function actionNearRoot(){
+              if(!root) return false;
+              const rr=root.getBoundingClientRect();
+              return allActionButtons().some(function(b){
+                const br=b.getBoundingClientRect();
+                return br.top>=rr.top-24 && br.top<=rr.bottom+260 && actionWords.test(label(b));
+              });
+            }
+            const visual=canvases.slice(-1)[0]||imgs.slice(-1)[0]||null;
+            const visualReady=!!visual && actionNearRect(visual.getBoundingClientRect());
+            const rootReady=actionNearRoot();
+            const ready=total>=minCount && (visualReady || rootReady);
+            return JSON.stringify({ready:ready,total:total,minCount:minCount,visualReady:visualReady,rootReady:rootReady});
+          } catch(e) {
+            return JSON.stringify({ready:false,error:String(e)});
+          }
         })();
     """.trimIndent()
 
@@ -1186,6 +1345,7 @@ class AuthoringWebGateway @Inject constructor(
             "function text(){const nodes=[...document.querySelectorAll('[data-message-author-role=\"assistant\"], article')];const texts=nodes.map(n=>(n.innerText||'').trim()).filter(Boolean);return texts.length?texts[texts.length-1]:(document.body?document.body.innerText:'');}" +
             "function dataText(t){return 'data:text/plain;base64,'+btoa(unescape(encodeURIComponent(t||'')));}" +
             "function saveUrl(url,name,mime){if(window.__seoinSaveUrl){return window.__seoinSaveUrl(url,name,mime);}return 'no-save-url';}" +
+            "function balancedJson(raw){const s=String(raw||'').replace(/```json/gi,'```').replace(/```/g,'').trim();for(let i=0;i<s.length;i++){const ch=s[i];if(ch!=='{'&&ch!=='[')continue;const stack=[ch==='{'?'}':']'];let inStr=false,esc=false;for(let j=i+1;j<s.length;j++){const c=s[j];if(inStr){if(esc){esc=false;continue;}if(c==='\\\\'){esc=true;continue;}if(c==='\\\"')inStr=false;continue;}if(c==='\\\"'){inStr=true;continue;}if(c==='{')stack.push('}');else if(c==='[')stack.push(']');else if(c==='}'||c===']'){if(!stack.length||c!==stack[stack.length-1])break;stack.pop();if(!stack.length)return s.slice(i,j+1);}}}return '';}" +
             "const downloadWords=/download|save|export|open image|view image|json|txt|text|다운로드|저장|받기|내보내기|텍스트|이미지\\s*열기/i;" +
             "const nonDownload=/add files?|add\\s*photos?|attach|upload|camera|photo|image\\s*upload|파일\\s*등\\s*추가|파일\\s*추가|첨부|업로드|카메라|사진|이미지\\s*추가|이미지\\s*만들기/i;" +
             "const nodes=[...document.querySelectorAll('a,button,[role=\"button\"],[download]')].filter(visible).map(el=>({el,txt:label(el),href:el.href||el.getAttribute('href')||''})).filter(x=>!nonDownload.test(x.txt));" +
@@ -1194,7 +1354,7 @@ class AuthoringWebGateway @Inject constructor(
             "const btn=nodes.find(x=>!x.href&&downloadWords.test(x.txt));" +
             "if(btn){btn.el.click();return 'clicked-download-button:'+btn.txt.slice(0,60);}" +
             "if(wantsImage){const imgs=[...document.images].filter(visible).map(img=>({src:img.currentSrc||img.src||'',area:(img.naturalWidth||0)*(img.naturalHeight||0)})).filter(x=>x.area>9000&&!/avatar|icon|logo/i.test(x.src)).sort((a,b)=>b.area-a.area);if(imgs.length){return saveUrl(imgs[0].src,baseName+'.png','image/png');}}" +
-            "if(!wantsImage){SeoinBridge.saveBase64File(dataText(text()),baseName+'.json','application/json');return 'assistant-json-save-started';}" +
+            "if(!wantsImage){const raw=text();const json=balancedJson(raw);if(json){SeoinBridge.saveBase64File(dataText(json),baseName+'.json','application/json');return 'assistant-json-save-started';}return 'no-json-download-source:textLen='+String(raw||'').length;}" +
             "return 'no-download-source';" +
             "})();"
     }
@@ -1225,6 +1385,7 @@ class AuthoringWebGateway @Inject constructor(
         const val RESPONSE_POLL_MS = 2_200L
         const val CAPTURE_TIMEOUT_MS = 15_000L
         const val TEXT_CAPTURE_TIMEOUT_MS = 12_000L
+        const val DOWNLOAD_READ_TIMEOUT_MS = 180_000L
 
         val DOWNLOAD_BRIDGE_JS = """
             (function(){

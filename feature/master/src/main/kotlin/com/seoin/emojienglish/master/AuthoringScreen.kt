@@ -1,9 +1,13 @@
 package com.seoin.emojienglish.master
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +18,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -25,6 +34,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -32,10 +43,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
+private enum class PhotoRangeTarget { Passage, Word }
 
 @Composable
 fun AuthoringScreen(
@@ -47,6 +68,20 @@ fun AuthoringScreen(
     val http431 by vm.http431State.collectAsStateWithLifecycle()
     var showAdvanced by remember { mutableStateOf(false) }
     var confirmClearAllCookies by remember { mutableStateOf(false) }
+    var showSourceDialog by remember { mutableStateOf(false) }
+    var sourceDraft by remember { mutableStateOf("") }
+    val sourceFocusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val context = LocalContext.current
+    val rootView = LocalView.current
+    var pendingRangeTarget by remember { mutableStateOf<PhotoRangeTarget?>(null) }
+
+    DisposableEffect(rootView) {
+        onDispose { rootView.keepScreenOn = false }
+    }
+    LaunchedEffect(rootView, s.running) {
+        rootView.keepScreenOn = s.running
+    }
 
     val passagePhotoPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(10),
@@ -54,9 +89,46 @@ fun AuthoringScreen(
     val wordPhotoPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(10),
     ) { uris -> vm.addWordPhotos(uris) }
+    val passageRangePhotoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia(2),
+    ) { uris -> vm.addPassagePhotoRange(uris) }
+    val wordRangePhotoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia(2),
+    ) { uris -> vm.addWordPhotoRange(uris) }
+    val rangePermission = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> Manifest.permission.READ_MEDIA_IMAGES
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> Manifest.permission.READ_EXTERNAL_STORAGE
+        else -> null
+    }
+    val rangePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val target = pendingRangeTarget
+        pendingRangeTarget = null
+        if (!granted || target == null) {
+            vm.showPhotoRangePermissionDenied()
+        } else {
+            when (target) {
+                PhotoRangeTarget.Passage -> passageRangePhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                PhotoRangeTarget.Word -> wordRangePhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }
+        }
+    }
+    fun launchRangePicker(target: PhotoRangeTarget) {
+        val permission = rangePermission
+        if (permission == null || ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
+            when (target) {
+                PhotoRangeTarget.Passage -> passageRangePhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                PhotoRangeTarget.Word -> wordRangePhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }
+        } else {
+            pendingRangeTarget = target
+            rangePermissionLauncher.launch(permission)
+        }
+    }
 
     val buttonPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-    val canRun = !s.running && (s.passagePhotoCount > 0 || s.wordPhotoCount > 0 || s.source.isNotBlank())
+    val canRun = s.running || s.passagePhotoCount > 0 || s.wordPhotoCount > 0 || s.source.isNotBlank()
 
     Column(Modifier.fillMaxSize()) {
         Row(
@@ -81,24 +153,115 @@ fun AuthoringScreen(
         Column(
             Modifier
                 .fillMaxWidth()
-                .heightIn(max = 260.dp)
+                .heightIn(max = 210.dp)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 10.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
-            OutlinedTextField(
-                value = s.unitTitle,
-                onValueChange = vm::setUnitTitle,
-                label = { Text("단원명") },
-                singleLine = true,
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = s.source,
-                onValueChange = vm::setSource,
-                label = { Text("텍스트") },
-                modifier = Modifier.fillMaxWidth().height(72.dp),
-            )
+            ) {
+                OutlinedTextField(
+                    value = s.unitTitle,
+                    onValueChange = vm::setUnitTitle,
+                    label = { Text("단원명") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                PhotoTokenButton(
+                    label = "지",
+                    count = s.passagePhotoCount,
+                    enabled = !s.running,
+                    onClick = { passagePhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                )
+                PhotoTokenButton(
+                    label = "단",
+                    count = s.wordPhotoCount,
+                    enabled = !s.running,
+                    onClick = { wordPhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                )
+                Button(
+                    onClick = {
+                        if (s.running) vm.cancelCurrentWork() else vm.runAllAuto()
+                    },
+                    enabled = canRun,
+                    modifier = Modifier.height(36.dp).widthIn(min = 54.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                ) { Text(if (s.running) "중지" else "생성", fontSize = 11.sp, maxLines = 1) }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            ) {
+                TinyActionButton(
+                    label = if (s.source.isBlank()) "텍" else "텍✓",
+                    active = s.source.isNotBlank(),
+                    enabled = !s.running,
+                    onClick = {
+                        sourceDraft = s.source
+                        showSourceDialog = true
+                    },
+                )
+                TinyActionButton(
+                    label = "지범",
+                    enabled = !s.running,
+                    onClick = { launchRangePicker(PhotoRangeTarget.Passage) },
+                )
+                TinyActionButton(
+                    label = "단범",
+                    enabled = !s.running,
+                    onClick = { launchRangePicker(PhotoRangeTarget.Word) },
+                )
+                TinyActionButton(
+                    label = "문",
+                    enabled = !s.running && (s.passagePhotoCount > 0 || s.source.isNotBlank()),
+                    onClick = vm::extractSentencesAuto,
+                )
+                TinyActionButton(
+                    label = "지저",
+                    enabled = !s.running && s.sentences.isNotEmpty(),
+                    onClick = vm::buildPassageAndSave,
+                )
+                TinyActionButton(
+                    label = "단",
+                    enabled = !s.running && (s.wordPhotoCount > 0 || s.source.isNotBlank()),
+                    onClick = vm::extractWordsAuto,
+                )
+                TinyActionButton(
+                    label = "만저",
+                    enabled = !s.running && s.words.isNotEmpty(),
+                    onClick = vm::buildAndSave,
+                )
+                TinyActionButton(
+                    label = "그요",
+                    enabled = !s.running && s.words.isNotEmpty(),
+                    onClick = vm::requestGridImage,
+                )
+                TinyActionButton(
+                    label = "그저",
+                    enabled = !s.running,
+                    onClick = vm::captureGridImage,
+                )
+                if (showAdvanced) {
+                    TinyActionButton(
+                        label = "대기",
+                        enabled = !s.running,
+                        onClick = vm::runResponseMenuProbe,
+                    )
+                }
+                Text(
+                    "문${s.sentences.size} 단${s.words.size}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1,
+                    modifier = Modifier.align(Alignment.CenterVertically),
+                )
+            }
 
             if (showAdvanced) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
@@ -117,82 +280,6 @@ fun AuthoringScreen(
                         modifier = Modifier.weight(1f),
                     )
                 }
-                OutlinedButton(
-                    onClick = vm::runResponseMenuProbe,
-                    enabled = !s.running,
-                    modifier = Modifier.fillMaxWidth().height(32.dp),
-                    contentPadding = buttonPadding,
-                ) { Text("대기테스트", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = { passagePhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                    enabled = !s.running,
-                    modifier = Modifier.weight(1f).height(34.dp),
-                    contentPadding = buttonPadding,
-                ) { Text(if (s.passagePhotoCount > 0) "지문 ${s.passagePhotoCount}" else "지문사진", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                OutlinedButton(
-                    onClick = { wordPhotoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                    enabled = !s.running,
-                    modifier = Modifier.weight(1f).height(34.dp),
-                    contentPadding = buttonPadding,
-                ) { Text(if (s.wordPhotoCount > 0) "단어 ${s.wordPhotoCount}" else "단어사진", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                Button(
-                    onClick = vm::runAllAuto,
-                    enabled = canRun,
-                    modifier = Modifier.weight(1.05f).height(34.dp),
-                    contentPadding = buttonPadding,
-                ) { Text("전체자동", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = vm::extractSentencesAuto,
-                    enabled = !s.running && (s.passagePhotoCount > 0 || s.source.isNotBlank()),
-                    modifier = Modifier.weight(1f).height(32.dp),
-                    contentPadding = buttonPadding,
-                ) { Text("문장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                OutlinedButton(
-                    onClick = vm::buildPassageAndSave,
-                    enabled = !s.running && s.sentences.isNotEmpty(),
-                    modifier = Modifier.weight(1f).height(32.dp),
-                    contentPadding = buttonPadding,
-                ) { Text("지문저장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                OutlinedButton(
-                    onClick = vm::extractWordsAuto,
-                    enabled = !s.running && (s.wordPhotoCount > 0 || s.source.isNotBlank()),
-                    modifier = Modifier.weight(1f).height(32.dp),
-                    contentPadding = buttonPadding,
-                ) { Text("단어", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                OutlinedButton(
-                    onClick = vm::buildAndSave,
-                    enabled = !s.running && s.words.isNotEmpty(),
-                    modifier = Modifier.weight(1f).height(32.dp),
-                    contentPadding = buttonPadding,
-                ) { Text("만화저장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = vm::requestGridImage,
-                    enabled = !s.running && s.words.isNotEmpty(),
-                    modifier = Modifier.weight(1f).height(32.dp),
-                    contentPadding = buttonPadding,
-                ) { Text("그림요청", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                OutlinedButton(
-                    onClick = vm::captureGridImage,
-                    enabled = !s.running,
-                    modifier = Modifier.weight(1f).height(32.dp),
-                    contentPadding = buttonPadding,
-                ) { Text("그림저장", style = MaterialTheme.typography.labelSmall, maxLines = 1) }
-                Text(
-                    "문장 ${s.sentences.size} · 단어 ${s.words.size}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.weight(1.25f).align(Alignment.CenterVertically),
-                    maxLines = 1,
-                )
             }
 
             if (s.running) {
@@ -295,5 +382,95 @@ fun AuthoringScreen(
                 TextButton(onClick = { confirmClearAllCookies = false }) { Text("취소") }
             },
         )
+    }
+
+    if (showSourceDialog) {
+        LaunchedEffect(Unit) {
+            sourceFocusRequester.requestFocus()
+            keyboard?.show()
+        }
+        AlertDialog(
+            onDismissRequest = { showSourceDialog = false },
+            title = { Text("텍스트") },
+            text = {
+                OutlinedTextField(
+                    value = sourceDraft,
+                    onValueChange = { sourceDraft = it },
+                    modifier = Modifier.fillMaxWidth().height(180.dp).focusRequester(sourceFocusRequester),
+                    label = { Text("직접 입력") },
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        vm.setSource(sourceDraft)
+                        showSourceDialog = false
+                    },
+                ) { Text("완료") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSourceDialog = false }) { Text("취소") }
+            },
+        )
+    }
+}
+
+@Composable
+private fun PhotoTokenButton(
+    label: String,
+    count: Int,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(contentAlignment = Alignment.TopStart) {
+        OutlinedButton(
+            onClick = onClick,
+            enabled = enabled,
+            shape = CircleShape,
+            modifier = Modifier.size(36.dp),
+            contentPadding = PaddingValues(0.dp),
+        ) {
+            Text(
+                if (count > 0) count.toString() else label,
+                fontSize = 12.sp,
+                maxLines = 1,
+            )
+        }
+        if (count > 0) {
+            Box(
+                Modifier
+                    .size(12.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label, color = Color.White, fontSize = 7.sp, maxLines = 1)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TinyActionButton(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    active: Boolean = false,
+) {
+    val colors = if (active) {
+        ButtonDefaults.outlinedButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        )
+    } else {
+        ButtonDefaults.outlinedButtonColors()
+    }
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.height(28.dp).widthIn(min = 42.dp),
+        contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp),
+        colors = colors,
+    ) {
+        Text(label, fontSize = 10.sp, maxLines = 1)
     }
 }
