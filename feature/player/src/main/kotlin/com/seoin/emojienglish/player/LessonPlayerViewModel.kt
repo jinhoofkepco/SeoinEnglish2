@@ -98,7 +98,7 @@ class LessonPlayerViewModel @Inject constructor(
             "Speak slowly in very easy English. Keep turns short. " +
             "Do not say bracket tags out loud."
     private val setupJob = viewModelScope.launch {
-        voiceSession.startSet(coachingPersona, queue.sourceLabel)
+        if (!sampleAudioMuted()) voiceSession.startSet(coachingPersona, queue.sourceLabel)
     }
 
     private val initialIndex: Int =
@@ -143,6 +143,10 @@ class LessonPlayerViewModel @Inject constructor(
         }
 
         override fun requestVoice(prompt: VoicePrompt) {
+            if (sampleAudioMuted()) {
+                trace("audio_muted", mapOf("kind" to "requestVoice", "templateId" to prompt.templateId))
+                return
+            }
             // Route the step's prompt through the persistent session; wait for the
             // set to finish connecting/priming so the first prompt isn't dropped.
             viewModelScope.launch {
@@ -152,6 +156,10 @@ class LessonPlayerViewModel @Inject constructor(
         }
 
         override fun speak(text: String, lang: String) {
+            if (sampleAudioMuted()) {
+                trace("audio_muted", mapOf("kind" to "speak", "chars" to text.length.toString()))
+                return
+            }
             // 다음 액션(다음 컷/문장 등 낭독)으로 넘어가면 학생 마이크를 자동으로 끈다
             // — 모든 스텝 공통. 다시 말하려면 "대화"로 열어야 한다 (피드백).
             voiceGateway.setMicOpen(false)
@@ -199,6 +207,7 @@ class LessonPlayerViewModel @Inject constructor(
         masterMode.unlocked.value || index <= maxReachedFlow.value
 
     fun openContextVoice() {
+        if (sampleAudioMuted()) return
         val item = uiState.value.currentItem ?: return
         viewModelScope.launch {
             setupJob.join()
@@ -338,6 +347,7 @@ class LessonPlayerViewModel @Inject constructor(
     }
 
     companion object {
+        private fun sampleAudioMuted(): Boolean = true
         private const val KEY_INDEX = "player_queue_index"
         private val json = Json
 

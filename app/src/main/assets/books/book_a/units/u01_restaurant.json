@@ -41,6 +41,123 @@
     }
   },
   "steps": [
+    {
+      "id": "s_passage_read2_demo",
+      "type": "passage_read2",
+      "params": {
+        "schemaVersion": "chunk-roles-1.0",
+        "id": "tyrian_purple_chunk_demo",
+        "title": "Tyrian Purple (chunk / role / clause demo)",
+        "_note": "이 파일은 '조립 완료본'입니다. 모델은 index 기반(id 없음)으로 출력하고, id/offset/depth는 코드가 계산해 붙입니다. 여기서는 테스트 편의를 위해 id와 depth를 채워 두었습니다. offset(startChar/endChar)은 생략했고, 렌더러는 chunk.text를 순서대로 이어 원문과 대조해 위치를 구합니다.",
+        "renderConfig": {
+          "roleHue": {
+            "subject": "red",
+            "verb": "orange",
+            "object": "yellow",
+            "complement": "teal",
+            "adjunct_time": "green",
+            "adjunct_place": "green",
+            "adjunct_reason": "green",
+            "adjunct_purpose": "green",
+            "adjunct_manner": "green",
+            "adjunct_topic": "green",
+            "modifier": "inherit",
+            "connective": "gray"
+          },
+          "depthSaturation": { "0": 1.0, "1": 0.6, "2": 0.35 },
+          "depthCap": 2,
+          "_capRule": "depth가 cap(2)을 넘는 절은 파고들지 않고, host 청크에 하위 전체를 '단일 블록'으로 병합한다.",
+          "_mergeDivider": "병합된 블록은 host 역할색 단색 배경 + 내부에 한 단계 옅은 구분선(이전 청크 경계)을 남긴다."
+        },
+        "sentences": [
+          {
+            "id": "s1",
+            "text": "Long ago, a group of people called the Phoenicians ruled the Mediterranean Sea.",
+            "clauses": [
+              { "id": "s1_cl0", "parent": null, "depth": 0, "role": "main", "hostChunkId": null }
+            ],
+            "chunks": [
+              { "id": "s1_c1", "text": "Long ago,", "role": "adjunct_time", "clauseId": "s1_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s1_c2", "text": "a group of people", "role": "subject", "clauseId": "s1_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s1_c3", "text": "called the Phoenicians", "role": "modifier", "clauseId": "s1_cl0", "opensClause": null, "attachesTo": "s1_c2" },
+              { "id": "s1_c4", "text": "ruled", "role": "verb", "clauseId": "s1_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s1_c5", "text": "the Mediterranean Sea.", "role": "object", "clauseId": "s1_cl0", "opensClause": null, "attachesTo": null }
+            ]
+          },
+          {
+            "id": "s4",
+            "text": "This dye was the rarest and most desired color in ancient times.",
+            "clauses": [
+              { "id": "s4_cl0", "parent": null, "depth": 0, "role": "main", "hostChunkId": null }
+            ],
+            "chunks": [
+              { "id": "s4_c1", "text": "This dye", "role": "subject", "clauseId": "s4_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s4_c2", "text": "was", "role": "verb", "clauseId": "s4_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s4_c3", "text": "the rarest and most desired color", "role": "complement", "clauseId": "s4_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s4_c4", "text": "in ancient times.", "role": "adjunct_time", "clauseId": "s4_cl0", "opensClause": null, "attachesTo": null }
+            ]
+          },
+          {
+            "id": "s6",
+            "text": "To create Tyrian purple, people needed the slime of the Murex snail.",
+            "clauses": [
+              { "id": "s6_cl0", "parent": null, "depth": 0, "role": "main", "hostChunkId": null }
+            ],
+            "chunks": [
+              { "id": "s6_c1", "text": "To create Tyrian purple,", "role": "adjunct_purpose", "clauseId": "s6_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s6_c2", "text": "people", "role": "subject", "clauseId": "s6_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s6_c3", "text": "needed", "role": "verb", "clauseId": "s6_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s6_c4", "text": "the slime", "role": "object", "clauseId": "s6_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s6_c5", "text": "of the Murex snail.", "role": "modifier", "clauseId": "s6_cl0", "opensClause": null, "attachesTo": "s6_c4" }
+            ]
+          },
+          {
+            "id": "s15",
+            "text": "As for emperors, they wore robes dyed completely in Tyrian purple to show off their power.",
+            "clauses": [
+              { "id": "s15_cl0", "parent": null, "depth": 0, "role": "main", "hostChunkId": null }
+            ],
+            "chunks": [
+              { "id": "s15_c1", "text": "As for emperors,", "role": "adjunct_topic", "clauseId": "s15_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s15_c2", "text": "they", "role": "subject", "clauseId": "s15_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s15_c3", "text": "wore", "role": "verb", "clauseId": "s15_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s15_c4", "text": "robes", "role": "object", "clauseId": "s15_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "s15_c5", "text": "dyed completely in Tyrian purple", "role": "modifier", "clauseId": "s15_cl0", "opensClause": null, "attachesTo": "s15_c4" },
+              { "id": "s15_c6", "text": "to show off their power.", "role": "adjunct_purpose", "clauseId": "s15_cl0", "opensClause": null, "attachesTo": null }
+            ]
+          },
+          {
+            "id": "cx",
+            "_purpose": "깊이 4단계 중첩 테스트 문장. cap=2이므로 cl3(depth3)·cl4(depth4)는 파고들지 않고 host('a snail')에 통째 병합되어야 함.",
+            "text": "Ancient writers recorded that the king announced that the dyers had finally found a snail that produced a dye which glowed in the dark.",
+            "clauses": [
+              { "id": "cx_cl0", "parent": null, "depth": 0, "role": "main", "hostChunkId": null },
+              { "id": "cx_cl1", "parent": "cx_cl0", "depth": 1, "role": "object", "hostChunkId": "cx_c2" },
+              { "id": "cx_cl2", "parent": "cx_cl1", "depth": 2, "role": "object", "hostChunkId": "cx_c5" },
+              { "id": "cx_cl3", "parent": "cx_cl2", "depth": 3, "role": "modifier", "hostChunkId": "cx_c9" },
+              { "id": "cx_cl4", "parent": "cx_cl3", "depth": 4, "role": "modifier", "hostChunkId": "cx_c12" }
+            ],
+            "chunks": [
+              { "id": "cx_c1", "text": "Ancient writers", "role": "subject", "clauseId": "cx_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "cx_c2", "text": "recorded", "role": "verb", "clauseId": "cx_cl0", "opensClause": null, "attachesTo": null },
+              { "id": "cx_c3", "text": "that", "role": "connective", "clauseId": "cx_cl1", "opensClause": "cx_cl1", "attachesTo": null },
+              { "id": "cx_c4", "text": "the king", "role": "subject", "clauseId": "cx_cl1", "opensClause": null, "attachesTo": null },
+              { "id": "cx_c5", "text": "announced", "role": "verb", "clauseId": "cx_cl1", "opensClause": null, "attachesTo": null },
+              { "id": "cx_c6", "text": "that", "role": "connective", "clauseId": "cx_cl2", "opensClause": "cx_cl2", "attachesTo": null },
+              { "id": "cx_c7", "text": "the dyers", "role": "subject", "clauseId": "cx_cl2", "opensClause": null, "attachesTo": null },
+              { "id": "cx_c8", "text": "had finally found", "role": "verb", "clauseId": "cx_cl2", "opensClause": null, "attachesTo": null },
+              { "id": "cx_c9", "text": "a snail", "role": "object", "clauseId": "cx_cl2", "opensClause": null, "attachesTo": null },
+              { "id": "cx_c10", "text": "that", "role": "connective", "clauseId": "cx_cl3", "opensClause": "cx_cl3", "attachesTo": null },
+              { "id": "cx_c11", "text": "produced", "role": "verb", "clauseId": "cx_cl3", "opensClause": null, "attachesTo": null },
+              { "id": "cx_c12", "text": "a dye", "role": "object", "clauseId": "cx_cl3", "opensClause": null, "attachesTo": null },
+              { "id": "cx_c13", "text": "which", "role": "connective", "clauseId": "cx_cl4", "opensClause": "cx_cl4", "attachesTo": null },
+              { "id": "cx_c14", "text": "glowed", "role": "verb", "clauseId": "cx_cl4", "opensClause": null, "attachesTo": null },
+              { "id": "cx_c15", "text": "in the dark.", "role": "adjunct_place", "clauseId": "cx_cl4", "opensClause": null, "attachesTo": null }
+            ]
+          }
+        ]
+      }
+    },
     { "id": "s0", "type": "story_comic", "params": {
       "title": "Mina's Lunch Story",
       "meaning": "오늘 배운 단어로 만든 이야기 만화예요. 칩이나 색칠된 단어를 누르면 설명을 들을 수 있어요.",
