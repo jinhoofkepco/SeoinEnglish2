@@ -42,9 +42,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.SpanStyle
@@ -85,7 +86,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -167,6 +167,7 @@ private data class PassageProgressSegment(
     val internalBreaks: List<Int>,
     val layers: List<PassageLayer>,
     val phase: ChunkPhase,
+    val opensTrack: Boolean,
 )
 
 private data class PassageLayer(
@@ -383,7 +384,15 @@ private fun ChunkedSentenceText(
     onAdvance: () -> Unit,
 ) {
     var layout by remember(sentence.id) { mutableStateOf<TextLayoutResult?>(null) }
-    val spacedText = remember(sentence.text) { sentence.text.withWiderWordGaps() }
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val markedText = remember(sentence, progress.currentChunkIndex, onSurface) {
+        sentence.text.withTrackTextStyling(
+            sentence = sentence,
+            currentChunkIndex = progress.currentChunkIndex,
+            subduedColor = onSurface.copy(alpha = 0.42f),
+        )
+    }
 
     Surface(
         shape = RoundedCornerShape(8.dp),
@@ -395,23 +404,24 @@ private fun ChunkedSentenceText(
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                spacedText,
+                markedText,
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontFamily = FontFamily.Serif,
                     fontSize = 13.5.sp,
                     lineHeight = 36.sp,
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = onSurface,
                 onTextLayout = { layout = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .drawBehind {
                         val textLayout = layout ?: return@drawBehind
-                        drawProgressBlocks(
+                        drawProgressTracks(
                             layout = textLayout,
                             segments = progress.displaySegments,
                             config = config,
                             activeDepth = progress.activeDepth,
+                            surfaceColor = surfaceColor,
                         )
                     },
             )
@@ -424,143 +434,274 @@ private fun ChunkedSentenceText(
     }
 }
 
-private fun DrawScope.drawProgressBlocks(
+private fun DrawScope.drawProgressTracks(
     layout: TextLayoutResult,
     segments: List<PassageProgressSegment>,
     config: PassageRenderConfig,
     activeDepth: Int,
+    surfaceColor: Color,
 ) {
-    val xPad = 3.5.dp.toPx()
-    val yPad = 1.4.dp.toPx()
-    val radius = 5.dp.toPx()
-
     segments.sortedWith(compareBy<PassageProgressSegment> { it.layers.lastOrNull()?.depth ?: 0 }.thenBy { it.startChar })
         .forEach { segment ->
-        val rects = layout.boundingRectsForRange(segment.startChar, segment.endChar)
+            val layer = segment.layers.lastOrNull() ?: PassageLayer(segment.displayRole, 0)
+            val depth = layer.depth.coerceAtMost(2)
+            val rects = layout.trackRectsForRange(segment.startChar, segment.endChar)
+            if (rects.isEmpty()) return@forEach
 
-        rects.forEach { rect ->
-            segment.layers.forEachIndexed { layerIndex, layer ->
-                val inset = depthInset(layer.depth)
-                val verticalInset = 0.6.dp.toPx() + layer.depth.coerceAtLeast(0) * 2.1.dp.toPx()
-                val topLeft = Offset(
-                    x = max(0f, rect.left - xPad + inset),
-                    y = max(0f, rect.top - yPad + verticalInset),
-                )
-                val size = Size(
-                    width = min(this.size.width - topLeft.x, rect.width + xPad * 2 - inset * 2),
-                    height = max(0f, rect.height + yPad * 2 - verticalInset * 2),
-                )
-                if (size.width <= 0f || size.height <= 0f) return@forEachIndexed
-                val color = colorForRole(layer.role).copy(
-                    alpha = layerAlpha(
-                        phase = segment.phase,
-                        layer = layer,
-                        activeDepth = activeDepth,
-                        config = config,
+            if (isConnectiveTrack(layer.role, segment.displayRole)) {
+                return@forEach
+            }
+
+            if (segment.opensTrack && depth in 1..2) {
+                drawOpenTrackBracket(
+                    rect = rects.first(),
+                    depth = depth,
+                    color = colorForRole(layer.role).copy(
+                        alpha = bracketAlpha(
+                            depth = depth,
+                            phase = segment.phase,
+                            activeDepth = activeDepth,
+                        ),
                     ),
                 )
-                val corner = CornerRadius(radius - min(radius - 1f, inset), radius - min(radius - 1f, inset))
-                if (shouldFillLayer(segment.phase, layer, activeDepth)) {
-                    drawRoundRect(
-                        color = color,
-                        topLeft = topLeft,
-                        size = size,
-                        cornerRadius = corner,
+            }
+
+            rects.forEach { rect ->
+                val roleColor = colorForRole(layer.role)
+                if (depth == 0) {
+                    drawD0Bubble(
+                        rect = rect,
+                        color = roleColor.copy(
+                            alpha = d0BubbleAlpha(
+                                phase = segment.phase,
+                                activeDepth = activeDepth,
+                            ),
+                        ),
                     )
                 } else {
-                    drawRoundRect(
-                        color = color.copy(alpha = max(color.alpha, 0.26f)),
-                        topLeft = topLeft,
-                        size = size,
-                        cornerRadius = corner,
-                        style = Stroke(width = 1.2.dp.toPx()),
+                    drawNestedDepthBand(
+                        rect = rect,
+                        depth = depth,
+                        color = roleColor.copy(
+                            alpha = nestedBandAlpha(
+                                depth = depth,
+                                phase = segment.phase,
+                                activeDepth = activeDepth,
+                                config = config,
+                            ),
+                        ),
                     )
                 }
             }
-            if (segment.phase == ChunkPhase.Painting) {
-                val topLeft = Offset(
-                    x = max(0f, rect.left - xPad),
-                    y = max(0f, rect.top + 0.8.dp.toPx()),
-                )
-                val size = Size(
-                    width = min(this.size.width - topLeft.x, rect.width + xPad * 2),
-                    height = max(0f, rect.height - 1.6.dp.toPx()),
-                )
-                val topRole = segment.layers.lastOrNull()?.role ?: segment.displayRole
-                drawRoundRect(
-                    color = colorForRole(topRole).copy(alpha = 0.74f),
-                    topLeft = topLeft,
-                    size = size,
-                    cornerRadius = CornerRadius(radius, radius),
-                    style = Stroke(width = 1.6.dp.toPx()),
+
+            if (segment.internalBreaks.isNotEmpty()) {
+                drawTrackBreaks(
+                    layout = layout,
+                    segment = segment,
+                    layer = layer,
+                    color = colorForRole(layer.role).copy(alpha = 0.44f),
+                    surfaceColor = surfaceColor,
                 )
             }
         }
-
-        if (segment.phase == ChunkPhase.Merged || segment.internalBreaks.isNotEmpty()) {
-            val topRole = segment.layers.lastOrNull()?.role ?: segment.displayRole
-            drawMergeBreaks(layout, segment, colorForRole(topRole).copy(alpha = 0.34f))
-        }
-    }
 }
 
-private fun DrawScope.drawMergeBreaks(
-    layout: TextLayoutResult,
-    segment: PassageProgressSegment,
+private fun DrawScope.drawD0Bubble(
+    rect: TrackRect,
     color: Color,
 ) {
+    val height = rect.height * 0.58f
+    val horizontalInset = min(rect.width * 0.1f, 3.2.dp.toPx())
+    val width = max(1f, rect.width - horizontalInset * 2)
+    val top = rect.top + (rect.height - height) / 2f + 0.4.dp.toPx()
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(rect.left + horizontalInset, top),
+        size = Size(width, height),
+        cornerRadius = CornerRadius(height / 2f, height / 2f),
+    )
+}
+
+private fun DrawScope.drawNestedDepthBand(
+    rect: TrackRect,
+    depth: Int,
+    color: Color,
+) {
+    val horizontalInset = min(rect.width * 0.08f, 2.4.dp.toPx())
+    val y = rect.centerY
+    drawLine(
+        color = color,
+        start = Offset(max(0f, rect.left + horizontalInset), y),
+        end = Offset(min(this.size.width, rect.right - horizontalInset), y),
+        strokeWidth = nestedStrokeWidth(rect, depth),
+        cap = StrokeCap.Round,
+    )
+}
+
+private fun DrawScope.drawOpenTrackBracket(
+    rect: TrackRect,
+    depth: Int,
+    color: Color,
+) {
+    val strokeWidth = nestedStrokeWidth(rect, depth)
+    val bracketWidth = if (depth == 1) 4.8.dp.toPx() else 3.8.dp.toPx()
+    val x = max(0f, rect.left - bracketWidth * 0.65f)
+    val top = rect.top + rect.height * 0.16f
+    val bottom = rect.bottom - rect.height * 0.16f
+    val middle = (top + bottom) / 2f
+    val path = Path().apply {
+        moveTo(x + bracketWidth, top)
+        cubicTo(x, top, x, middle, x + bracketWidth * 0.45f, middle)
+        cubicTo(x, middle, x, bottom, x + bracketWidth, bottom)
+    }
+    drawPath(
+        path = path,
+        color = color,
+        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+    )
+}
+
+private fun DrawScope.drawTrackBreaks(
+    layout: TextLayoutResult,
+    segment: PassageProgressSegment,
+    layer: PassageLayer,
+    color: Color,
+    surfaceColor: Color,
+) {
     val textLength = layout.layoutInput.text.length
-    val yPad = 1.dp.toPx()
     segment.internalBreaks
         .filter { it > segment.startChar && it < segment.endChar && it < textLength }
         .forEach { breakOffset ->
             val rect = layout.getBoundingBox(breakOffset)
             if (rect.width <= 0f || rect.height <= 0f) return@forEach
+            val depth = layer.depth.coerceAtMost(2)
             val x = rect.left
+            val lineIndex = layout.getLineForOffset(breakOffset)
+            val lineRect = TrackRect(rect.left, rect.top, rect.right, rect.bottom, lineIndex)
+            val y = lineRect.centerY
+            val clearHalfHeight = if (depth == 0) {
+                lineRect.height * 0.36f
+            } else {
+                nestedStrokeWidth(lineRect, depth) * 0.68f
+            }
+            val markHalfHeight = min(clearHalfHeight * 0.62f, 2.4.dp.toPx())
+            drawLine(
+                color = surfaceColor,
+                start = Offset(x, y - clearHalfHeight),
+                end = Offset(x, y + clearHalfHeight),
+                strokeWidth = 2.4.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
             drawLine(
                 color = color,
-                start = Offset(x, rect.top - yPad),
-                end = Offset(x, rect.bottom + yPad),
-                strokeWidth = 1.dp.toPx(),
+                start = Offset(x, y - markHalfHeight),
+                end = Offset(x, y + markHalfHeight),
+                strokeWidth = 0.9.dp.toPx(),
+                cap = StrokeCap.Round,
             )
         }
 }
 
-private fun DrawScope.depthInset(depth: Int): Float =
-    when (depth.coerceAtLeast(0)) {
-        0 -> 0.dp.toPx()
-        1 -> 3.8.dp.toPx()
-        2 -> 7.2.dp.toPx()
-        else -> 9.6.dp.toPx()
-    }
+private fun DrawScope.nestedStrokeWidth(
+    rect: TrackRect,
+    depth: Int,
+): Float {
+    val ratio = if (depth.coerceAtMost(2) == 1) 0.5f else 0.25f
+    val minWidth = if (depth.coerceAtMost(2) == 1) 4.dp.toPx() else 2.dp.toPx()
+    return max(minWidth, rect.height * ratio)
+}
 
-private fun String.withWiderWordGaps() = buildAnnotatedString {
-    this@withWiderWordGaps.forEach { char ->
-        if (char == ' ') {
-            withStyle(SpanStyle(letterSpacing = 1.4.sp)) {
+private fun d0BubbleAlpha(
+    phase: ChunkPhase,
+    activeDepth: Int,
+): Float {
+    val base = when (phase) {
+        ChunkPhase.Painting -> 0.5f
+        ChunkPhase.Active -> 0.42f
+        ChunkPhase.Merged -> 0.3f
+        ChunkPhase.Dimmed -> 0.24f
+    }
+    val depthFocus = if (activeDepth == 0) 1f else 0.56f
+    return (base * depthFocus).coerceIn(0.1f, 0.5f)
+}
+
+private fun nestedBandAlpha(
+    depth: Int,
+    phase: ChunkPhase,
+    activeDepth: Int,
+    config: PassageRenderConfig,
+): Float {
+    val base = if (depth.coerceAtMost(2) == 1) 0.3f else 0.18f
+    return (base * nestedVisibility(depth, phase, activeDepth) * (0.78f + config.saturation(depth) * 0.22f))
+        .coerceIn(0.07f, 0.32f)
+}
+
+private fun bracketAlpha(
+    depth: Int,
+    phase: ChunkPhase,
+    activeDepth: Int,
+): Float {
+    val base = if (depth.coerceAtMost(2) == 1) 0.5f else 0.3f
+    return (base * nestedVisibility(depth, phase, activeDepth)).coerceIn(0.1f, 0.5f)
+}
+
+private fun nestedVisibility(depth: Int, phase: ChunkPhase, activeDepth: Int): Float {
+    val focused = depth.coerceAtMost(2) == activeDepth.coerceAtMost(2)
+    return when {
+        phase == ChunkPhase.Painting -> 1f
+        focused -> 0.95f
+        phase == ChunkPhase.Merged -> 0.72f
+        else -> 0.56f
+    }
+}
+
+private fun isConnectiveTrack(role: String, displayRole: String): Boolean =
+    role == "connective" || displayRole == "connective"
+
+private fun String.withTrackTextStyling(
+    sentence: PassageRead2Sentence,
+    currentChunkIndex: Int,
+    subduedColor: Color,
+) = buildAnnotatedString {
+    val subduedOffsets = sentence.chunks
+        .asSequence()
+        .filterIndexed { index, chunk -> index <= currentChunkIndex && chunk.role == "connective" }
+        .flatMap { chunk -> (chunk.startChar until chunk.endChar).asSequence() }
+        .toSet()
+
+    this@withTrackTextStyling.forEachIndexed { index, char ->
+        val style = when {
+            index in subduedOffsets && char == ' ' -> SpanStyle(color = subduedColor, letterSpacing = 1.4.sp)
+            index in subduedOffsets -> SpanStyle(color = subduedColor)
+            char == ' ' -> SpanStyle(letterSpacing = 1.4.sp)
+            else -> null
+        }
+        if (style == null) {
+            append(char)
+        } else {
+            withStyle(style) {
                 append(char)
             }
-        } else {
-            append(char)
         }
     }
 }
 
-private fun TextLayoutResult.boundingRectsForRange(start: Int, endExclusive: Int): List<Rect> {
+private fun TextLayoutResult.trackRectsForRange(start: Int, endExclusive: Int): List<TrackRect> {
     val textLength = layoutInput.text.length
     val safeStart = start.coerceIn(0, textLength)
     val safeEnd = endExclusive.coerceIn(0, textLength)
     if (safeStart >= safeEnd) return emptyList()
 
-    val rows = mutableListOf<LineRect>()
+    val rows = mutableListOf<TrackRect>()
     for (offset in safeStart until safeEnd) {
         val rect = getBoundingBox(offset)
         if (rect.width <= 0f || rect.height <= 0f) continue
+        val lineIndex = getLineForOffset(offset)
         val row = rows.firstOrNull {
-            abs(it.top - rect.top) < 1.5f && abs(it.bottom - rect.bottom) < 1.5f
+            it.lineIndex == lineIndex
         }
         if (row == null) {
-            rows += LineRect(rect.left, rect.top, rect.right, rect.bottom)
+            rows += TrackRect(rect.left, rect.top, rect.right, rect.bottom, lineIndex)
         } else {
             row.left = min(row.left, rect.left)
             row.top = min(row.top, rect.top)
@@ -568,15 +709,20 @@ private fun TextLayoutResult.boundingRectsForRange(start: Int, endExclusive: Int
             row.bottom = max(row.bottom, rect.bottom)
         }
     }
-    return rows.map { Rect(it.left, it.top, it.right, it.bottom) }
+    return rows
 }
 
-private data class LineRect(
+private data class TrackRect(
     var left: Float,
     var top: Float,
     var right: Float,
     var bottom: Float,
-)
+    val lineIndex: Int,
+) {
+    val width: Float get() = right - left
+    val height: Float get() = bottom - top
+    val centerY: Float get() = (top + bottom) / 2f
+}
 
 private data class ClauseSpan(
     val clause: PassageClause,
@@ -646,6 +792,7 @@ private fun buildProgressState(
                 internalBreaks = rangeChunks.drop(1).map { it.startChar },
                 layers = layersForChunk(host, sentence, config),
                 phase = if (safeIndex in sourceIndexes) ChunkPhase.Painting else ChunkPhase.Merged,
+                opensTrack = false,
             )
         }
 
@@ -654,21 +801,23 @@ private fun buildProgressState(
         .sortedBy { it.clause.depth }
         .forEach { span ->
             val role = roleForClause(span.clause, sentence)
+            val trackChunks = span.chunks.filterNot { it.role == "connective" }.ifEmpty { span.chunks }
+            val startChar = trackChunks.minOf { it.startChar }
+            val endChar = trackChunks.maxOf { it.endChar }
             display += PassageProgressSegment(
                 id = "${span.clause.id}_surfaced",
-                text = sentence.text.substring(span.startChar, span.endChar),
+                text = sentence.text.substring(startChar, endChar),
                 displayRole = span.clause.role,
-                startChar = span.startChar,
-                endChar = span.endChar,
+                startChar = startChar,
+                endChar = endChar,
                 sourceChunkIds = span.chunks.map { it.id },
                 sourceChunkIndexes = span.indexes,
-                internalBreaks = span.internalBreaks,
+                internalBreaks = trackChunks.drop(1).map { it.startChar },
                 layers = layersForClause(span.clause, sentence, config, role),
                 phase = ChunkPhase.Merged,
+                opensTrack = span.clause.depth in 1..config.depthCap,
             )
-            if (span.clause.depth >= config.depthCap) {
-                hiddenChunkIds += span.chunks.map { it.id }
-            }
+            hiddenChunkIds += span.chunks.map { it.id }
         }
 
     sentence.chunks.forEachIndexed { modifierIndex, modifier ->
@@ -693,6 +842,7 @@ private fun buildProgressState(
             internalBreaks = listOf(modifier.startChar),
             layers = layersForChunk(head, sentence, config),
             phase = ChunkPhase.Merged,
+            opensTrack = false,
         )
     }
 
@@ -721,6 +871,12 @@ private fun buildProgressState(
                 depth == activeDepth -> ChunkPhase.Active
                 else -> ChunkPhase.Dimmed
             },
+            opensTrack = opensVisibleClauseTrack(
+                chunk = chunk,
+                sentence = sentence,
+                clauseById = clauseById,
+                config = config,
+            ),
         )
     }
 
@@ -754,6 +910,21 @@ private fun clauseSpan(
         endChar = chunks.maxOf { it.endChar },
         internalBreaks = chunks.drop(1).map { it.startChar },
     )
+}
+
+private fun opensVisibleClauseTrack(
+    chunk: PassageChunk2,
+    sentence: PassageRead2Sentence,
+    clauseById: Map<String, PassageClause>,
+    config: PassageRenderConfig,
+): Boolean {
+    val clause = clauseById[chunk.clauseId] ?: return false
+    if (clause.depth !in 1..config.depthCap) return false
+    if (chunk.role == "connective") return false
+    val firstContentChunk = sentence.chunks
+        .firstOrNull { it.clauseId == clause.id && it.role != "connective" }
+        ?: sentence.chunks.firstOrNull { it.clauseId == clause.id }
+    return firstContentChunk?.id == chunk.id
 }
 
 private fun layersForChunk(
@@ -822,43 +993,6 @@ private fun PassageChunk2.roleForProgress(progress: PassageProgressState): Strin
         ?.lastOrNull()
         ?.role
         ?: role
-
-private fun layerAlpha(
-    phase: ChunkPhase,
-    layer: PassageLayer,
-    activeDepth: Int,
-    config: PassageRenderConfig,
-): Float {
-    if (isOutlineOnlyRole(layer.role)) {
-        return if (phase == ChunkPhase.Painting) 0.62f else 0.38f
-    }
-    val distance = abs(activeDepth - layer.depth)
-    val focus = when (distance) {
-        0 -> 1.0f
-        1 -> 0.64f
-        else -> 0.42f
-    }
-    val base = when (phase) {
-        ChunkPhase.Painting -> 0.34f
-        ChunkPhase.Active -> 0.28f
-        ChunkPhase.Dimmed -> 0.32f
-        ChunkPhase.Merged -> 0.26f
-    }
-    return (base * focus * (0.72f + config.saturation(layer.depth) * 0.28f)).coerceIn(0.06f, 0.48f)
-}
-
-private fun shouldFillLayer(
-    phase: ChunkPhase,
-    layer: PassageLayer,
-    activeDepth: Int,
-): Boolean {
-    if (isOutlineOnlyRole(layer.role)) return false
-    if (phase == ChunkPhase.Dimmed) return false
-    return phase == ChunkPhase.Painting || layer.depth == activeDepth
-}
-
-private fun isOutlineOnlyRole(role: String): Boolean =
-    role == "connective" || role.startsWith("adjunct")
 
 @Composable
 private fun ChunkProgressInspector(progress: PassageProgressState, totalChunks: Int) {
