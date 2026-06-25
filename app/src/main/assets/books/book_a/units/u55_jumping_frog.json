@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 2,
+  "unitId": "u55_jumping_frog",
+  "title": "UNIT 55 — Jumping Frog",
+  "level": "A2",
+  "content": {
+    "words": [],
+    "passage": {
+      "id": "u55_jumping_frog",
+      "title": "UNIT 55 — Jumping Frog",
+      "text": "Mark Twain once wrote a story called “The Celebrated Jumping Frog of Calaveras County.” The story became very famous. It gave the people who really lived in Calaveras County a great idea—to have a frog-jumping contest. The contest has been held every year since 1928 at Angel's Camp, Calaveras County, California. Fifty-one frogs competed in the first contest. The winning frog jumped 3 feet, 4 inches. In a more recent contest, Rosie the Ribeter won with a jump of 21 feet, 5¾ inches. Are the frogs stronger than they used to be, or have they been getting more practice? Whatever the reason, the frogs are jumping better than ever.",
+      "sentences": [
+        "Mark Twain once wrote a story called “The Celebrated Jumping Frog of Calaveras County.”",
+        "The story became very famous.",
+        "It gave the people who really lived in Calaveras County a great idea—to have a frog-jumping contest.",
+        "The contest has been held every year since 1928 at Angel's Camp, Calaveras County, California.",
+        "Fifty-one frogs competed in the first contest.",
+        "The winning frog jumped 3 feet, 4 inches.",
+        "In a more recent contest, Rosie the Ribeter won with a jump of 21 feet, 5¾ inches.",
+        "Are the frogs stronger than they used to be, or have they been getting more practice?",
+        "Whatever the reason, the frogs are jumping better than ever."
+      ],
+      "chunks": [],
+      "questions": []
+    }
+  },
+  "steps": [
+    {
+      "id": "s1",
+      "type": "passage_read3",
+      "params": {
+        "passageId": "u55_jumping_frog",
+        "title": "UNIT 55 — Jumping Frog",
+        "reefDensity": 0.6,
+        "sentences": [
+          {
+            "index": 0,
+            "text": "Mark Twain once wrote a story called “The Celebrated Jumping Frog of Calaveras County.”",
+            "maxDepth": 0,
+            "reefIds": [
+              "u55_mt",
+              "u55_cc"
+            ]
+          },
+          {
+            "index": 1,
+            "text": "The story became very famous.",
+            "maxDepth": 0,
+            "reefIds": [
+              "u55_famous"
+            ]
+          },
+          {
+            "index": 2,
+            "text": "It gave the people who really lived in Calaveras County a great idea—to have a frog-jumping contest.",
+            "maxDepth": 1,
+            "reefIds": [
+              "u55_skel"
+            ]
+          },
+          {
+            "index": 3,
+            "text": "The contest has been held every year since 1928 at Angel's Camp, Calaveras County, California.",
+            "maxDepth": 0,
+            "reefIds": []
+          },
+          {
+            "index": 4,
+            "text": "Fifty-one frogs competed in the first contest.",
+            "maxDepth": 0,
+            "reefIds": [
+              "u55_competed"
+            ]
+          },
+          {
+            "index": 5,
+            "text": "The winning frog jumped 3 feet, 4 inches.",
+            "maxDepth": 0,
+            "reefIds": []
+          },
+          {
+            "index": 6,
+            "text": "In a more recent contest, Rosie the Ribeter won with a jump of 21 feet, 5¾ inches.",
+            "maxDepth": 0,
+            "reefIds": []
+          },
+          {
+            "index": 7,
+            "text": "Are the frogs stronger than they used to be, or have they been getting more practice?",
+            "maxDepth": 0,
+            "reefIds": []
+          },
+          {
+            "index": 8,
+            "text": "Whatever the reason, the frogs are jumping better than ever.",
+            "maxDepth": 0,
+            "reefIds": []
+          }
+        ],
+        "reefs": [
+          {
+            "id": "u55_mt",
+            "sentenceIndex": 0,
+            "anchorStart": 0,
+            "anchorEnd": 10,
+            "type": "nametag",
+            "difficulty": 1,
+            "nametag": {
+              "answer": "person",
+              "reassure": "정확히 몰라도 괜찮아, 계속 읽어."
+            }
+          },
+          {
+            "id": "u55_cc",
+            "sentenceIndex": 0,
+            "anchorStart": 69,
+            "anchorEnd": 85,
+            "type": "nametag",
+            "difficulty": 1,
+            "nametag": {
+              "answer": "place",
+              "reassure": "정확히 몰라도 괜찮아, 계속 읽어."
+            }
+          },
+          {
+            "id": "u55_famous",
+            "sentenceIndex": 1,
+            "anchorStart": 22,
+            "anchorEnd": 28,
+            "type": "detective",
+            "difficulty": 3,
+            "detective": {
+              "blankSentence": "The story became very ___.",
+              "options": [
+                "유명한",
+                "신기한",
+                "재미있는"
+              ],
+              "answerIndex": 0,
+              "hint": "아주 많은 사람들이 알게 된 상태를 뜻해.",
+              "meaning": "유명한"
+            }
+          },
+          {
+            "id": "u55_competed",
+            "sentenceIndex": 4,
+            "anchorStart": 16,
+            "anchorEnd": 24,
+            "type": "detective",
+            "difficulty": 3,
+            "detective": {
+              "blankSentence": "Fifty-one frogs ___ in the first contest.",
+              "options": [
+                "참가했다",
+                "먹었다",
+                "춤췄다"
+              ],
+              "answerIndex": 0,
+              "hint": "대회에 나가서 겨루었다는 뜻이야.",
+              "meaning": "참가하다"
+            }
+          },
+          {
+            "id": "u55_skel",
+            "sentenceIndex": 2,
+            "anchorStart": 8,
+            "anchorEnd": 18,
+            "type": "skeleton",
+            "difficulty": 4,
+            "skeleton": {
+              "chunks": [
+                {
+                  "id": "c1",
+                  "text": "the people who really lived in Calaveras County",
+                  "depth": 0,
+                  "role": "who"
+                },
+                {
+                  "id": "c2",
+                  "text": "had a great idea—to have a frog-jumping contest",
+                  "depth": 0,
+                  "role": "didWhat"
+                },
+                {
+                  "id": "c3",
+                  "text": "who really lived in Calaveras County",
+                  "depth": 1,
+                  "role": "whichPeople",
+                  "attachTo": "c1",
+                  "containsReefs": []
+                },
+                {
+                  "id": "c4",
+                  "text": "to have a frog-jumping contest",
+                  "depth": 1,
+                  "role": "whatIdea",
+                  "attachTo": "c2"
+                }
+              ],
+              "questions": [
+                {
+                  "q": "who?",
+                  "depth": 0,
+                  "answer": "c1"
+                },
+                {
+                  "q": "did what?",
+                  "depth": 0,
+                  "answer": "c2"
+                },
+                {
+                  "q": "which people?",
+                  "depth": 1,
+                  "answer": "c3",
+                  "attachTo": "c1"
+                },
+                {
+                  "q": "what idea?",
+                  "depth": 1,
+                  "answer": "c4",
+                  "attachTo": "c2"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

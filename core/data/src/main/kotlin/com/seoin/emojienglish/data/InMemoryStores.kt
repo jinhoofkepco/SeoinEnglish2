@@ -102,7 +102,7 @@ class InMemoryMasterModeState @Inject constructor() : MasterModeState {
     private companion object {
         // Development switch: keep master mode open on app start.
         // Revert by changing this to false after authoring tests are done.
-        private const val DEV_UNLOCK_MASTER_ON_START = true
+        private const val DEV_UNLOCK_MASTER_ON_START = false
     }
 
     private val _unlocked = MutableStateFlow(DEV_UNLOCK_MASTER_ON_START)

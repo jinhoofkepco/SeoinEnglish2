@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 2,
+  "unitId": "u56_wrong_house",
+  "title": "UNIT 56 — The Wrong House",
+  "level": "A2",
+  "content": {
+    "words": [],
+    "passage": {
+      "id": "u56_wrong_house",
+      "title": "UNIT 56 — The Wrong House",
+      "text": "How would you like to drive up to your house and find a pile of wood where your home once stood? It happened to Dorothy Irwin! When Irwin drove up on January 12, 1972, she saw a bulldozer knocking her house to pieces. “What are you doing?” she screamed. The operator said that he was told to demolish a vacant house on Raven Street. “Oh, no!” she said. “You have knocked down the wrong house!” A year earlier in 1971, her house had been slightly damaged by an earthquake. Dorothy Irwin planned to move back in, but the bulldozer got there first. Now she has a new house—and for free. The insurance company paid the bill.",
+      "sentences": [
+        "How would you like to drive up to your house and find a pile of wood where your home once stood?",
+        "It happened to Dorothy Irwin!",
+        "When Irwin drove up on January 12, 1972, she saw a bulldozer knocking her house to pieces.",
+        "“What are you doing?” she screamed.",
+        "The operator said that he was told to demolish a vacant house on Raven Street.",
+        "“Oh, no!” she said.",
+        "“You have knocked down the wrong house!”",
+        "A year earlier in 1971, her house had been slightly damaged by an earthquake.",
+        "Dorothy Irwin planned to move back in, but the bulldozer got there first.",
+        "Now she has a new house—and for free.",
+        "The insurance company paid the bill."
+      ],
+      "chunks": [],
+      "questions": []
+    }
+  },
+  "steps": [
+    {
+      "id": "s1",
+      "type": "passage_read3",
+      "params": {
+        "passageId": "u56_wrong_house",
+        "title": "UNIT 56 — The Wrong House",
+        "reefDensity": 0.6,
+        "sentences": [
+          {
+            "index": 0,
+            "text": "How would you like to drive up to your house and find a pile of wood where your home once stood?",
+            "maxDepth": 0,
+            "reefIds": []
+          },
+          {
+            "index": 1,
+            "text": "It happened to Dorothy Irwin!",
+            "maxDepth": 0,
+            "reefIds": [
+              "u56_di"
+            ]
+          },
+          {
+            "index": 2,
+            "text": "When Irwin drove up on January 12, 1972, she saw a bulldozer knocking her house to pieces.",
+            "maxDepth": 0,
+            "reefIds": [
+              "u56_skel"
+            ]
+          },
+          {
+            "index": 3,
+            "text": "“What are you doing?” she screamed.",
+            "maxDepth": 0,
+            "reefIds": []
+          },
+          {
+            "index": 4,
+            "text": "The operator said that he was told to demolish a vacant house on Raven Street.",
+            "maxDepth": 0,
+            "reefIds": [
+              "u56_vacant",
+              "u56_rst"
+            ]
+          },
+          {
+            "index": 5,
+            "text": "“Oh, no!” she said.",
+            "maxDepth": 0,
+            "reefIds": []
+          },
+          {
+            "index": 6,
+            "text": "“You have knocked down the wrong house!”",
+            "maxDepth": 0,
+            "reefIds": []
+          },
+          {
+            "index": 7,
+            "text": "A year earlier in 1971, her house had been slightly damaged by an earthquake.",
+            "maxDepth": 0,
+            "reefIds": [
+              "u56_slightly",
+              "u56_eq"
+            ]
+          },
+          {
+            "index": 8,
+            "text": "Dorothy Irwin planned to move back in, but the bulldozer got there first.",
+            "maxDepth": 0,
+            "reefIds": []
+          },
+          {
+            "index": 9,
+            "text": "Now she has a new house—and for free.",
+            "maxDepth": 0,
+            "reefIds": []
+          },
+          {
+            "index": 10,
+            "text": "The insurance company paid the bill.",
+            "maxDepth": 0,
+            "reefIds": [
+              "u56_insurance"
+            ]
+          }
+        ],
+        "reefs": [
+          {
+            "id": "u56_di",
+            "sentenceIndex": 1,
+            "anchorStart": 15,
+            "anchorEnd": 28,
+            "type": "nametag",
+            "difficulty": 1,
+            "nametag": {
+              "answer": "person",
+              "reassure": "정확히 몰라도 괜찮아, 계속 읽어."
+            }
+          },
+          {
+            "id": "u56_rst",
+            "sentenceIndex": 4,
+            "anchorStart": 65,
+            "anchorEnd": 77,
+            "type": "nametag",
+            "difficulty": 1,
+            "nametag": {
+              "answer": "place",
+              "reassure": "정확히 몰라도 괜찮아, 계속 읽어."
+            }
+          },
+          {
+            "id": "u56_vacant",
+            "sentenceIndex": 4,
+            "anchorStart": 49,
+            "anchorEnd": 55,
+            "type": "detective",
+            "difficulty": 3,
+            "detective": {
+              "blankSentence": "The operator said that he was told to demolish a ___ house on Raven Street.",
+              "options": [
+                "빈",
+                "큰",
+                "아름다운"
+              ],
+              "answerIndex": 0,
+              "hint": "사람이 살지 않는, 비어 있는 집을 말해.",
+              "meaning": "빈"
+            }
+          },
+          {
+            "id": "u56_slightly",
+            "sentenceIndex": 7,
+            "anchorStart": 43,
+            "anchorEnd": 51,
+            "type": "detective",
+            "difficulty": 3,
+            "detective": {
+              "blankSentence": "A year earlier in 1971, her house had been ___ damaged by an earthquake.",
+              "options": [
+                "약간",
+                "심하게",
+                "전혀"
+              ],
+              "answerIndex": 0,
+              "hint": "조금, 살짝이라는 뜻이야.",
+              "meaning": "약간"
+            }
+          },
+          {
+            "id": "u56_eq",
+            "sentenceIndex": 7,
+            "anchorStart": 66,
+            "anchorEnd": 76,
+            "type": "detective",
+            "difficulty": 3,
+            "detective": {
+              "blankSentence": "A year earlier in 1971, her house had been slightly damaged by an ___.",
+              "options": [
+                "지진",
+                "불",
+                "폭풍"
+              ],
+              "answerIndex": 0,
+              "hint": "땅이 흔들리는 자연재해야.",
+              "meaning": "지진"
+            }
+          },
+          {
+            "id": "u56_insurance",
+            "sentenceIndex": 10,
+            "anchorStart": 4,
+            "anchorEnd": 13,
+            "type": "detective",
+            "difficulty": 3,
+            "detective": {
+              "blankSentence": "The ___ company paid the bill.",
+              "options": [
+                "보험",
+                "건설",
+                "식품"
+              ],
+              "answerIndex": 0,
+              "hint": "돈을 내면 사고가 났을 때 도와주는 회사야.",
+              "meaning": "보험 회사"
+            }
+          },
+          {
+            "id": "u56_skel",
+            "sentenceIndex": 2,
+            "anchorStart": 0,
+            "anchorEnd": 90,
+            "type": "skeleton",
+            "difficulty": 4,
+            "skeleton": {
+              "chunks": [
+                {
+                  "id": "c1",
+                  "text": "Irwin",
+                  "depth": 0,
+                  "role": "who"
+                },
+                {
+                  "id": "c2",
+                  "text": "saw a bulldozer knocking her house to pieces",
+                  "depth": 0,
+                  "role": "didWhat"
+                },
+                {
+                  "id": "c3",
+                  "text": "when she drove up on January 12, 1972",
+                  "depth": 1,
+                  "role": "time",
+                  "attachTo": "c2"
+                }
+              ],
+              "questions": [
+                {
+                  "q": "who?",
+                  "depth": 0,
+                  "answer": "c1"
+                },
+                {
+                  "q": "did what?",
+                  "depth": 0,
+                  "answer": "c2"
+                },
+                {
+                  "q": "when?",
+                  "depth": 1,
+                  "answer": "c3",
+                  "attachTo": "c2"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

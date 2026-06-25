@@ -65,6 +65,7 @@ dependencies {
     implementation(project(":steps:chunk"))
     implementation(project(":steps:passageread"))
     implementation(project(":steps:passageread2"))
+    implementation(project(":steps:passageread3"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
