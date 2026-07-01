@@ -247,6 +247,10 @@ class WebViewVoiceGateway @Inject constructor(
                 if (script.instruction.isNotBlank()) add(script.instruction)
                 if (script.payload.isNotBlank()) add(script.payload)
             }.joinToString("\n\n")
+            val baselineText = evalObj(buildResponseProbeScript(null))
+                ?.optString("assistantText")
+                ?.trim()
+                .orEmpty()
 
             if (!send(message)) {
                 _state.value = VoiceShellState.PRIMED
@@ -258,7 +262,7 @@ class WebViewVoiceGateway @Inject constructor(
             // One loop watches BOTH the response text and the speaker audio so the
             // "설명 중" flag tracks real audio live (on as soon as it plays, off when
             // it stops) instead of starting only after the text finished (피드백).
-            val response = awaitTurnComplete()
+            val response = awaitTurnComplete(baselineText)
 
             val tail = response.assistantText.takeLast(TRANSCRIPT_TAIL)
             _state.value = VoiceShellState.PRIMED
@@ -382,20 +386,23 @@ class WebViewVoiceGateway @Inject constructor(
 
     /**
      * Single combined wait after a send: each tick probes BOTH the response text
-     * and the speaker audio. [speaking] mirrors the live audio activity (on the
-     * moment audio plays, off ~quietStreak after it stops) so the "설명 중" flag is
-     * accurate. The mic is muted while audio plays (목표②). The turn ends when the
-     * text is stable AND the speaker has gone quiet (or it was a text-only answer).
+     * and the speaker audio. [speaking] still mirrors live audio activity for the
+     * UI/mic gate, while [TURN_COMPLETION_MODE] decides which signal ends the turn.
      */
-    private suspend fun awaitTurnComplete(): ResponseProbe {
+    private suspend fun awaitTurnComplete(baselineText: String): ResponseProbe {
         val startWaitDeadline = now() + MEDIA_AUDIO_START_WAIT_MS
         val maxWait = now() + MEDIA_AUDIO_GATE_MAX_WAIT_MS
         var sawAudio = false
         var quietStreak = 0
+        var textStarted = false
+        var lastText = ""
+        var lastTextChangeAt = 0L
+        var textStableAfterPunctuation = false
         var polls = 0
         var last = ResponseProbe("", busy = true, complete = false)
         try {
             while (now() < maxWait) {
+                val nowMs = now()
                 val media = evalObj(buildMediaPlaybackProbeScript())
                 val recentActive = media?.optBoolean("recentActive") == true
                 val voiceOpen = media?.optBoolean("voiceOpen") == true
@@ -410,7 +417,7 @@ class WebViewVoiceGateway @Inject constructor(
                     quietStreak++
                 }
 
-                // Capture the latest assistant text for tag parsing (not for ending).
+                // Capture the latest assistant text for tag parsing and optional text-idle completion.
                 val resp = evalObj(buildResponseProbeScript(null))
                 if (resp != null) {
                     last = ResponseProbe(
@@ -418,20 +425,39 @@ class WebViewVoiceGateway @Inject constructor(
                         busy = resp.optBoolean("busy"),
                         complete = resp.optBoolean("sentenceComplete"),
                     )
+                    val currentText = last.assistantText.trim()
+                    if (currentText.isNotEmpty() && currentText != baselineText) {
+                        if (!textStarted || currentText != lastText) {
+                            textStarted = true
+                            lastText = currentText
+                            lastTextChangeAt = nowMs
+                            textStableAfterPunctuation = false
+                        } else {
+                            val idleMs = nowMs - lastTextChangeAt
+                            textStableAfterPunctuation =
+                                hasSentencePunctuation(currentText) && idleMs >= TURN_TEXT_IDLE_AFTER_PUNCTUATION_MS
+                        }
+                    }
                 }
                 if (polls < 6 || polls % 8 == 0) {
-                    Log.d(TAG, "turn poll=$polls recent=$recentActive saw=$sawAudio quiet=$quietStreak voiceOpen=$voiceOpen mic=${_micOpen.value}")
+                    val textIdleMs = if (textStarted) nowMs - lastTextChangeAt else 0L
+                    Log.d(
+                        TAG,
+                        "turn poll=$polls mode=$TURN_COMPLETION_MODE recent=$recentActive saw=$sawAudio quiet=$quietStreak textStarted=$textStarted textIdle=$textIdleMs textStable=$textStableAfterPunctuation voiceOpen=$voiceOpen mic=${_micOpen.value}",
+                    )
                 }
                 polls++
-                // In voice mode the SPEAKER finishing ends the turn — we do NOT wait
-                // for the text response to "complete" (its stop-icon never settles in
-                // voice mode, which left 코칭 stuck for ~45s). 피드백.
-                when {
-                    // Spoke, then went quiet for a couple ticks (ignores tiny gaps).
-                    sawAudio && quietStreak >= QUIET_STREAK_POLLS -> break
-                    // Never spoke: text-only answer or the overlay closed.
-                    !sawAudio && !voiceOpen && polls >= 3 -> break
-                    !sawAudio && now() > startWaitDeadline -> break
+                when (TURN_COMPLETION_MODE) {
+                    TurnCompletionMode.TextIdleAfterPunctuation -> when {
+                        textStableAfterPunctuation -> break
+                        !textStarted && !voiceOpen && polls >= 3 -> break
+                        !textStarted && nowMs > startWaitDeadline -> break
+                    }
+                    TurnCompletionMode.AudioQuiet -> when {
+                        sawAudio && quietStreak >= QUIET_STREAK_POLLS -> break
+                        !sawAudio && !voiceOpen && polls >= 3 -> break
+                        !sawAudio && nowMs > startWaitDeadline -> break
+                    }
                 }
                 delay(TURN_POLL_MS)
             }
@@ -442,6 +468,9 @@ class WebViewVoiceGateway @Inject constructor(
         }
         return last
     }
+
+    private fun hasSentencePunctuation(text: String): Boolean =
+        text.any { it == '.' || it == '!' || it == '?' || it == '。' || it == '！' || it == '？' || it == '…' }
 
     // -------------------------------------------------------------- JS bridge
 
@@ -462,6 +491,11 @@ class WebViewVoiceGateway @Inject constructor(
     private fun now() = System.currentTimeMillis()
 
     private data class ResponseProbe(val assistantText: String, val busy: Boolean, val complete: Boolean)
+
+    private enum class TurnCompletionMode {
+        AudioQuiet,
+        TextIdleAfterPunctuation,
+    }
 
     // ===================================================================== JS
     // Ported verbatim from TRPG_webviewGPT/MainActivity.kt (markers genericised).
@@ -755,7 +789,8 @@ class WebViewVoiceGateway @Inject constructor(
         const val MEDIA_AUDIO_GATE_MAX_WAIT_MS = 45_000L
         // Combined turn loop (text + audio in one poll).
         const val TURN_POLL_MS = 150L
-        const val TURN_TEXT_STABLE_POLLS = 3
+        const val TURN_TEXT_IDLE_AFTER_PUNCTUATION_MS = 250L
+        val TURN_COMPLETION_MODE = TurnCompletionMode.TextIdleAfterPunctuation
         const val KEYBOARD_NUDGE_SETTLE_MS = 600L
         const val TRANSCRIPT_TAIL = 80
     }

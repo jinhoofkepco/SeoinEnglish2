@@ -5,18 +5,13 @@ import android.webkit.WebView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,8 +28,7 @@ import com.seoin.emojienglish.voice.PictureWord
 
 /**
  * 그림창 — 화면 가운데를 거의 다 덮는 오버레이. 2번째 ChatGPT WebView를 host 하고,
- * 현재 포커스 문장/컷의 그림 단어를 **웹뷰 위에 떠 있는 칩**으로 띄운다(없으면 안 띄움).
- * 칩을 누르면 그 단어의 그림 요청 프롬프트가 웹뷰에 주입된다.
+ * 현재 포커스 문장/컷의 그림 단어는 패널이 열릴 때 곧바로 ChatGPT에 주입된다.
  *
  * 닫기: **바깥(스크림) 탭** 또는 하단 허브의 "그림" 버튼 재탭(AppShell이 허브를 이 패널
  * 위에 그린다). 스크림은 카드 **뒤 형제 레이어**라 카드 안 웹뷰 터치와 충돌하지 않는다.
@@ -92,7 +86,7 @@ fun PicturePanel(
                     )
                 }
 
-                // 웹뷰 + (위에 떠 있는) 단어 칩
+                // 웹뷰: 찾을 대상은 패널 진입 전에 확정되어 곧바로 주입된다.
                 Box(Modifier.fillMaxWidth().weight(1f)) {
                     val webView = provideView()
                     if (webView != null) {
@@ -103,40 +97,6 @@ fun PicturePanel(
                                 webView
                             },
                         )
-                    }
-
-                    // 칩이 있을 때만 — 웹뷰 하단에 가로 스크롤로 띄운다.
-                    if (state.words.isNotEmpty()) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                            tonalElevation = 3.dp,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .fillMaxWidth()
-                                .padding(8.dp),
-                        ) {
-                            Row(
-                                Modifier
-                                    .horizontalScroll(rememberScrollState())
-                                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    "단어 그림:",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.outline,
-                                )
-                                state.words.forEach { word ->
-                                    AssistChip(
-                                        onClick = { onWord(word) },
-                                        label = { Text(word.label) },
-                                        colors = AssistChipDefaults.assistChipColors(),
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
             }

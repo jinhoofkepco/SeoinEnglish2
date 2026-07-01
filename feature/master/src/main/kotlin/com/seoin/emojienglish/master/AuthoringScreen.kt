@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -69,18 +70,29 @@ fun AuthoringScreen(
     var showAdvanced by remember { mutableStateOf(false) }
     var confirmClearAllCookies by remember { mutableStateOf(false) }
     var showSourceDialog by remember { mutableStateOf(false) }
+    var showRepairDialog by remember { mutableStateOf(false) }
+    var showWordCardDialog by remember { mutableStateOf(false) }
     var sourceDraft by remember { mutableStateOf("") }
     val sourceFocusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val context = LocalContext.current
     val rootView = LocalView.current
+    val repairChoice = s.repairChoices.getOrNull(s.repairChoiceIndex)
     var pendingRangeTarget by remember { mutableStateOf<PhotoRangeTarget?>(null) }
 
     DisposableEffect(rootView) {
         onDispose { rootView.keepScreenOn = false }
     }
+    LaunchedEffect(Unit) {
+        vm.clearAuthoringDraftOnEntry()
+    }
     LaunchedEffect(rootView, s.running) {
         rootView.keepScreenOn = s.running
+    }
+    LaunchedEffect(s.wordCardCandidateVersion) {
+        if (s.wordCardCandidateVersion > 0 && s.wordCardCandidates.isNotEmpty()) {
+            showWordCardDialog = true
+        }
     }
 
     val passagePhotoPicker = rememberLauncherForActivityResult(
@@ -227,6 +239,20 @@ fun AuthoringScreen(
                     onClick = vm::buildPassageAndSave,
                 )
                 TinyActionButton(
+                    label = "단카",
+                    enabled = !s.running && (s.passagePhotoCount > 0 || s.source.isNotBlank()),
+                    active = s.wordCardCandidates.isNotEmpty(),
+                    onClick = {
+                        if (s.wordCardCandidates.isNotEmpty()) showWordCardDialog = true
+                        else vm.prepareWordCardCandidates()
+                    },
+                )
+                TinyActionButton(
+                    label = "단카2",
+                    enabled = !s.running && s.wordPhotoCount > 0,
+                    onClick = vm::buildWordCardFromDefinitionPhotos,
+                )
+                TinyActionButton(
                     label = "단",
                     enabled = !s.running && (s.wordPhotoCount > 0 || s.source.isNotBlank()),
                     onClick = vm::extractWordsAuto,
@@ -246,6 +272,19 @@ fun AuthoringScreen(
                     enabled = !s.running,
                     onClick = vm::captureGridImage,
                 )
+                TinyActionButton(
+                    label = "그림다시",
+                    enabled = !s.running,
+                    onClick = {
+                        vm.refreshRepairChoices()
+                        showRepairDialog = true
+                    },
+                )
+                TinyActionButton(
+                    label = "보정",
+                    enabled = !s.running && repairChoice != null,
+                    onClick = vm::repairSelectedUnitImages,
+                )
                 if (showAdvanced) {
                     TinyActionButton(
                         label = "대기",
@@ -254,7 +293,9 @@ fun AuthoringScreen(
                     )
                 }
                 Text(
-                    "문${s.sentences.size} 단${s.words.size}",
+                    repairChoice?.let {
+                        "그림 ${s.repairChoiceIndex + 1}/${s.repairChoices.size}"
+                    } ?: "문${s.sentences.size} 단${s.words.size}",
                     style = MaterialTheme.typography.labelSmall,
                     fontSize = 10.sp,
                     color = MaterialTheme.colorScheme.outline,
@@ -410,6 +451,116 @@ fun AuthoringScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showSourceDialog = false }) { Text("취소") }
+            },
+        )
+    }
+
+    if (showWordCardDialog) {
+        AlertDialog(
+            onDismissRequest = { showWordCardDialog = false },
+            title = { Text("단어카드 단어 선택") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (s.wordCardBracketedText.isNotBlank()) {
+                        Text(
+                            s.wordCardBracketedText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 8,
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        TinyActionButton(label = "전체", enabled = !s.running, onClick = { vm.setAllWordCardCandidates(true) })
+                        TinyActionButton(label = "해제", enabled = !s.running, onClick = { vm.setAllWordCardCandidates(false) })
+                        TinyActionButton(label = "새로", enabled = !s.running, onClick = {
+                            showWordCardDialog = false
+                            vm.clearWordCardCandidates()
+                            vm.prepareWordCardCandidates()
+                        })
+                    }
+                    s.wordCardCandidates.withIndex().chunked(2).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                            row.forEach { indexedCandidate ->
+                                val candidate = indexedCandidate.value
+                                OutlinedButton(
+                                    onClick = { vm.toggleWordCardCandidate(indexedCandidate.index) },
+                                    enabled = !s.running,
+                                    modifier = Modifier.weight(1f).height(34.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                    colors = if (candidate.selected) {
+                                        ButtonDefaults.outlinedButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        )
+                                    } else {
+                                        ButtonDefaults.outlinedButtonColors()
+                                    },
+                                ) {
+                                    Text(candidate.word, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                }
+                            }
+                            if (row.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
+                    OutlinedTextField(
+                        value = s.wordCardPrompt,
+                        onValueChange = vm::setWordCardPrompt,
+                        modifier = Modifier.fillMaxWidth().height(170.dp),
+                        label = { Text("설명 생성 프롬프트") },
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !s.running && s.wordCardCandidates.any { it.selected },
+                    onClick = {
+                        showWordCardDialog = false
+                        vm.buildWordCardFromSelected()
+                    },
+                ) { Text("보내기") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWordCardDialog = false }) { Text("닫기") }
+            },
+        )
+    }
+
+    if (showRepairDialog) {
+        AlertDialog(
+            onDismissRequest = { showRepairDialog = false },
+            title = { Text("그림 다시 만들 단원") },
+            text = {
+                if (s.repairChoices.isEmpty()) {
+                    Text("story_comic 단원을 찾지 못했습니다.")
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        s.repairChoices.forEachIndexed { index, choice ->
+                            OutlinedButton(
+                                onClick = {
+                                    vm.selectRepairChoice(index)
+                                    showRepairDialog = false
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            ) {
+                                Text(
+                                    "${index + 1}. ${choice.label}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 2,
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showRepairDialog = false }) { Text("닫기") }
             },
         )
     }

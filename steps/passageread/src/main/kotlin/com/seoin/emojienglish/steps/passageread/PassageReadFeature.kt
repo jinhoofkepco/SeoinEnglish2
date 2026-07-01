@@ -271,6 +271,17 @@ class PassageReadFeature @Inject constructor(
                                 PictureWord(id = "${current.id}_${label.hashCode()}", label = label, prompt = prompt),
                             )
                         },
+                        onVoice = { label, prompt ->
+                            session.trace("passage_selection_voice", mapOf("sentence" to current.id, "text" to label))
+                            session.requestVoice(
+                                VoicePrompt(
+                                    templateId = "passage_selection_explain",
+                                    kind = StepPromptKind.EXPLAIN,
+                                    payload = prompt,
+                                    contextLabel = "${data.title} · 선택 설명",
+                                ),
+                            )
+                        },
                         overlookOpenId = overlookParaId,
                         onOverlookToggle = { pid ->
                             overlookParaId = if (overlookParaId == pid) null else pid
@@ -453,6 +464,7 @@ private fun PassageScroll(
     onSentenceClick: (String) -> Unit,
     onChunkClick: (PassageChunk) -> Unit,
     onPicture: (String, String) -> Unit,
+    onVoice: (String, String) -> Unit,
     overlookOpenId: String?,
     onOverlookToggle: (String) -> Unit,
 ) {
@@ -470,6 +482,7 @@ private fun PassageScroll(
                         onClick = { onSentenceClick(sentence.id) },
                         onChunkClick = onChunkClick,
                         onPicture = onPicture,
+                        onVoice = onVoice,
                     )
                 }
             }
@@ -539,6 +552,7 @@ private fun SentenceLine(
     onClick: () -> Unit,
     onChunkClick: (PassageChunk) -> Unit,
     onPicture: (String, String) -> Unit,
+    onVoice: (String, String) -> Unit,
 ) {
     val baseColor = if (isCurrent) MaterialTheme.colorScheme.onSurface
                     else MaterialTheme.colorScheme.outlineVariant
@@ -658,6 +672,10 @@ private fun SentenceLine(
                     onPicture(selText, passagePicturePayload(selText, sentence))
                     menuAnchor = null
                 },
+                onVoice = {
+                    onVoice(selText, passageSelectionVoicePayload(selText, sentence))
+                    menuAnchor = null
+                },
                 onDismiss = { menuAnchor = null; selection = null },
             )
         }
@@ -673,6 +691,7 @@ private fun SelectionActionMenu(
     anchor: Offset,
     selectedText: String,
     onPicture: () -> Unit,
+    onVoice: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     Popup(
@@ -702,6 +721,15 @@ private fun SelectionActionMenu(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(onClick = onPicture)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                )
+                Text(
+                    "🎙 보이스",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onVoice)
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                 )
             }
@@ -1142,9 +1170,13 @@ private fun sentenceDecodePayload(data: PassageReadData, sentence: PassageSenten
 private fun chunkDecodePayload(data: PassageReadData, sentence: PassageSentence, chunk: PassageChunk): String =
     "\"${chunk.text}\"가 이 문장에서 어떤 뜻·역할인지 쉽게 설명해줘: ${sentence.text}"
 
-// 그림창에 주입할 요청문 — 사진 우선, 없으면 간단히 그려달라고. 짧게 + 문맥 한 줄.
+private fun passageSelectionVoicePayload(selectedText: String, sentence: PassageSentence): String =
+    "\"${selectedText.trim()}\"가 이 문장에서 어떤 뜻인지 설명해줘. " +
+        "단어면 뜻과 쓰임을, 청크면 끊어 읽는 법과 역할을 아이에게 쉽게 말해줘. 문장: ${sentence.text}"
+
+// 그림창에 주입할 요청문 — 생성 요청 없이 사진 검색만 짧게.
 private fun passagePicturePayload(selectedText: String, sentence: PassageSentence): String =
-    "\"${selectedText.trim()}\" 의 사진이나 그림을 보여줘. 못 찾으면 아이가 알아볼 수 있게 간단히 그려줘. 문맥: ${sentence.text}"
+    "\"${selectedText.trim()}\"(이 문장에서의 뜻) 을 설명할 수 있는 사진 찾아줘. 문맥: ${sentence.text}"
 
 private fun parentExplorePayload(
     data: PassageReadData,

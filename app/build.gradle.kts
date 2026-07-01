@@ -64,6 +64,7 @@ dependencies {
     implementation(project(":steps:question"))
     implementation(project(":steps:chunk"))
     implementation(project(":steps:passageread"))
+    implementation(project(":steps:wordcard"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

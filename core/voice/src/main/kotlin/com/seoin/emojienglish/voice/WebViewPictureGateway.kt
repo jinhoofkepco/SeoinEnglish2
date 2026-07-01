@@ -10,6 +10,7 @@ import android.webkit.WebViewClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +44,7 @@ class WebViewPictureGateway @Inject constructor(
 
     private var webView: WebView? = null
     @Volatile private var pageLoaded = false
+    private var autoRequestJob: Job? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun ensureWebView(): WebView {
@@ -96,9 +98,13 @@ class WebViewPictureGateway @Inject constructor(
     }
 
     override fun addWord(word: PictureWord) {
-        ensureWebView()
-        val merged = (_state.value.words + word).distinctBy { it.id }
-        _state.value = _state.value.copy(visible = true, words = merged)
+        autoRequestJob?.cancel()
+        autoRequestJob = main.launch {
+            ensureWebView()
+            _state.value = _state.value.copy(visible = true, words = listOf(word))
+            val ok = send(word.prompt)
+            Log.d(TAG, "autoRequestPicture \"${word.label}\" sent=$ok")
+        }
     }
 
     override fun open() {
@@ -108,6 +114,8 @@ class WebViewPictureGateway @Inject constructor(
 
     override fun close() {
         // 닫으면 칩도 비운다 — 다음에 열 땐 다시 단어를 골라 추가한다.
+        autoRequestJob?.cancel()
+        autoRequestJob = null
         _state.value = _state.value.copy(visible = false, words = emptyList())
     }
 
@@ -129,6 +137,10 @@ class WebViewPictureGateway @Inject constructor(
     private suspend fun send(message: String): Boolean = withContext(Dispatchers.Main.immediate) {
         val loadDeadline = now() + PAGE_LOAD_TIMEOUT_MS
         while (!pageLoaded && now() < loadDeadline) delay(150)
+        if (!waitForComposerReady()) {
+            Log.w(TAG, "send: composer not ready for \"${message.take(40)}\"")
+            return@withContext false
+        }
         var clicked = false
         var attempts = INJECT_SEND_ATTEMPTS
         while (attempts-- > 0 && !clicked) {
@@ -138,6 +150,16 @@ class WebViewPictureGateway @Inject constructor(
         }
         if (!clicked) Log.w(TAG, "send: never clicked for \"${message.take(40)}\"")
         clicked
+    }
+
+    private suspend fun waitForComposerReady(): Boolean = withContext(Dispatchers.Main.immediate) {
+        val deadline = now() + COMPOSER_READY_TIMEOUT_MS
+        while (now() < deadline) {
+            val ready = evalObj(buildComposerReadyScript())?.optBoolean("inputReady") == true
+            if (ready) return@withContext true
+            delay(COMPOSER_READY_POLL_MS)
+        }
+        false
     }
 
     private suspend fun eval(js: String): String = withContext(Dispatchers.Main.immediate) {
@@ -195,6 +217,22 @@ class WebViewPictureGateway @Inject constructor(
         """.trimIndent()
     }
 
+    private fun buildComposerReadyScript(): String {
+        val inputSelector = JSONObject.quote(CHATGPT_INPUT_SELECTOR)
+        return """
+            (function() {
+              const selector = $inputSelector;
+              const result = { inputReady:false, readyState:document.readyState, reason:"" };
+              const isVisible = function(el){ if(!el) return false; const r=el.getBoundingClientRect(); const s=window.getComputedStyle(el); return r.width>0&&r.height>0&&s.visibility!=="hidden"&&s.display!=="none"; };
+              const inputs = Array.from(document.querySelectorAll(selector)).filter(function(el){return isVisible(el)&&!el.closest("[aria-hidden='true']");});
+              const input = inputs.find(function(el){return el.id==="prompt-textarea"||el.getAttribute("data-testid")==="prompt-textarea";})||inputs[0];
+              result.inputReady=!!input;
+              result.reason=input?"ready":"no-input";
+              return result;
+            })();
+        """.trimIndent()
+    }
+
     private companion object {
         const val TAG = "SeoinPicture"
         const val CHATGPT_URL = "https://chatgpt.com/"
@@ -203,7 +241,9 @@ class WebViewPictureGateway @Inject constructor(
         const val CHATGPT_SEND_BUTTON_SELECTOR =
             "button[data-testid='send-button'], button[data-testid='composer-submit-button'], button[data-testid='composer-send-button'], button[aria-label='Send prompt'], button[aria-label='Send message'], button[aria-label='Send']"
         const val PAGE_LOAD_TIMEOUT_MS = 20_000L
-        const val INJECT_SEND_ATTEMPTS = 12
-        const val INJECT_SEND_POLL_MS = 120L
+        const val COMPOSER_READY_TIMEOUT_MS = 20_000L
+        const val COMPOSER_READY_POLL_MS = 250L
+        const val INJECT_SEND_ATTEMPTS = 24
+        const val INJECT_SEND_POLL_MS = 180L
     }
 }

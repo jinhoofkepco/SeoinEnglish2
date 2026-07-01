@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.util.Base64
+import android.util.Log
 import android.webkit.WebView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -41,6 +43,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -60,6 +63,18 @@ class AuthoringViewModel @Inject constructor(
     private val lessonRepo: LessonRepository,
 ) : ViewModel() {
 
+    data class RepairUnitChoice(
+        val bookId: String,
+        val bookTitle: String,
+        val unitId: String,
+        val unitTitle: String,
+        val wordCount: Int,
+        val missingImageCount: Int,
+    ) {
+        val label: String
+            get() = "$unitTitle · 단어 $wordCount · 누락 $missingImageCount"
+    }
+
     data class State(
         val bookId: String = "book_a",
         val bookTitle: String = "Emoji English Book A",
@@ -75,6 +90,13 @@ class AuthoringViewModel @Inject constructor(
         val error: String? = null,
         val passagePhotoCount: Int = 0,
         val wordPhotoCount: Int = 0,
+        val repairChoices: List<RepairUnitChoice> = emptyList(),
+        val repairChoiceIndex: Int = 0,
+        val wordCardPassage: String = "",
+        val wordCardBracketedText: String = "",
+        val wordCardCandidates: List<WordCardCandidate> = emptyList(),
+        val wordCardPrompt: String = DEFAULT_WORD_CARD_PROMPT,
+        val wordCardCandidateVersion: Int = 0,
     )
 
     private val _state = MutableStateFlow(State())
@@ -101,6 +123,18 @@ class AuthoringViewModel @Inject constructor(
         val finalJsonText: String,
     )
 
+    private data class RepairWord(
+        val key: String,
+        val text: String,
+        val definition: String,
+    )
+
+    data class WordCardCandidate(
+        val word: String,
+        val src: String = "",
+        val selected: Boolean = false,
+    )
+
     private data class ImageMeta(
         val uri: Uri,
         val id: Long,
@@ -117,6 +151,14 @@ class AuthoringViewModel @Inject constructor(
     fun provideView(): WebView {
         isolateAuthoringWebView()
         return gateway.provideView()
+    }
+
+    fun clearAuthoringDraftOnEntry() {
+        if (_state.value.running) return
+        viewModelScope.launch {
+            runCatching { gateway.clearComposerDraftOnEntry() }
+                .onFailure { e -> Log.d("AuthoringViewModel", "entry draft clear skipped: ${e.message}") }
+        }
     }
 
     private fun isolateAuthoringWebView() {
@@ -542,6 +584,149 @@ class AuthoringViewModel @Inject constructor(
         }
     }
 
+    fun setWordCardPrompt(v: String) = _state.update { it.copy(wordCardPrompt = v) }
+
+    fun toggleWordCardCandidate(index: Int) {
+        if (_state.value.running) return
+        _state.update { s ->
+            val before = s.wordCardCandidates.getOrNull(index)
+            val afterSelected = before?.selected?.not() ?: false
+            Log.d(
+                "AuthoringViewModel",
+                "word card candidate toggle index=$index word=${before?.word.orEmpty()} selected=$afterSelected",
+            )
+            s.copy(
+                wordCardCandidates = s.wordCardCandidates.mapIndexed { i, candidate ->
+                    if (i == index) candidate.copy(selected = !candidate.selected) else candidate
+                },
+            )
+        }
+    }
+
+    fun setAllWordCardCandidates(selected: Boolean) {
+        if (_state.value.running) return
+        _state.update { s ->
+            Log.d("AuthoringViewModel", "word card candidate setAll selected=$selected total=${s.wordCardCandidates.size}")
+            s.copy(wordCardCandidates = s.wordCardCandidates.map { it.copy(selected = selected) })
+        }
+    }
+
+    fun clearWordCardCandidates() {
+        if (_state.value.running) return
+        _state.update {
+            it.copy(
+                wordCardBracketedText = "",
+                wordCardCandidates = emptyList(),
+                error = null,
+            )
+        }
+    }
+
+    /** 지문을 영어로 정리한 뒤, GPT가 고른 후보 단어를 팝업 선택 상태로 올린다. */
+    fun prepareWordCardCandidates() {
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
+        if (s.passagePhotoCount <= 0 && s.source.isBlank()) {
+            _state.update { it.copy(error = "단어카드용 지문 사진을 고르거나 텍스트를 넣어주세요.") }
+            return
+        }
+        runStep("단어카드 후보 준비 중…") {
+            val passage = wordCardEnglishPassage(s)
+            if (passage.isBlank()) error("단어카드용 영어 지문을 만들지 못했습니다.")
+            _state.update { it.copy(wordCardPassage = passage, status = "영어 지문 정리 완료 → 단어 후보 표시 요청 중…") }
+            val candidateResponse = bracketWordCardCandidates(passage)
+            val candidates = parseWordCardCandidates(candidateResponse)
+            if (candidates.isEmpty()) error("단어카드 후보를 찾지 못했습니다. GPT 응답이 JSON 배열인지 확인하세요.")
+            Log.d(
+                "AuthoringViewModel",
+                "word card candidates ready total=${candidates.size} selected=${candidates.count { it.selected }}",
+            )
+            _state.update {
+                it.copy(
+                    wordCardPassage = passage,
+                    wordCardBracketedText = candidateResponse,
+                    wordCardCandidates = candidates,
+                    wordCardCandidateVersion = it.wordCardCandidateVersion + 1,
+                    status = "단어카드 후보 ${candidates.size}개 준비됨. 팝업에서 고른 뒤 보내세요.",
+                    error = null,
+                )
+            }
+        }
+    }
+
+    /** 사용자가 고른 단어로 word_card 단원을 생성한다. */
+    fun buildWordCardFromSelected() {
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
+        val selectedCandidates = s.wordCardCandidates.filter { it.selected }
+        val selectedWords = selectedCandidates.map { it.word }
+        Log.d(
+            "AuthoringViewModel",
+            "word card build selected=${selectedCandidates.size}/${s.wordCardCandidates.size} words=${selectedWords.joinToString("|")}",
+        )
+        if (selectedCandidates.isEmpty()) {
+            _state.update { it.copy(error = "단어카드로 만들 단어를 하나 이상 골라주세요.") }
+            return
+        }
+        val passage = s.wordCardPassage.ifBlank { s.source }
+        if (passage.isBlank()) {
+            _state.update { it.copy(error = "단어카드 설명에 사용할 지문이 비었습니다.") }
+            return
+        }
+        runStep("단어카드 설명 JSON 생성 중… (${selectedWords.size}개)") {
+            val params = generateWordCardParams(passage, selectedCandidates, s.wordCardPrompt, s)
+            val unit = saveWordCardUnit(params, selectedWords, s)
+            _state.update {
+                it.copy(
+                    savedUnit = true,
+                    words = selectedWords,
+                    unitJsonPreview = json.encodeToString(LessonUnit.serializer(), unit),
+                    status = "단어카드 단원 저장 완료: ${selectedWords.size}개 카드. 책에서 바로 확인하세요.",
+                )
+            }
+        }
+    }
+
+    /** 단어+영어 뜻 사진을 바로 word_card 단원으로 만든다. 선택 팝업 없이 전부 사용. */
+    fun buildWordCardFromDefinitionPhotos() {
+        val current = _state.value
+        if (current.running) return
+        val s = ensureUnitId(current)
+        if (s.wordPhotoCount <= 0) {
+            _state.update { it.copy(error = "단카2는 단어와 영어 뜻이 함께 있는 단어사진을 먼저 골라야 해요.") }
+            return
+        }
+        runStep("단카2: 단어+뜻 사진 분석 중…") {
+            val candidates = extractWordDefinitionsFromPhotoInternal()
+            val words = candidates.map { it.word }
+            if (candidates.isEmpty()) error("사진에서 단어와 영어 뜻을 찾지 못했습니다.")
+            Log.d(
+                "AuthoringViewModel",
+                "word card2 build definitions=${candidates.size} words=${words.joinToString("|")}",
+            )
+            _state.update {
+                it.copy(
+                    words = words,
+                    wordCardCandidates = emptyList(),
+                    wordCardBracketedText = "",
+                    status = "단카2: 단어+뜻 ${candidates.size}개 추출됨 → 설명/예문 생성 중…",
+                )
+            }
+            val params = generateWordCardParamsFromDefinitions(candidates, s.wordCardPrompt, s)
+            val unit = saveWordCardUnit(params, words, s)
+            _state.update {
+                it.copy(
+                    savedUnit = true,
+                    words = words,
+                    unitJsonPreview = json.encodeToString(LessonUnit.serializer(), unit),
+                    status = "단카2 완료: ${words.size}개 카드 저장됨. 책에서 바로 확인하세요.",
+                )
+            }
+        }
+    }
+
     /**
      * ②(실험) **청크 수신 방식** — GPT 응답에서 JSON만 찾아 JS 브릿지로 작은 조각씩 받는다.
      * 큰 응답 문자열을 evaluateJavascript 결과로 직접 받지 않아 WebView 다운 위험을 줄인다.
@@ -607,6 +792,119 @@ class AuthoringViewModel @Inject constructor(
         }
     }
 
+    /** 완료된 story_comic 단원 전체를 그림 재생성 후보로 불러온다. */
+    fun refreshRepairChoices() {
+        if (_state.value.running) return
+        runCatching {
+            lessonRepo.refresh()
+            lessonRepo.books().flatMap { book ->
+                book.units.mapNotNull { unit -> repairChoiceFor(book.bookId, book.title, unit) }
+            }.sortedWith(
+                compareByDescending<RepairUnitChoice> { it.missingImageCount }
+                    .thenBy { it.unitTitle },
+            )
+        }.onSuccess { choices ->
+            _state.update {
+                it.copy(
+                    repairChoices = choices,
+                    repairChoiceIndex = 0,
+                    error = null,
+                    status = if (choices.isEmpty()) {
+                        "그림을 다시 만들 story_comic 단원을 찾지 못했습니다."
+                    } else {
+                        "그림 다시 만들 단원 ${choices.size}개 확인: 목록에서 고르세요."
+                    },
+                )
+            }
+        }.onFailure { e ->
+            _state.update { it.copy(error = "그림 다시 후보 확인 실패: ${e.message}") }
+        }
+    }
+
+    fun selectRepairChoice(index: Int) {
+        if (_state.value.running) return
+        _state.update { s ->
+            val choice = s.repairChoices.getOrNull(index)
+            if (choice == null) {
+                s.copy(error = "그림 다시 만들 단원을 다시 고르세요.")
+            } else {
+                s.copy(
+                    repairChoiceIndex = index,
+                    error = null,
+                    status = "그림 다시 대상: ${choice.label}",
+                )
+            }
+        }
+    }
+
+    /** 선택된 단원의 모든 단어 그림을 단어별 첫 번째 사진으로 다시 생성해 wordPopups에 매핑한다. */
+    fun repairSelectedUnitImages() {
+        val current = _state.value
+        if (current.running) return
+        val selected = current.repairChoices.getOrNull(current.repairChoiceIndex)
+        if (selected == null) {
+            _state.update { it.copy(error = "먼저 그림다시 버튼으로 단원을 고르세요.") }
+            return
+        }
+        runStep("그림 다시 시작: ${selected.label}") {
+            lessonRepo.refresh()
+            var unit = lessonRepo.unitOrNull(selected.bookId, selected.unitId)
+                ?: error("단원을 찾지 못했습니다: ${selected.bookId}/${selected.unitId}")
+            val repairWords = allRepairWordsForUnit(unit)
+            if (repairWords.isEmpty()) {
+                _state.update { it.copy(status = "그림을 다시 만들 단어가 없습니다: ${selected.unitTitle}") }
+                return@runStep
+            }
+
+            prepareFreshChat("repair-word-images")
+            repairWords.forEachIndexed { wordIndex, word ->
+                val wordNo = wordIndex + 1
+                val fileName = repairWordFileName(wordNo, word)
+                _state.update {
+                    it.copy(status = "그림 다시 $wordNo/${repairWords.size}: ${word.text}")
+                }
+                val before = gateway.assistantMarker()
+                if (!gateway.sendOnly(repairWordPhotoPrompt(word))) {
+                    error(gateway.lastQueryFailureMessage("그림 다시 요청"))
+                }
+                val bytes = awaitFirstWordImageBytes(before)
+                writer.writeImage(selected.bookId, selected.unitId, fileName, bytes)
+                saveImageDownload(
+                    _state.value.copy(bookId = selected.bookId, unitId = selected.unitId),
+                    fileName,
+                    bytes,
+                )
+
+                unit = patchStoryUnitWithRepairWordImage(
+                    unit = unit,
+                    bookId = selected.bookId,
+                    word = word,
+                    fileName = fileName,
+                )
+                writer.writeUnit(selected.bookId, selected.bookTitle, unit)
+                lessonRepo.refresh()
+            }
+
+            val refreshedChoices = lessonRepo.books().flatMap { book ->
+                book.units.mapNotNull { u -> repairChoiceFor(book.bookId, book.title, u) }
+            }.sortedWith(
+                compareByDescending<RepairUnitChoice> { it.missingImageCount }
+                    .thenBy { it.unitTitle },
+            )
+            _state.update {
+                it.copy(
+                    savedUnit = true,
+                    unitJsonPreview = json.encodeToString(LessonUnit.serializer(), unit),
+                    repairChoices = refreshedChoices,
+                    repairChoiceIndex = refreshedChoices.indexOfFirst {
+                        it.bookId == selected.bookId && it.unitId == selected.unitId
+                    }.coerceAtLeast(0),
+                    status = "그림 다시 완료: ${repairWords.size}개 단어 사진을 저장했습니다.",
+                )
+            }
+        }
+    }
+
     /** ChatGPT에서 **수동 다운로드한 .json 파일을 가져와** 단원으로 저장(가장 견고한 경로). */
     fun importJson(uri: Uri) {
         val current = _state.value
@@ -617,6 +915,26 @@ class AuthoringViewModel @Inject constructor(
                 context.contentResolver.openInputStream(uri)!!.use { it.readBytes().decodeToString() }
             }
             val jsonText = extractJson(text) ?: text
+            if (looksLikeWordCardParams(jsonText)) {
+                val params = parseWordCardParams(jsonText, s.source, parseWordCardWords(jsonText), s)
+                val unit = LessonUnit(
+                    unitId = s.unitId,
+                    title = s.unitTitle.ifBlank { params["title"]?.jsonPrimitive?.contentOrNull ?: s.unitId },
+                    content = LessonContent(),
+                    steps = listOf(StepDef(id = "s_word_card", type = "word_card", params = params)),
+                )
+                writer.writeUnit(bookId = s.bookId, bookTitle = s.bookTitle, unit = unit)
+                lessonRepo.refresh()
+                _state.update {
+                    it.copy(
+                        savedUnit = true,
+                        words = parseWordCardWords(jsonText),
+                        unitJsonPreview = json.encodeToString(LessonUnit.serializer(), unit),
+                        status = "가져온 단어카드 JSON 저장됨 → 책에서 바로 보입니다.",
+                    )
+                }
+                return@runStep
+            }
             if (looksLikePassageParams(jsonText)) {
                 val params = parsePassageParams(jsonText)
                 val unit = LessonUnit(
@@ -678,6 +996,12 @@ class AuthoringViewModel @Inject constructor(
             ?.mapNotNull { it.jsonPrimitive.contentOrNull?.trim() }?.filter { it.isNotBlank() } ?: emptyList()
     }.getOrDefault(emptyList())
 
+    private fun parseWordCardWords(jsonText: String): List<String> = runCatching {
+        json.parseToJsonElement(jsonText).jsonObject["cards"]?.jsonArray
+            ?.mapNotNull { (it as? JsonObject)?.get("word")?.jsonPrimitive?.contentOrNull?.trim() }
+            ?.filter { it.isNotBlank() } ?: emptyList()
+    }.getOrDefault(emptyList())
+
     private fun runStep(startStatus: String, block: suspend () -> Unit) {
         if (activeStepJob?.isActive == true) return
         val job = viewModelScope.launch {
@@ -688,6 +1012,7 @@ class AuthoringViewModel @Inject constructor(
                 _state.update { it.copy(error = null, status = "작업이 중지됐습니다.") }
                 throw e
             } catch (e: Exception) {
+                Log.w("AuthoringViewModel", "runStep failed status=$startStatus message=${e.message}", e)
                 _state.update { it.copy(error = e.message ?: "오류") }
             } finally {
                 _state.update { it.copy(running = false) }
@@ -748,6 +1073,35 @@ class AuthoringViewModel @Inject constructor(
         return words.toList()
     }
 
+    private suspend fun extractWordDefinitionsFromPhotoInternal(): List<WordCardCandidate> {
+        val batches = wordPhotoUris.chunked(PHOTO_BATCH_SIZE)
+        val items = mutableListOf<WordCardCandidate>()
+        batches.forEachIndexed { index, batch ->
+            prepareFreshChat("word-def-photo-batch-${index + 1}")
+            gateway.armPhotos(batch)
+            val attach = gateway.attachImages()
+            ensurePhotoAttachSucceeded(attach)
+            val start = index * PHOTO_BATCH_SIZE + 1
+            val end = start + batch.size - 1
+            _state.update {
+                it.copy(status = "단카2: 단어뜻사진 ${index + 1}/${batches.size} 첨부($attach) · ${start}~${end}쪽 추출…")
+            }
+            delay(uploadDelayMs(batch.size))
+            gateway.selectInstantMode()
+            val resp = gateway.query(photoWordDefinitionBatchPrompt(start, end, batch.size))
+                ?: error(gateway.lastQueryFailureMessage("${start}~${end}쪽 단어 뜻 추출"))
+            val parsed = parseWordDefinitionArray(resp)
+            Log.d(
+                "AuthoringViewModel",
+                "word card2 definitions parsed batch=${index + 1}/${batches.size} respLen=${resp.length} items=${parsed.size}",
+            )
+            items += parsed
+        }
+        return items
+            .filter { it.word.isNotBlank() && it.src.isNotBlank() }
+            .distinctBy { "${it.word.lowercase()}|${it.src.lowercase()}" }
+    }
+
     private suspend fun extractSentencesFromPhotoInternal(): List<String> {
         val batches = passagePhotoUris.chunked(PHOTO_BATCH_SIZE)
         val pages = mutableListOf<PageSentences>()
@@ -765,7 +1119,13 @@ class AuthoringViewModel @Inject constructor(
             gateway.selectInstantMode()
             val resp = gateway.query(photoSentenceBatchPrompt(start, end, batch.size))
                 ?: error(gateway.lastQueryFailureMessage("${start}~${end}쪽 문장 추출"))
-            pages += parsePageSentenceGroups(resp, start, batch.size)
+            val parsedPages = parsePageSentenceGroups(resp, start, batch.size)
+            Log.d(
+                "AuthoringViewModel",
+                "photo sentence parsed batch=${index + 1}/${batches.size} respLen=${resp.length} " +
+                    "pages=${parsedPages.size} sentences=${parsedPages.sumOf { it.sentences.size }}",
+            )
+            pages += parsedPages
         }
         if (pages.isEmpty()) return emptyList()
         _state.update { it.copy(status = "①b 페이지 순서 정리 요청 중… (${pages.size}쪽)") }
@@ -780,43 +1140,234 @@ class AuthoringViewModel @Inject constructor(
         }.getOrDefault(emptyList()).filter { it.isNotBlank() }.distinct()
     }
 
+    private fun parseWordDefinitionArray(resp: String): List<WordCardCandidate> {
+        val jsonText = extractJson(resp)
+        if (jsonText != null) {
+            val parsed = runCatching {
+                val root = json.parseToJsonElement(jsonText)
+                val array = when (root) {
+                    is JsonArray -> root
+                    is JsonObject -> {
+                        (root["items"] as? JsonArray)
+                            ?: (root["words"] as? JsonArray)
+                            ?: (root["vocabulary"] as? JsonArray)
+                            ?: (root["entries"] as? JsonArray)
+                            ?: JsonArray(emptyList())
+                    }
+                    else -> JsonArray(emptyList())
+                }
+                array.mapNotNull { element ->
+                    val obj = element as? JsonObject ?: return@mapNotNull null
+                    val word = obj.stringValue("word")
+                        ?: obj.stringValue("term")
+                        ?: obj.stringValue("vocab")
+                        ?: obj.stringValue("expression")
+                    val definition = obj.stringValue("definition")
+                        ?: obj.stringValue("meaning")
+                        ?: obj.stringValue("def")
+                        ?: obj.stringValue("englishDefinition")
+                        ?: obj.stringValue("src")
+                    val cleanWord = word?.trim().orEmpty()
+                    val cleanDefinition = definition?.normalizeSentenceText().orEmpty()
+                    if (cleanWord.isBlank() || cleanDefinition.isBlank()) null else {
+                        WordCardCandidate(word = cleanWord, src = cleanDefinition, selected = true)
+                    }
+                }
+            }.getOrDefault(emptyList())
+            if (parsed.isNotEmpty()) return parsed
+        }
+        return parseLooseWordDefinitionLines(resp)
+    }
+
+    private fun parseLooseWordDefinitionLines(resp: String): List<WordCardCandidate> =
+        resp.replace("```", "")
+            .lineSequence()
+            .mapNotNull { raw ->
+                val line = raw.trim()
+                    .replace(Regex("^[-*•]+\\s*"), "")
+                    .replace(Regex("^\\d+[.)]\\s*"), "")
+                    .trim()
+                val match = Regex("^([A-Za-z][A-Za-z0-9 '\\-/]{0,60})\\s*[:\\-–—]\\s*(.{3,})$").find(line)
+                    ?: return@mapNotNull null
+                val word = match.groupValues[1].trim()
+                val definition = match.groupValues[2].normalizeSentenceText()
+                if (word.isBlank() || definition.isBlank() || !definition.any(Char::isLetter)) null else {
+                    WordCardCandidate(word = word, src = definition, selected = true)
+                }
+            }
+            .distinctBy { "${it.word.lowercase()}|${it.src.lowercase()}" }
+            .toList()
+
+    private fun parsePassageText(resp: String): String {
+        val jsonText = extractJson(resp)
+        if (jsonText != null) {
+            runCatching {
+                val element = json.parseToJsonElement(jsonText)
+                when (element) {
+                    is JsonObject -> element["passage"]?.jsonPrimitive?.contentOrNull
+                        ?: element["text"]?.jsonPrimitive?.contentOrNull
+                    is JsonArray -> element.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.joinToString("\n")
+                    else -> null
+                }
+            }.getOrNull()?.let { return it.trim() }
+        }
+        return resp.replace("```", "").trim()
+    }
+
+    private fun parseBracketedPassage(resp: String): String {
+        val jsonText = extractJson(resp)
+        if (jsonText != null) {
+            runCatching {
+                val obj = json.parseToJsonElement(jsonText).jsonObject
+                obj["bracketedPassage"]?.jsonPrimitive?.contentOrNull
+                    ?: obj["text"]?.jsonPrimitive?.contentOrNull
+            }.getOrNull()?.let { return it.trim() }
+        }
+        return resp.replace("```", "").trim()
+    }
+
+    private fun parseBracketedWords(text: String): List<String> =
+        Regex("\\[([^\\[\\]]{1,80})]").findAll(text)
+            .map { it.groupValues[1].trim().trim('.', ',', ';', ':', '!', '?', '"', '\'') }
+            .filter { it.any(Char::isLetter) }
+            .distinctBy { it.lowercase() }
+            .toList()
+
+    private fun parseWordCardCandidates(resp: String): List<WordCardCandidate> {
+        val jsonText = extractJson(resp)
+        if (jsonText != null) {
+            runCatching {
+                when (val element = json.parseToJsonElement(jsonText)) {
+                    is JsonArray -> element.mapNotNull { item ->
+                        when (item) {
+                            is JsonObject -> {
+                                val word = item["word"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                                val src = item["src"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                                if (word.isBlank()) null else WordCardCandidate(word = word, src = src)
+                            }
+                            is JsonPrimitive -> item.contentOrNull
+                                ?.trim()
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let { WordCardCandidate(word = it) }
+                            else -> null
+                        }
+                    }
+                    is JsonObject -> {
+                        val bracketed = element["bracketedPassage"]?.jsonPrimitive?.contentOrNull
+                            ?: element["text"]?.jsonPrimitive?.contentOrNull
+                        parseBracketedWords(bracketed.orEmpty()).map { WordCardCandidate(word = it) }
+                    }
+                    else -> emptyList()
+                }
+            }.getOrNull()?.let { candidates ->
+                return candidates
+                    .filter { it.word.isNotBlank() }
+                    .distinctBy { "${it.word.lowercase()}|${it.src}" }
+            }
+        }
+        return parseBracketedWords(resp).map { WordCardCandidate(word = it) }
+    }
+
     private fun parseSentenceArray(resp: String): List<String> {
         val arr = extractJson(resp) ?: return emptyList()
         return runCatching {
-            json.parseToJsonElement(arr).jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull?.trim() }
+            when (val root = json.parseToJsonElement(arr)) {
+                is JsonArray -> root.stringListFromJson()
+                is JsonObject -> root["sentences"].stringListFromJson()
+                else -> emptyList()
+            }
         }.getOrDefault(emptyList())
-            .map { it.replace(Regex("\\s+"), " ").trim() }
-            .filter { it.isNotBlank() }
             .distinct()
     }
 
+    private fun JsonElement?.stringListFromJson(): List<String> =
+        when (this) {
+            is JsonArray -> mapNotNull { (it as? JsonPrimitive)?.contentOrNull?.normalizeSentenceText() }
+                .filter { it.isNotBlank() }
+            is JsonPrimitive -> contentOrNull
+                ?.split(Regex("(?<=[.!?])\\s+"))
+                ?.map { it.normalizeSentenceText() }
+                ?.filter { it.isNotBlank() }
+                .orEmpty()
+            else -> emptyList()
+        }
+
+    private fun pageSentencesFromJson(element: JsonElement, fallbackPageNumber: Int): PageSentences? {
+        val obj = element as? JsonObject ?: return null
+        val pageNumber = obj["pageNumber"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+            ?: obj["page"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
+            ?: fallbackPageNumber
+        val sentences = obj["sentences"].stringListFromJson()
+            .ifEmpty { obj["text"].stringListFromJson() }
+        return PageSentences(pageNumber, sentences)
+    }
+
+    private fun parseLooseSentenceLines(resp: String): List<String> =
+        resp.replace("```", "")
+            .lineSequence()
+            .map { line ->
+                line.trim()
+                    .replace(Regex("^[-*•]+\\s*"), "")
+                    .replace(Regex("^\\d+[.)]\\s*"), "")
+                    .trim('"', '\'', ' ', '\t')
+                    .normalizeSentenceText()
+            }
+            .filter { line ->
+                line.length >= 8 &&
+                    line.any { it in 'A'..'Z' || it in 'a'..'z' } &&
+                    line.none { it in '가'..'힣' } &&
+                    line.lastOrNull() in listOf('.', '?', '!')
+            }
+            .distinct()
+            .toList()
+
+    private fun String.normalizeSentenceText(): String =
+        replace(Regex("\\s+"), " ").trim()
+
     private fun parsePageSentenceGroups(resp: String, startPage: Int, expectedCount: Int): List<PageSentences> {
-        val jsonText = extractJson(resp) ?: return emptyList()
-        return runCatching {
-            val root = json.parseToJsonElement(jsonText)
-            val pageElements = when (root) {
-                is JsonObject -> root["pages"]?.jsonArray ?: JsonArray(emptyList())
-                is JsonArray -> root
-                else -> JsonArray(emptyList())
-            }
-            pageElements.mapIndexedNotNull { index, element ->
-                val obj = element.jsonObject
-                val pageNumber = obj["pageNumber"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
-                    ?: obj["page"]?.jsonPrimitive?.contentOrNull?.toIntOrNull()
-                    ?: (startPage + index)
-                val sentences = obj["sentences"]?.jsonArray
-                    ?.mapNotNull { it.jsonPrimitive.contentOrNull?.trim() }
-                    ?.map { it.replace(Regex("\\s+"), " ").trim() }
-                    ?.filter { it.isNotBlank() }
-                    .orEmpty()
-                PageSentences(pageNumber, sentences)
-            }
-        }.getOrDefault(emptyList())
-            .ifEmpty {
-                val flat = parseSentenceArray(resp)
-                if (flat.isEmpty()) emptyList() else listOf(PageSentences(startPage, flat))
-            }
+        val parsed = extractJson(resp)?.let { jsonText ->
+            runCatching {
+                when (val root = json.parseToJsonElement(jsonText)) {
+                    is JsonObject -> {
+                        val direct = root["sentences"].stringListFromJson()
+                        if (direct.isNotEmpty()) {
+                            listOf(PageSentences(startPage, direct))
+                        } else {
+                            val pages = root["pages"] as? JsonArray ?: JsonArray(emptyList())
+                            pages.mapIndexedNotNull { index, element ->
+                                pageSentencesFromJson(element, startPage + index)
+                            }
+                        }
+                    }
+                    is JsonArray -> {
+                        val flat = root.stringListFromJson()
+                        if (flat.isNotEmpty()) {
+                            listOf(PageSentences(startPage, flat))
+                        } else {
+                            root.mapIndexedNotNull { index, element ->
+                                pageSentencesFromJson(element, startPage + index)
+                            }
+                        }
+                    }
+                    else -> emptyList()
+                }
+            }.getOrDefault(emptyList())
+        }.orEmpty()
+
+        val filtered = parsed
             .filter { it.pageNumber in startPage until startPage + expectedCount || it.sentences.isNotEmpty() }
+            .filter { it.sentences.isNotEmpty() }
+        if (filtered.isNotEmpty()) return filtered
+
+        val flat = parseSentenceArray(resp).ifEmpty { parseLooseSentenceLines(resp) }
+        if (flat.isEmpty()) {
+            Log.w(
+                "AuthoringViewModel",
+                "photo sentence parse empty preview=${resp.take(500).replace(Regex("\\s+"), " ")}",
+            )
+            return emptyList()
+        }
+        return listOf(PageSentences(startPage, flat))
     }
 
     private suspend fun reorderSentencesWithGpt(pages: List<PageSentences>): List<String> {
@@ -855,6 +1406,63 @@ class AuthoringViewModel @Inject constructor(
         saveJsonDownload(s, "passage_params.json", jsonText)
         return runCatching { json.parseToJsonElement(jsonText).jsonObject }
             .getOrElse { throw IllegalStateException("지문 JSON 파싱 실패: ${it.message}") }
+    }
+
+    private suspend fun wordCardEnglishPassage(s: State): String {
+        if (s.passagePhotoCount > 0) {
+            val sentences = extractSentencesFromPhotoInternal()
+            _state.update { it.copy(sentences = sentences) }
+            return sentences.joinToString("\n")
+        }
+        prepareFreshChat("word-card-english-passage")
+        gateway.selectInstantMode()
+        val resp = gateway.query(wordCardEnglishPassagePrompt(s.source))
+            ?: error(gateway.lastQueryFailureMessage("단어카드 영어 지문 정리"))
+        return parsePassageText(resp).ifBlank { s.source.trim() }
+    }
+
+    private suspend fun bracketWordCardCandidates(passage: String): String {
+        prepareFreshChat("word-card-brackets")
+        gateway.selectInstantMode()
+        val resp = gateway.query(wordCardBracketPrompt(passage))
+            ?: error(gateway.lastQueryFailureMessage("단어카드 후보 표시"))
+        return parseBracketedPassage(resp).ifBlank { resp.trim() }
+    }
+
+    private suspend fun generateWordCardParams(
+        passage: String,
+        candidates: List<WordCardCandidate>,
+        customPrompt: String,
+        s: State,
+    ): JsonObject {
+        prepareFreshChat("word-card-json")
+        requireAuthoringMode("단어카드 JSON 생성")
+        val before = gateway.assistantMarker()
+        if (!gateway.sendOnly(wordCardExplanationPrompt(passage, candidates, customPrompt, s))) {
+            throw IllegalStateException("단어카드 JSON 요청 전송 실패(로그와 작성창 확인).")
+        }
+        val jsonText = awaitWordCardJsonChunk(before)
+        saveJsonDownload(s, "word_card_params.json", jsonText)
+        val words = candidates.map { it.word }
+        return parseWordCardParams(jsonText, passage, words, s)
+    }
+
+    private suspend fun generateWordCardParamsFromDefinitions(
+        candidates: List<WordCardCandidate>,
+        customPrompt: String,
+        s: State,
+    ): JsonObject {
+        prepareFreshChat("word-card2-json")
+        requireAuthoringMode("단카2 JSON 생성")
+        val definitionText = candidates.joinToString("\n") { "${it.word}: ${it.src}" }
+        val before = gateway.assistantMarker()
+        if (!gateway.sendOnly(wordCardDefinitionExplanationPrompt(candidates, customPrompt, s))) {
+            throw IllegalStateException("단카2 JSON 요청 전송 실패(로그와 작성창 확인).")
+        }
+        val jsonText = awaitWordCardJsonChunk(before)
+        saveJsonDownload(s, "word_card2_params.json", jsonText)
+        val words = candidates.map { it.word }
+        return parseWordCardParams(jsonText, definitionText, words, s)
     }
 
     private suspend fun downloadPassageParamsFilesForReview(sentences: List<String>, s: State): PassageDownloadResult {
@@ -979,6 +1587,19 @@ class AuthoringViewModel @Inject constructor(
         return unit
     }
 
+    private fun saveWordCardUnit(params: JsonObject, words: List<String>, s: State): LessonUnit {
+        val unit = LessonUnit(
+            unitId = s.unitId,
+            title = s.unitTitle.ifBlank { params["title"]?.jsonPrimitive?.contentOrNull ?: s.unitId },
+            content = LessonContent(),     // word_card 는 params 자급자족
+            steps = listOf(StepDef(id = "s_word_card", type = "word_card", params = params)),
+        )
+        writer.writeUnit(bookId = s.bookId, bookTitle = s.bookTitle, unit = unit)
+        lessonRepo.refresh()
+        _state.update { it.copy(words = words) }
+        return unit
+    }
+
     private fun saveAuthoredUnit(
         storyParams: JsonObject?,
         passageParams: JsonObject?,
@@ -1006,32 +1627,170 @@ class AuthoringViewModel @Inject constructor(
         return unit
     }
 
+    private fun repairChoiceFor(bookId: String, bookTitle: String, unit: LessonUnit): RepairUnitChoice? {
+        val step = unit.storyStepOrNull() ?: return null
+        val words = storyWordsForUnit(unit, step.params)
+        if (words.isEmpty()) return null
+        val missing = repairWordsForUnit(unit).size
+        return RepairUnitChoice(
+            bookId = bookId,
+            bookTitle = bookTitle,
+            unitId = unit.unitId,
+            unitTitle = unit.title.ifBlank { unit.unitId },
+            wordCount = words.size,
+            missingImageCount = missing,
+        )
+    }
+
+    private fun allRepairWordsForUnit(unit: LessonUnit): List<RepairWord> {
+        val step = unit.storyStepOrNull() ?: return emptyList()
+        val popups = step.params["wordPopups"] as? JsonObject
+        return storyWordsForUnit(unit, step.params)
+            .mapNotNull { word ->
+                val key = word.lowercase().trim()
+                if (key.isBlank()) {
+                    null
+                } else {
+                    val definition = popupFor(popups, key)
+                        ?.stringValue("definitionEn")
+                        .orEmpty()
+                        .ifBlank { "${word.trim()} is a word from this lesson." }
+                    RepairWord(key = key, text = word.trim(), definition = definition)
+                }
+            }
+            .distinctBy { it.key }
+    }
+
+    private fun repairWordsForUnit(unit: LessonUnit): List<RepairWord> {
+        val step = unit.storyStepOrNull() ?: return emptyList()
+        val params = step.params
+        val popups = params["wordPopups"] as? JsonObject
+        return storyWordsForUnit(unit, params).mapNotNull { word ->
+            val key = word.lowercase().trim()
+            if (key.isBlank()) return@mapNotNull null
+            val popup = popups?.entries?.firstOrNull { it.key.equals(key, ignoreCase = true) }?.value as? JsonObject
+            val assetPath = popup?.stringValue("imageAsset").orEmpty()
+            if (assetPath.isNotBlank() && imageAssetExists(assetPath)) return@mapNotNull null
+            val definition = popup
+                ?.stringValue("definitionEn")
+                .orEmpty()
+                .ifBlank { "${word.trim()} is a word from this lesson." }
+            RepairWord(key = key, text = word.trim(), definition = definition)
+        }.distinctBy { it.key }
+    }
+
+    private fun storyWordsForUnit(unit: LessonUnit, params: JsonObject): List<String> {
+        val fromPopups = (params["wordPopups"] as? JsonObject)?.keys.orEmpty()
+        val fromParams = (params["words"] as? JsonArray)
+            ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+            .orEmpty()
+        val fromContent = unit.content.words.map { it.text }
+        return (fromPopups + fromParams + fromContent)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+    }
+
+    private fun LessonUnit.storyStepOrNull(): StepDef? =
+        steps.firstOrNull { it.type == "story_comic" }
+
+    private fun popupFor(popups: JsonObject?, key: String): JsonObject? =
+        popups?.entries?.firstOrNull { it.key.equals(key, ignoreCase = true) }?.value as? JsonObject
+
+    private fun imageAssetExists(assetPath: String): Boolean {
+        if (assetPath.isBlank()) return false
+        val runtime = File(context.filesDir, assetPath)
+        if (runtime.isFile) return true
+        return runCatching {
+            context.assets.open(assetPath).use { true }
+        }.getOrDefault(false)
+    }
+
+    private fun patchStoryUnitWithRepairWordImage(
+        unit: LessonUnit,
+        bookId: String,
+        word: RepairWord,
+        fileName: String,
+    ): LessonUnit {
+        val assetPath = writer.imageAssetPath(bookId, unit.unitId, fileName)
+        val steps = unit.steps.map { step ->
+            if (step.type != "story_comic") return@map step
+            step.copy(params = patchStoryParamsWithRepairWordImage(step.params, word, assetPath))
+        }
+        return unit.copy(steps = steps)
+    }
+
+    private fun patchStoryParamsWithRepairWordImage(
+        params: JsonObject,
+        word: RepairWord,
+        assetPath: String,
+    ): JsonObject {
+        val existing = params["wordPopups"] as? JsonObject ?: JsonObject(emptyMap())
+        val popups = buildJsonObject {
+            existing.forEach { (key, value) ->
+                if (!key.equals(word.key, ignoreCase = true)) put(key, value)
+            }
+            val old = popupFor(existing, word.key)
+            put(word.key, buildJsonObject {
+                old?.forEach { (key, value) -> if (key !in gridKeys) put(key, value) }
+                if (old?.stringValue("definitionEn").isNullOrBlank()) {
+                    put("definitionEn", JsonPrimitive(word.definition))
+                }
+                if (old?.stringValue("imageAlt").isNullOrBlank()) {
+                    put("imageAlt", JsonPrimitive("A representative photo for ${word.text}."))
+                }
+                put("imageAsset", JsonPrimitive(assetPath))
+            })
+        }
+        return buildJsonObject {
+            params.forEach { (key, value) -> if (key != "wordPopups") put(key, value) }
+            put("wordPopups", popups)
+        }
+    }
+
+    private fun repairWordFileName(wordNo: Int, word: RepairWord): String =
+        "repair_${wordNo.toString().padStart(2, '0')}_${slugId(word.text).ifBlank { "word" }.take(32)}.png"
+
     private suspend fun requestAndSaveGridImage(words: List<String>, s: State, chatReason: String): ByteArray {
         val side = gridSide(words.size)
         _state.update { it.copy(status = "③ 그리드 그림 생성 요청 중… (${side}×$side, grid.png)") }
         prepareFreshChat(chatReason)
-        val beforeImages = gateway.largeAssistantImageCount()
+        val before = gateway.assistantMarker()
         if (!gateway.sendOnly(gridPrompt(words, side))) {
             error(gateway.lastQueryFailureMessage("그리드 그림 요청"))
         }
-        val bytes = awaitGridImageBytes(beforeImages + 1)
+        val bytes = awaitGridImageBytes(before)
         saveImageDownload(s, GRID_FILE, bytes)
         writer.writeImage(s.bookId, s.unitId, GRID_FILE, bytes)
         lessonRepo.refresh()
         return bytes
     }
 
-    private suspend fun awaitGridImageBytes(minImageCount: Int): ByteArray {
+    private suspend fun awaitGridImageBytes(before: AuthoringWebGateway.AssistantMarker): ByteArray {
         for (i in 1..60) {
             delay(if (i == 1) 6000 else 3000)
-            _state.update { it.copy(status = "자동 ③ 그리드 완료 메뉴 확인 중… $i/60") }
-            if (!gateway.generatedImageActionsReady(minImageCount)) continue
+            _state.update { it.copy(status = "자동 ③ 그리드 답변 완료 확인 중… $i/60") }
+            if (!gateway.generatedImageActionsReadyAfter(before, minImageCount = 1)) continue
             delay(IMAGE_ACTION_MENU_SETTLE_MS)
             _state.update { it.copy(status = "자동 ③ 그리드 완료 감지 → 저장 중…") }
-            val dataUrl = gateway.captureLastImageDataUrl(minImageCount) ?: continue
+            val dataUrl = gateway.captureFirstImageDataUrlAfter(before, minImageCount = 1) ?: continue
             return decodeImageDataUrl(dataUrl)
         }
-        throw IllegalStateException("그리드 그림 완료 메뉴를 자동으로 못 찾음. 그림 아래 복사/좋음 메뉴가 보이면 ‘저장’ 버튼으로 다시 시도하세요.")
+        throw IllegalStateException("그리드 그림 완료를 자동으로 못 찾음. 답변 하단 복사/좋음/나쁨 메뉴가 보이면 ‘저장’ 버튼으로 다시 시도하세요.")
+    }
+
+    private suspend fun awaitFirstWordImageBytes(before: AuthoringWebGateway.AssistantMarker): ByteArray {
+        for (i in 1..60) {
+            delay(if (i == 1) 6000 else 3000)
+            _state.update { it.copy(status = "단어 사진 답변 완료 확인 중… $i/60") }
+            if (!gateway.generatedImageActionsReadyAfter(before, minImageCount = 1)) continue
+            delay(IMAGE_ACTION_MENU_SETTLE_MS)
+            if (!gateway.generatedImageActionsReadyAfter(before, minImageCount = 1)) continue
+            _state.update { it.copy(status = "단어 사진 완료 감지 → 첫 번째 사진 저장 중…") }
+            val dataUrl = gateway.captureFirstImageDataUrlAfter(before, minImageCount = 1) ?: continue
+            return decodeImageDataUrl(dataUrl)
+        }
+        throw IllegalStateException("단어 사진 완료를 자동으로 못 찾음. 답변 하단 복사/좋음/나쁨 메뉴가 보이면 다시 시도하세요.")
     }
 
     private fun decodeImageDataUrl(dataUrl: String): ByteArray {
@@ -1069,6 +1828,18 @@ class AuthoringViewModel @Inject constructor(
         throw IllegalStateException("지문 JSON 청크를 못 받음(응답 생성이 끝났는지, 화면에 JSON이 보이는지 확인).")
     }
 
+    private suspend fun awaitWordCardJsonChunk(before: AuthoringWebGateway.AssistantMarker): String {
+        val requiredCount = before.count + 1
+        for (i in 1..PASSAGE_JSON_CHUNK_ATTEMPTS) {
+            delay(if (i == 1) JSON_CHUNK_FIRST_DELAY_MS else JSON_CHUNK_RETRY_DELAY_MS)
+            _state.update { it.copy(status = "단어카드 JSON 확인 중… $i/$PASSAGE_JSON_CHUNK_ATTEMPTS") }
+            val captured = gateway.captureLastAssistantJsonChunked(requiredCount, before) ?: continue
+            val jsonText = extractJson(captured) ?: captured.trim()
+            if (looksLikeWordCardParams(jsonText)) return jsonText
+        }
+        throw IllegalStateException("단어카드 JSON을 받지 못했습니다. 화면에 cards JSON이 보이는지 확인하세요.")
+    }
+
     private fun looksLikeStoryParams(jsonText: String): Boolean = runCatching {
         val obj = json.parseToJsonElement(jsonText).jsonObject
         obj["panels"]?.jsonArray?.isNotEmpty() == true && obj["words"]?.jsonArray?.isNotEmpty() == true
@@ -1079,6 +1850,107 @@ class AuthoringViewModel @Inject constructor(
         obj["paragraphs"]?.jsonArray?.isNotEmpty() == true ||
             obj["sentences"]?.jsonArray?.isNotEmpty() == true
     }.getOrDefault(false)
+
+    private fun looksLikeWordCardParams(jsonText: String): Boolean = runCatching {
+        val obj = json.parseToJsonElement(jsonText).jsonObject
+        obj["cards"]?.jsonArray?.isNotEmpty() == true
+    }.getOrDefault(false)
+
+    private fun parseWordCardParams(
+        jsonText: String,
+        passage: String,
+        words: List<String>,
+        s: State,
+    ): JsonObject {
+        val raw = runCatching { json.parseToJsonElement(jsonText).jsonObject }
+            .getOrElse { throw IllegalStateException("단어카드 JSON 파싱 실패: ${it.message}") }
+        val rawCards = raw["cards"]?.jsonArray ?: JsonArray(emptyList())
+        if (rawCards.isEmpty()) throw IllegalStateException("단어카드 JSON에 cards가 없습니다.")
+        val cards = rawCards.mapIndexedNotNull { index, element ->
+            val obj = element as? JsonObject ?: return@mapIndexedNotNull null
+            val word = obj["word"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+            if (word.isBlank()) return@mapIndexedNotNull null
+            buildJsonObject {
+                put("id", JsonPrimitive(obj["id"]?.jsonPrimitive?.contentOrNull?.ifBlank { null } ?: "w${index + 1}_${slugId(word)}"))
+                put("word", JsonPrimitive(word))
+                put("meaningKo", normalizeStringArray(obj, "meaningKo", fallback = wordCardMeaningFallback(obj, word)))
+                put("structureKo", normalizeStringArray(obj, "structureKo", fallback = wordCardStructureFallback(obj, word)))
+                put("examples", normalizeExamples(obj, word, passage))
+                put("checked", obj["checked"] ?: JsonPrimitive(false))
+            }
+        }
+        if (cards.isEmpty()) throw IllegalStateException("단어카드 JSON에서 유효한 카드를 찾지 못했습니다.")
+        return buildJsonObject {
+            raw.forEach { (key, value) -> if (key !in setOf("title", "passage", "cards", "selectedWords")) put(key, value) }
+            put("title", JsonPrimitive(raw["title"]?.jsonPrimitive?.contentOrNull ?: s.unitTitle.ifBlank { "Word Cards" }))
+            put("passage", JsonPrimitive(raw["passage"]?.jsonPrimitive?.contentOrNull ?: passage))
+            put("selectedWords", JsonArray(words.map { JsonPrimitive(it) }))
+            put("cards", JsonArray(cards))
+        }
+    }
+
+    private fun wordCardMeaningFallback(obj: JsonObject, word: String): List<String> {
+        val koSense = obj["ko_sense"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+        val desc = obj["desc"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+        return listOf(koSense, desc)
+            .filter { it.isNotBlank() }
+            .ifEmpty { listOf("${word} 뜻을 아주 쉬운 말로 확인해요.") }
+    }
+
+    private fun wordCardStructureFallback(obj: JsonObject, word: String): List<String> {
+        val frame = obj["frame"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+        if (frame.isBlank() || frame.equals("null", ignoreCase = true)) {
+            return listOf("${word}는 뜻과 쓰임을 문장 안에서 떠올리면 돼요.")
+        }
+        return listOf("이 단어는 문장에서 $frame 모양으로 쓰여요.")
+    }
+
+    private fun normalizeStringArray(obj: JsonObject, key: String, fallback: List<String>): JsonArray {
+        val values = when (val value = obj[key]) {
+            is JsonArray -> value.mapNotNull { (it as? JsonPrimitive)?.contentOrNull?.trim() }
+            is JsonPrimitive -> listOfNotNull(value.contentOrNull?.trim())
+            else -> emptyList()
+        }.filter { it.isNotBlank() }
+        return JsonArray((values.ifEmpty { fallback }).map { JsonPrimitive(it) })
+    }
+
+    private fun normalizeExamples(obj: JsonObject, word: String, passage: String): JsonArray {
+        val raw = obj["examples"] as? JsonArray
+        val exKo = obj.stringListValue("ex_ko")
+        val examples = raw?.mapNotNull { element ->
+            val index = raw.indexOf(element)
+            when (element) {
+                is JsonObject -> {
+                    val en = element["en"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+                    if (en.isBlank()) null else buildJsonObject {
+                        put("en", JsonPrimitive(en))
+                        put("ko", JsonPrimitive(element["ko"]?.jsonPrimitive?.contentOrNull ?: exKo.getOrNull(index).orEmpty()))
+                        put("noteKo", JsonPrimitive(element["noteKo"]?.jsonPrimitive?.contentOrNull.orEmpty()))
+                    }
+                }
+                is JsonPrimitive -> element.contentOrNull?.takeIf { it.isNotBlank() }?.let {
+                    buildJsonObject {
+                        put("en", JsonPrimitive(it))
+                        put("ko", JsonPrimitive(exKo.getOrNull(index).orEmpty()))
+                        put("noteKo", JsonPrimitive(""))
+                    }
+                }
+                else -> null
+            }
+        }.orEmpty()
+        if (examples.isNotEmpty()) return JsonArray(examples)
+        val sentence = passage.lineSequence().firstOrNull { it.contains(word, ignoreCase = true) }
+            ?: passage.lineSequence().firstOrNull().orEmpty()
+        return JsonArray(
+            listOf(
+                buildJsonObject {
+                    put("en", JsonPrimitive(sentence.ifBlank { "This sentence uses $word." }))
+                    put("ko", JsonPrimitive(""))
+                    put("noteKo", JsonPrimitive("${word}를 지문 문장 속에서 찾아봐요."))
+                },
+            ),
+        )
+    }
 
     private fun fallbackPassageParams(sentences: List<String>, s: State): JsonObject {
         val sentenceObjects = sentences.mapIndexed { index, sentence ->
@@ -1255,6 +2127,117 @@ class AuthoringViewModel @Inject constructor(
         sentences.forEachIndexed { i, sentence -> append("${i + 1}. $sentence\n") }
     }
 
+    private fun wordCardEnglishPassagePrompt(source: String): String = buildString {
+        append("다음 지문을 아이 영어 학습용으로 깨끗한 영어 지문으로 옮겨줘.\n")
+        append("이미 영어라면 문장을 자연스럽게 정리만 하고 뜻은 바꾸지 마.\n")
+        append("문제, 선택지, 번호, 한국어 설명은 빼고 실제 읽을 영어 지문만 남겨줘.\n")
+        append("반드시 JSON 객체 하나만 출력해: {\"passage\":\"...\"}\n\n")
+        append(source)
+    }
+
+    private fun wordCardBracketPrompt(passage: String): String = buildString {
+        append(
+            """
+            지문에서 공부할 단어 후보를 골라 버튼용 목록으로 만들어.
+
+            [빼는 것]
+            - 문장 "중간"에 대문자로 시작하는 말(이름·지명). 단 문장 맨 앞 단어는 빼지 마.
+            - 따옴표 안이나 기울임꼴(제목·인용) 안의 단어.
+            - 숫자, 글자로 쓴 수(Fifty-one, twenty), 하이픈으로 이은 복합어(three-headed).
+            - the, a, is, and, to, in, of 같은 기본 기능어.
+
+            [묶는 것]
+            - 같은 기본형은 버튼 하나로: knocking·knocked → "knock", built·building → "build".
+            - 구동사·여러 단어가 한 뜻이면 통째 한 버튼: "knock down", "figure out", "be made from", "look for".
+
+            각 버튼: {"word":"기본형 또는 묶음", "src":"그 단어가 나온 문장 원문"}
+            같은 단어가 다른 문장에서 다른 뜻으로 나오면 각각 버튼으로.
+            JSON 배열만. 설명 금지.
+
+            지문:
+            """.trimIndent(),
+        )
+        append("\n\"\"\"\n")
+        append(passage)
+        append("\n\"\"\"")
+    }
+
+    private fun wordCardExplanationPrompt(
+        passage: String,
+        candidates: List<WordCardCandidate>,
+        customPrompt: String,
+        s: State,
+    ): String = buildString {
+        append(customPrompt.ifBlank { DEFAULT_WORD_CARD_PROMPT }.trim())
+        append("\n\nReturn ONLY one valid JSON object. No markdown. No code fence. No explanation.\n")
+        append("Create params for a word_card step.\n")
+        append("Title hint: ${s.unitTitle.ifBlank { s.unitId }}\n")
+        append("Use the selected word/src items below. Keep card order exactly the same.\n")
+        append("Selected word/src JSON:\n")
+        append(JsonArray(candidates.map { candidate ->
+            buildJsonObject {
+                put("word", JsonPrimitive(candidate.word))
+                put("src", JsonPrimitive(candidate.src.ifBlank { passage.lineSequence().firstOrNull { it.contains(candidate.word, ignoreCase = true) }.orEmpty() }))
+            }
+        }).toString())
+        append("\nPassage:\n")
+        append(passage)
+        append("\n\nRequired JSON schema:\n")
+        append("{\n")
+        append("  \"title\": \"short English title\",\n")
+        append("  \"passage\": \"the English passage\",\n")
+        append("  \"cards\": [\n")
+        append("    {\n")
+        append("      \"id\": \"w_word\",\n")
+        append("      \"word\": \"selected word\",\n")
+        append("      \"ko_sense\": \"이 문장에서의 뜻과 쓰임\",\n")
+        append("      \"frame\": \"나온 모양 그대로 + [슬롯], or null\",\n")
+        append("      \"desc\": \"세 문장짜리 순한글 설명\",\n")
+        append("      \"examples\": [\"easy sentence\", \"one more piece\", \"near passage sentence\"],\n")
+        append("      \"ex_ko\": [\"쉬운 뜻\", \"쉬운 뜻\", \"쉬운 뜻\"],\n")
+        append("      \"checked\": false\n")
+        append("    }\n")
+        append("  ]\n")
+        append("}\n")
+    }
+
+    private fun wordCardDefinitionExplanationPrompt(
+        candidates: List<WordCardCandidate>,
+        customPrompt: String,
+        s: State,
+    ): String = buildString {
+        append(customPrompt.ifBlank { DEFAULT_WORD_CARD_PROMPT }.trim())
+        append("\n\nReturn ONLY one valid JSON object. No markdown. No code fence. No explanation.\n")
+        append("Create params for a word_card step from vocabulary-photo definitions.\n")
+        append("Title hint: ${s.unitTitle.ifBlank { s.unitId }}\n")
+        append("Use EVERY word/definition item below. Do not add extra words. Keep order exactly the same.\n")
+        append("The definition field is the English meaning printed next to the word in the photo. Base the Korean sense, easy explanation, and examples on that definition.\n")
+        append("Word/definition JSON:\n")
+        append(JsonArray(candidates.map { candidate ->
+            buildJsonObject {
+                put("word", JsonPrimitive(candidate.word))
+                put("definition", JsonPrimitive(candidate.src))
+            }
+        }).toString())
+        append("\n\nRequired JSON schema:\n")
+        append("{\n")
+        append("  \"title\": \"short English title\",\n")
+        append("  \"passage\": \"short summary of these vocabulary words\",\n")
+        append("  \"cards\": [\n")
+        append("    {\n")
+        append("      \"id\": \"w_word\",\n")
+        append("      \"word\": \"word from list\",\n")
+        append("      \"ko_sense\": \"photo definition을 바탕으로 한 쉬운 한국어 뜻\",\n")
+        append("      \"frame\": \"verb/pattern frame, or null for noun/adjective when not needed\",\n")
+        append("      \"desc\": \"세 문장짜리 순한글 설명\",\n")
+        append("      \"examples\": [\"easy sentence\", \"one more piece\", \"near real-use sentence\"],\n")
+        append("      \"ex_ko\": [\"쉬운 뜻\", \"쉬운 뜻\", \"쉬운 뜻\"],\n")
+        append("      \"checked\": false\n")
+        append("    }\n")
+        append("  ]\n")
+        append("}\n")
+    }
+
     private fun passageDownloadPrompt(
         batch: PassageJsonBatch,
         s: State,
@@ -1317,6 +2300,15 @@ class AuthoringViewModel @Inject constructor(
         append("중복은 제거하고, 책에 나온 원형 표현을 우선해. 설명·코드펜스 없이 [\"word\", ...] 형식만.")
     }
 
+    private fun photoWordDefinitionBatchPrompt(startPage: Int, endPage: Int, count: Int): String = buildString {
+        append("첨부된 이미지 ${count}장은 영어 단어와 그 옆/아래 영어 뜻(definition)이 함께 있는 단어장 사진이며, 선택 순서상 ${startPage}~${endPage}쪽이야.\n")
+        append("이미지에 보이는 모든 단어/표현과 바로 옆에 적힌 영어 뜻을 빠짐없이 추출해줘.\n")
+        append("품사 표시(adj., n., v. 등)는 definition에 포함해도 되지만, 단어 자체에는 넣지 마.\n")
+        append("뜻이 여러 줄이면 자연스럽게 한 문장으로 합쳐. 임의로 새 단어를 추가하지 마.\n")
+        append("설명·코드펜스 없이 JSON 배열만 출력:\n")
+        append("[{\"word\":\"fizzy\",\"definition\":\"having a lot of gas bubbles\"}]")
+    }
+
     private fun pageOrderPrompt(pages: List<PageSentences>): String = buildString {
         append("아래는 여러 번 나눠 추출한 페이지별 영어 문장 JSON이야.\n")
         append("pageNumber는 사용자가 사진을 선택한 순서지만, 페이지끼리 순서가 엉켰을 수도 있어. ")
@@ -1346,6 +2338,10 @@ class AuthoringViewModel @Inject constructor(
         append("Do NOT put any letters or text inside the image. Same art style across all cells. ")
         append("After it's generated I'll save it as grid.png.")
     }
+
+    /** 그림다시 단어별 사진 프롬프트. 반드시 이 한 줄만 보낸다. */
+    private fun repairWordPhotoPrompt(word: RepairWord): String =
+        "\"${word.text}\"(${word.definition}) 을 설명할 수 있는 사진 찾아줘."
 
     private suspend fun saveJsonDownload(s: State, suffix: String, text: String) {
         runCatching {
@@ -1395,9 +2391,11 @@ class AuthoringViewModel @Inject constructor(
     private fun uploadDelayMs(count: Int): Long =
         (2500L + count.coerceAtLeast(1) * 1200L).coerceAtMost(9000L)
 
-    private fun prepareFreshChat(reason: String) {
+    private suspend fun prepareFreshChat(reason: String) {
         isolateAuthoringWebView()
         gateway.provideView()
+        runCatching { gateway.clearComposerDraftOnEntry() }
+            .onFailure { Log.d("AuthoringViewModel", "fresh chat draft clear skipped reason=$reason error=${it.message}") }
     }
 
     private fun ensurePhotoAttachSucceeded(result: String) {
@@ -1526,16 +2524,36 @@ class AuthoringViewModel @Inject constructor(
             val fenced = Regex("```(.*?)```", RegexOption.DOT_MATCHES_ALL).find(it)?.groupValues?.get(1)
             (fenced ?: it).trim()
         }
-        val startObj = t.indexOf('{')
-        val startArr = t.indexOf('[')
-        val start = listOf(startObj, startArr).filter { it >= 0 }.minOrNull() ?: return null
-        val open = t[start]
-        val close = if (open == '{') '}' else ']'
-        var depth = 0
-        for (i in start until t.length) {
-            when (t[i]) {
-                open -> depth++
-                close -> { depth--; if (depth == 0) return t.substring(start, i + 1) }
+        for (start in t.indices) {
+            if (t[start] != '{' && t[start] != '[') continue
+            val candidate = balancedJsonCandidate(t, start) ?: continue
+            if (runCatching { json.parseToJsonElement(candidate) }.isSuccess) return candidate
+        }
+        return null
+    }
+
+    private fun balancedJsonCandidate(text: String, start: Int): String? {
+        val stack = ArrayDeque<Char>()
+        var inString = false
+        var escaped = false
+        for (i in start until text.length) {
+            val ch = text[i]
+            if (inString) {
+                when {
+                    escaped -> escaped = false
+                    ch == '\\' -> escaped = true
+                    ch == '"' -> inString = false
+                }
+                continue
+            }
+            when (ch) {
+                '"' -> inString = true
+                '{' -> stack.addLast('}')
+                '[' -> stack.addLast(']')
+                '}', ']' -> {
+                    if (stack.isEmpty() || stack.removeLast() != ch) return null
+                    if (stack.isEmpty()) return text.substring(start, i + 1)
+                }
             }
         }
         return null
@@ -1543,6 +2561,14 @@ class AuthoringViewModel @Inject constructor(
 
     private fun slugId(v: String): String =
         v.trim().lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_')
+
+    private fun JsonObject.stringValue(key: String): String? =
+        (this[key] as? JsonPrimitive)?.contentOrNull
+
+    private fun JsonObject.stringListValue(key: String): List<String> =
+        (this[key] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull?.trim() }
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
 
     private fun mergePhotoUris(current: List<Uri>, added: List<Uri>): List<Uri> =
         (current + added).distinctBy { it.toString() }
@@ -1560,6 +2586,25 @@ class AuthoringViewModel @Inject constructor(
         const val JSON_CHUNK_RETRY_DELAY_MS = 5_000L
         const val IMAGE_ACTION_MENU_SETTLE_MS = 2_000L
         const val PASSAGE_JSON_USE_DOWNLOAD_FLOW = true
+        const val DEFAULT_WORD_CARD_PROMPT =
+            "7세 남아용 단어 학습 카드를 만들어. 아이는 한자어를 못 알아들어.\n\n" +
+                "[받는 것] word(또는 묶음)와 그 단어가 나온 문장(src).\n\n" +
+                "[frame 규칙]\n" +
+                "- frame은 그 단어가 직접 거느리는 부분만. 명사·사람·사물·장소 이름은 frame 없이 뜻만 줘(frame:null). 주어로 쓰였다고 뒤 문장을 frame에 끌어오지 마.\n" +
+                "  예: contest·bulldozer·operator는 frame 없음. hold·knock·give만 frame 가짐.\n" +
+                "- 동사·구동사는 지문에 나온 모양 그대로 한 덩어리로. 수동태·구동사 문법으로 풀지 마.\n" +
+                "  be made from → frame: be made from + [재료]\n" +
+                "  give (gave the people a great idea) → frame: give + [누구] + [무엇]\n" +
+                "- ko_sense는 이 문장에서 쓰인 뜻·용법으로. 사전 1번 뜻 말고(hold=열리다 / hold=버티다 구분).\n\n" +
+                "[설명(desc) 규칙 — 카드의 핵심]\n" +
+                "- 그 단어의 느낌을 세 문장으로 풀어. 짧게 끊지 말고 그림이 그려지게.\n" +
+                "- frame 있는 단어(동사 등): 뒤에 무엇이 오는지를 자연스럽게 녹여. 이 말을 보면 뒤에 ~가 오겠구나 하는 느낌이 들게.\n" +
+                "- frame 없는 단어(명사 등): 그게 뭔지, 어떻게 생겼는지, 언제 쓰는지를 떠올리게.\n" +
+                "- 모두 순한글 구어체 반말. 보호·위험·계획 같은 추상 한자어 금지(지켜주다·무서운·미리 정하다로). 창문·책상 같은 기본 명사는 OK.\n\n" +
+                "[예문 규칙]\n" +
+                "- 쉬운 단어로, 지문 어순을 그대로 따라. 동사는 3칸 모두 완전한 문장으로.\n" +
+                "- 3단: ①제일 쉽게 ②한 조각 더 ③지문 문장에 가깝게.\n\n" +
+                "각 카드에는 word, ko_sense, frame, desc, examples 3개, ex_ko 3개를 채워. 최종 출력 형식은 뒤에 붙는 앱 저장용 JSON 스키마를 따라."
         val gridKeys = setOf("imageAsset", "cell", "gridCols", "gridRows")
         const val PHOTO_WORD_PROMPT =
             "이 사진을 보고 초등학생이 배울 핵심 영어 단어를 8~14개 골라 JSON 배열로만 답해줘. " +

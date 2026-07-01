@@ -552,10 +552,13 @@ private fun captionWithTappableWords(
     append(caption.substring(cursor))
 }
 
-// 그림창에 주입할 요청문 — 사진 우선, 없으면 간단히 그려달라고. 짧게.
+// 그림창에 주입할 요청문 — 생성 요청 없이 사진 검색만 짧게.
 private fun storyPicturePayload(word: String, explanation: String?): String {
-    val ctx = explanation?.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: ""
-    return "\"$word\"$ctx 의 사진이나 그림을 보여줘. 못 찾으면 아이가 알아볼 수 있게 간단히 그려줘."
+    val target = explanation
+        ?.takeIf { it.isNotBlank() }
+        ?.let { "\"$word\"($it)" }
+        ?: "\"$word\""
+    return "$target 을 설명할 수 있는 사진 찾아줘."
 }
 
 private fun storyWordTalkPayload(

@@ -231,6 +231,17 @@ class AuthoringWebGateway @Inject constructor(
 
     fun provideView(): WebView = ensureWebView()
 
+    suspend fun clearComposerDraftOnEntry(): Boolean = withContext(Dispatchers.Main.immediate) {
+        ensureWebView()
+        if (!waitForEditor()) return@withContext false
+        val result = evalObj(buildClearComposerDraftJs())
+        val cleared = result?.optBoolean("cleared") == true
+        val beforeLen = result?.optInt("beforeLen", 0) ?: 0
+        val afterLen = result?.optInt("afterLen", 0) ?: 0
+        Log.d(TAG, "entry draft clear cleared=$cleared beforeLen=$beforeLen afterLen=$afterLen status=${result?.optString("status").orEmpty()}")
+        cleared || beforeLen == 0
+    }
+
     fun retryAfterHttp431() {
         val wv = ensureWebView()
         pageLoaded = false
@@ -390,6 +401,7 @@ class AuthoringWebGateway @Inject constructor(
         val sentAt = now()
         var lastText = ""
         var lastChange = sentAt
+        var lastWaitLog = 0L
         delay(3500)
         val deadline = timeoutMs?.let { sentAt + it }
         while (deadline == null || now() < deadline) {
@@ -403,18 +415,31 @@ class AuthoringWebGateway @Inject constructor(
                 val stop = snap.optBoolean("stopVisible")
                 val uploading = snap.optBoolean("uploadingVisible")
                 val actionsReady = snap.optBoolean("assistantActionsReady")
-                val hasNew = (count > preCount && len > 3) || len > preLen + 20 || text.length > preTail + 20
-                val stable = hasNew && now() - lastChange >= RESPONSE_STABLE_MS && !stop && !uploading && actionsReady
+                val hasNew = (count > preCount && len > 20) || len > preLen + 20 || text.length > preTail + 20
+                val quietMs = now() - lastChange
+                val stable = ResponseCompletionDetector.isComplete(snap, hasNew, quietMs, RESPONSE_STABLE_MS)
                 if (stable) {
-                    Log.d(TAG, "query stable len=$len count=$count actionsReady=$actionsReady queue=${snap.optInt("domQueueDepth")} lastSource=${snap.optString("lastSource")} raf=${snap.optLong("raf")}")
+                    Log.d(
+                        TAG,
+                        "query stable len=$len count=$count queue=${snap.optInt("domQueueDepth")} " +
+                            "actionsReady=$actionsReady stop=$stop lastSource=${snap.optString("lastSource")} raf=${snap.optLong("raf")}",
+                    )
                     return@withContext snap.optString("lastAssistant").ifEmpty { text }
+                }
+                if (hasNew && now() - lastWaitLog >= 12_000L) {
+                    lastWaitLog = now()
+                    Log.d(
+                        TAG,
+                        "query waiting stable len=$len count=$count quietMs=$quietMs actionsReady=$actionsReady stop=$stop uploading=$uploading " +
+                            "queue=${snap.optInt("domQueueDepth")} source=${snap.optString("lastSource")}",
+                    )
                 }
             }
             delay(RESPONSE_POLL_MS)
         }
         lastQueryFailure = AuthoringQueryFailureReason.RESPONSE_TIMEOUT
         Log.w(TAG, "query timeout lastLen=${lastText.length}")
-        null
+        lastText.ifEmpty { null }
     }
 
     /** 프롬프트만 보내고 응답은 기다리지 않는다(그림/JSON 생성은 capture* 로 따로 받는다). */
@@ -432,17 +457,38 @@ class AuthoringWebGateway @Inject constructor(
     }
 
     private suspend fun inject(prompt: String): Boolean {
-        repeat(6) {
+        repeat(6) { attempt ->
             val r = eval(buildPromptInjectionJs(prompt))
+            Log.d(TAG, "inject attempt=$attempt result=${r.take(260)}")
             if (r.contains("prompt-injected")) return true
             delay(400)
+            val probe = evalObj(buildPromptPresenceProbeJs(prompt))
+            Log.d(
+                TAG,
+                "inject probe attempt=$attempt hasPrompt=${probe?.optBoolean("hasPrompt")} " +
+                    "textLen=${probe?.optInt("textLen")} sendEnabled=${probe?.optBoolean("sendEnabled")} " +
+                    "selector=${probe?.optString("selector")}",
+            )
+            if (probe?.optBoolean("hasPrompt") == true) {
+                Log.d(TAG, "inject accepted by probe promptChars=${prompt.length} textLen=${probe.optInt("textLen")}")
+                return true
+            }
         }
+        Log.w(TAG, "inject failed promptChars=${prompt.length}")
         return false
     }
 
     private suspend fun sendWithRetry(): Boolean {
         var mode = "button"
         for (attempt in 0 until SEND_MAX_ATTEMPTS) {
+            val target = evalObj(buildSendTargetJs(attempt))
+            Log.d(TAG, "send native target attempt=$attempt target=$target")
+            if (target?.optBoolean("found") == true) {
+                tapTarget(target)
+                delay(1_200)
+                Log.d(TAG, "send native tap dispatched attempt=$attempt")
+                return true
+            }
             val r = eval(buildSendJs(mode))
             Log.d(TAG, "send attempt=$attempt mode=$mode result=$r")
             if (r.contains("clicked-send-button")) return true
@@ -450,6 +496,33 @@ class AuthoringWebGateway @Inject constructor(
             mode = if (enter || attempt >= 5) "button" else mode
             delay(if (enter) 1200 else 2500)
         }
+        return false
+    }
+
+    private suspend fun waitForPromptSent(prompt: String, attempt: Int): Boolean {
+        val deadline = now() + USER_SEND_CONFIRM_TIMEOUT_MS
+        var lastProbe: JSONObject? = null
+        while (now() < deadline) {
+            val probe = evalObj(buildPromptThreadSnapshotJs(prompt))
+            lastProbe = probe
+            if (probe?.optBoolean("userFound") == true) {
+                Log.d(
+                    TAG,
+                    "send confirmed attempt=$attempt userIndex=${probe.optInt("userIndex")} " +
+                        "assistantIndex=${probe.optInt("assistantIndex")} editorLen=${probe.optInt("editorLen")}",
+                )
+                return true
+            }
+            if (probe?.optBoolean("stopVisible") == true) {
+                Log.d(TAG, "send waiting: stopVisible without user prompt attempt=$attempt editorLen=${probe.optInt("editorLen")}")
+            }
+            delay(USER_SEND_CONFIRM_POLL_MS)
+        }
+        Log.w(
+            TAG,
+            "send not confirmed attempt=$attempt editorLen=${lastProbe?.optInt("editorLen")} " +
+                "userIndex=${lastProbe?.optInt("userIndex")} assistantIndex=${lastProbe?.optInt("assistantIndex")}",
+        )
         return false
     }
 
@@ -490,16 +563,54 @@ class AuthoringWebGateway @Inject constructor(
         evalObj(buildImageCompletionProbeJs(minImageCount))?.optBoolean("ready") == true
     }
 
+    suspend fun generatedImageActionsReadyAfter(previous: AssistantMarker, minImageCount: Int = 0): Boolean =
+        withContext(Dispatchers.Main.immediate) {
+            ensureWebView()
+            val probe = evalObj(buildImageCompletionProbeJs(minImageCount, previous))
+            Log.d(
+                TAG,
+                "image actions after prevTurn=${previous.turnId} ready=${probe?.optBoolean("ready")} " +
+                    "new=${probe?.optBoolean("newAssistant")} total=${probe?.optInt("total")} " +
+                    "visualReady=${probe?.optBoolean("visualReady")} rootReady=${probe?.optBoolean("rootReady")} " +
+                    "actionReady=${probe?.optBoolean("actionReady")} scopedActions=${probe?.optInt("scopedActions")} " +
+                    "nearDocActions=${probe?.optInt("nearDocActions")} turn=${probe?.optInt("turnId")}",
+            )
+            probe?.optBoolean("ready") == true
+        }
+
     /** 마지막 turn 에서 생성 이미지를 fetch→base64 로 직접 가져온다. */
     suspend fun captureLastImageDataUrl(minImageCount: Int = 0): String? = withContext(Dispatchers.Main.immediate) {
         ensureWebView()
         val d = CompletableDeferred<String?>()
         captureDeferred = d
-        eval(buildCaptureScript(minImageCount))
+        eval(buildCaptureScript(minImageCount, preferFirst = false))
         val r = withTimeoutOrNull(CAPTURE_TIMEOUT_MS) { d.await() }
         captureDeferred = null
         r
     }
+
+    /** 마지막 turn 에서 첫 번째 큰 이미지를 fetch→base64 로 직접 가져온다. */
+    suspend fun captureFirstImageDataUrl(minImageCount: Int = 0): String? = withContext(Dispatchers.Main.immediate) {
+        ensureWebView()
+        val d = CompletableDeferred<String?>()
+        captureDeferred = d
+        eval(buildCaptureScript(minImageCount, preferFirst = true))
+        val r = withTimeoutOrNull(CAPTURE_TIMEOUT_MS) { d.await() }
+        captureDeferred = null
+        r
+    }
+
+    /** [previous] 이후 새 assistant turn 의 첫 번째 완성 이미지를 가져온다. */
+    suspend fun captureFirstImageDataUrlAfter(previous: AssistantMarker, minImageCount: Int = 0): String? =
+        withContext(Dispatchers.Main.immediate) {
+            ensureWebView()
+            val d = CompletableDeferred<String?>()
+            captureDeferred = d
+            eval(buildCaptureScript(minImageCount, preferFirst = true, previous = previous))
+            val r = withTimeoutOrNull(CAPTURE_TIMEOUT_MS) { d.await() }
+            captureDeferred = null
+            r
+        }
 
     /** 마지막 turn 에서 JSON 만 골라 작은 조각으로 받아 합친다(큰 응답 안전 수신). */
     suspend fun captureLastAssistantJsonChunked(
@@ -900,9 +1011,11 @@ class AuthoringWebGateway @Inject constructor(
 
     private suspend fun eval(js: String): String = withContext(Dispatchers.Main.immediate) {
         val wv = ensureWebView()
-        suspendCancellableCoroutine { cont ->
-            wv.evaluateJavascript(js) { result -> if (cont.isActive) cont.resume(result ?: "null") }
-        }
+        withTimeoutOrNull(EVAL_TIMEOUT_MS) {
+            suspendCancellableCoroutine { cont ->
+                wv.evaluateJavascript(js) { result -> if (cont.isActive) cont.resume(result ?: "null") }
+            }
+        } ?: "eval-timeout"
     }
 
     private suspend fun evalObj(js: String): JSONObject? = runCatching {
@@ -958,6 +1071,38 @@ class AuthoringWebGateway @Inject constructor(
         })();
         """.trimIndent()
 
+    private fun buildClearComposerDraftJs(): String =
+        """
+        (function(){
+          function rectOf(el){if(!el||!el.getBoundingClientRect)return {width:0,height:0,top:0,left:0,bottom:0,right:0}; const r=el.getBoundingClientRect(); return {width:r.width,height:r.height,top:r.top,bottom:r.bottom,right:r.right,left:r.left};}
+          function visible(el){if(!el){return false;}const r=rectOf(el);const s=getComputedStyle(el);return r.width>0&&r.height>0&&r.bottom>0&&r.right>0&&r.top<window.innerHeight&&r.left<window.innerWidth&&s.visibility!=="hidden"&&s.display!=="none";}
+          function fire(el,type){try{el.dispatchEvent(new InputEvent(type,{bubbles:true,cancelable:true,inputType:"deleteContentBackward",data:null}));}catch(e){el.dispatchEvent(new Event(type,{bubbles:true,cancelable:true}));}}
+          const selectors=["#prompt-textarea","[data-testid='composer-text-input']","[data-testid='prompt-textarea']","textarea",".ProseMirror","[contenteditable]","[role='textbox']"];
+          let el=null, selector="";
+          for(const q of selectors){
+            const all=Array.from(document.querySelectorAll(q));
+            const list=all.filter(visible);
+            const picked=(list.length?list:all).slice(-1)[0];
+            if(picked){el=picked;selector=q;break;}
+          }
+          if(!el){return JSON.stringify({status:"no-editor",cleared:false,beforeLen:0,afterLen:0});}
+          const before=("value" in el)?String(el.value||""):String(el.innerText||el.textContent||"");
+          if(before.length===0){return JSON.stringify({status:"already-empty",cleared:false,beforeLen:0,afterLen:0,selector:selector});}
+          if("value" in el){
+            let proto=Object.getPrototypeOf(el), desc=null;
+            while(proto&&!desc){desc=Object.getOwnPropertyDescriptor(proto,"value");proto=Object.getPrototypeOf(proto);}
+            if(desc&&desc.set){desc.set.call(el,"");}else{el.value="";}
+            fire(el,"beforeinput");fire(el,"input");el.dispatchEvent(new Event("change",{bubbles:true}));
+          } else {
+            el.innerHTML="";
+            el.textContent="";
+            fire(el,"beforeinput");fire(el,"input");el.dispatchEvent(new Event("change",{bubbles:true}));
+          }
+          const after=("value" in el)?String(el.value||""):String(el.innerText||el.textContent||"");
+          return JSON.stringify({status:after.length===0?"cleared":"not-cleared",cleared:after.length===0,beforeLen:before.length,afterLen:after.length,selector:selector});
+        })();
+        """.trimIndent()
+
     private fun buildComposerModeTargetJs(labels: List<String>): String {
         val targets = labels
             .filter { it.isNotBlank() }
@@ -995,44 +1140,142 @@ class AuthoringWebGateway @Inject constructor(
             "return JSON.stringify({clicked:false,bodyTail:String(document.body&&document.body.innerText||'').slice(-240)});" +
         "})();"
 
+    private fun buildPromptThreadSnapshotJs(
+        prompt: String,
+        previousTurnId: Int = 0,
+        previousHash: String = "",
+        previousLength: Int = 0,
+    ): String {
+        val prefix = jsTemplate(prompt.take(72))
+        val tail = jsTemplate(prompt.takeLast(72))
+        val previousHashJson = JSONObject.quote(previousHash)
+        return DOM_QUEUE_RUNTIME_JS + "\n" + """
+        (function(){
+          const prefix=`$prefix`;
+          const tail=`$tail`;
+          const previousTurnId=$previousTurnId;
+          const previousHash=$previousHashJson;
+          const previousLength=$previousLength;
+          function norm(v){return String(v||"").replace(/\s+/g," ").trim();}
+          function hashOf(value){const s=String(value||"");return s.length+":"+s.slice(0,80)+":"+s.slice(-160);}
+          function nodeId(el){const s=window.__seoinDomQueueState;return s&&s.ids&&s.ids.get?(s.ids.get(el)||0):0;}
+          function visible(el){if(!el||!el.getBoundingClientRect)return false;const r=el.getBoundingClientRect();const s=getComputedStyle(el);return r.width>0&&r.height>0&&r.bottom>0&&r.right>0&&r.top<window.innerHeight&&r.left<window.innerWidth&&s.visibility!=="hidden"&&s.display!=="none";}
+          function text(el){return norm(el&&((el.innerText||el.textContent)||""));}
+          function editorText(){
+            const selectors=["#prompt-textarea","[data-testid='composer-text-input']","[data-testid='prompt-textarea']","textarea",".ProseMirror","[contenteditable]","[role='textbox']"];
+            for(const q of selectors){
+              const all=Array.from(document.querySelectorAll(q));
+              const list=all.filter(visible);
+              const el=(list.length?list:all).slice(-1)[0];
+              if(el) return norm(("value" in el)?el.value:(el.innerText||el.textContent||""));
+            }
+            return "";
+          }
+          function containsPrompt(value){
+            const t=norm(value);
+            const p=norm(prefix);
+            const z=norm(tail);
+            const pOk=!p || t.indexOf(p)>=0;
+            const zOk=!z || t.indexOf(z)>=0;
+            return t.length>0 && pOk && zOk;
+          }
+          const buttons=Array.from(document.querySelectorAll("button,[role='button']")).filter(visible);
+          const labels=buttons.map(function(b){return b.innerText||b.ariaLabel||b.title||b.getAttribute("aria-label")||"";}).join("\n");
+          const stopVisible=/stop|중지|정지|생성 중지|응답 중지/i.test(labels);
+          const uploadingVisible=/uploading|첨부 중|업로드|upload failed|파일을 처리/i.test(labels);
+          const nodes=Array.from(document.querySelectorAll("[data-message-author-role]"));
+          const turns=nodes.map(function(n,i){
+            return {node:n,index:i,role:n.getAttribute("data-message-author-role")||"",text:text(n)};
+          });
+          let userIndex=-1;
+          for(let i=turns.length-1;i>=0;i--){
+            if(turns[i].role==="user" && containsPrompt(turns[i].text)){userIndex=i;break;}
+          }
+          let assistantIndex=-1;
+          let assistantText="";
+          let assistantNode=null;
+          let assistantAfterPre=false;
+          let matchMode="none";
+          if(userIndex>=0){
+            for(let i=userIndex+1;i<turns.length;i++){
+              if(turns[i].role==="assistant" && turns[i].text.length>0){
+                assistantIndex=i;
+                assistantText=turns[i].text;
+                assistantNode=turns[i].node;
+                matchMode="prompt";
+              }
+            }
+          }
+          if(!assistantText){
+            for(let i=turns.length-1;i>=0;i--){
+              if(turns[i].role==="assistant" && turns[i].text.length>0){
+                const candidate=turns[i];
+                const h=hashOf(candidate.text);
+                const id=nodeId(candidate.node);
+                const changed=(previousHash&&h!==previousHash) ||
+                  (previousTurnId>0&&id>0&&id!==previousTurnId) ||
+                  (!previousHash&&previousLength>0&&candidate.text.length!==previousLength);
+                if(changed){
+                  assistantIndex=i;
+                  assistantText=candidate.text;
+                  assistantNode=candidate.node;
+                  assistantAfterPre=true;
+                  matchMode="assistant-after-pre";
+                }
+                break;
+              }
+            }
+          }
+          """ + ResponseCompletionDetector.ACTION_MENU_JS + """
+          const editor=editorText();
+          return JSON.stringify({
+            href:location.href,
+            title:document.title,
+            userFound:userIndex>=0,
+            assistantAfterPre:assistantAfterPre,
+            matchMode:matchMode,
+            userIndex:userIndex,
+            assistantIndex:assistantIndex,
+            assistantText:assistantText,
+            assistantLen:assistantText.length,
+            assistantActionsReady:actionMenuReady(assistantNode),
+            editorLen:editor.length,
+            stopVisible:stopVisible,
+            uploadingVisible:uploadingVisible,
+            raf:window.__seoinRaf||0,
+            ts:Date.now()
+          });
+        })();
+        """.trimIndent()
+    }
+
     private fun buildSnapshotJs(): String =
         DOM_QUEUE_RUNTIME_JS + "\n" + """
         (function(){
           const text=function(el){return (el&&((el.innerText||el.textContent)||"")).trim();};
           const visible=function(el){if(!el||!el.getBoundingClientRect)return false;const r=el.getBoundingClientRect();const s=getComputedStyle(el);return r.width>0&&r.height>0&&s.visibility!=="hidden"&&s.display!=="none";};
+          const norm=function(v){return String(v||"").replace(/\s+/g," ").trim();};
+          const hashOf=function(value){const s=String(value||"");return s.length+":"+s.slice(0,80)+":"+s.slice(-160);};
           const drained=window.__seoinDrainChangedTurns?window.__seoinDrainChangedTurns():{items:[],last:null,assistantCount:0,depth:0,seq:0};
+          const directAssistants=Array.from(document.querySelectorAll("[data-message-author-role='assistant']"))
+            .filter(function(el){return norm(el.innerText||el.textContent).length>0;});
+          const directLast=directAssistants.length?directAssistants[directAssistants.length-1]:null;
+          const directText=norm(directLast&&(directLast.innerText||directLast.textContent));
           let last=drained.last;
           if(!last && window.__seoinLatestAssistantSnapshot){ last=window.__seoinLatestAssistantSnapshot(); }
           let lastAssistant=(last&&last.role==="assistant")?String(last.text||""):"";
           if(!lastAssistant && window.__seoinLastAssistant){ lastAssistant=text(window.__seoinLastAssistant()); }
+          if(directText && (!lastAssistant || directText!==lastAssistant)){
+            lastAssistant=directText;
+            last={id:0,hash:hashOf(directText),source:"direct-dom",role:"assistant",text:directText};
+          }
           const editor=!!document.querySelector("#prompt-textarea,[data-testid='composer-text-input'],[data-testid='prompt-textarea'],textarea,.ProseMirror,[contenteditable],[role='textbox']");
           const buttons=Array.from(document.querySelectorAll("button,[role='button']")).filter(visible);
           const labels=buttons.map(function(b){return b.innerText||b.ariaLabel||b.title||b.getAttribute("aria-label")||"";}).join("\n");
           const stopVisible=/stop|중지|정지|생성 중지|응답 중지/i.test(labels);
           const uploadingVisible=/uploading|첨부 중|업로드|upload failed|파일을 처리/i.test(labels);
-          function actionMenuReady(root){
-            if(!root) return false;
-            const rr=root.getBoundingClientRect?root.getBoundingClientRect():{top:0,bottom:0,left:0,right:0};
-            const scope=root.closest&&(
-              root.closest("[data-testid^='conversation-turn']") ||
-              root.closest("article") ||
-              root.parentElement
-            );
-            const actionWords=/copy|copied|good response|bad response|like|dislike|thumb|regenerate|share|edit|복사|좋은|나쁜|좋아요|싫어요|공유|다시 생성|편집/i;
-            const candidates=[];
-            if(scope&&scope.querySelectorAll){
-              candidates.push(...Array.from(scope.querySelectorAll("button,[role='button']")));
-            }
-            candidates.push(...buttons.filter(function(b){
-              const r=b.getBoundingClientRect();
-              return r.top>=rr.top-24 && r.top<=rr.bottom+220 && r.left>=0 && r.right<=window.innerWidth+4;
-            }));
-            return candidates.some(function(b){
-              const label=[b.innerText,b.ariaLabel,b.title,b.getAttribute&&b.getAttribute("aria-label"),b.getAttribute&&b.getAttribute("data-testid")].filter(Boolean).join(" ");
-              return actionWords.test(label);
-            });
-          }
-          const lastNode=window.__seoinLastAssistant?window.__seoinLastAssistant():null;
+          """ + ResponseCompletionDetector.ACTION_MENU_JS + """
+          const lastNode=(window.__seoinLastAssistant?window.__seoinLastAssistant():null)||directLast;
           const assistantActionsReady=actionMenuReady(lastNode);
           const bodyTail=lastAssistant.slice(-2400);
           return JSON.stringify({
@@ -1040,7 +1283,7 @@ class AuthoringWebGateway @Inject constructor(
             title:document.title,
             bodyLen:lastAssistant.length,
             bodyTail:bodyTail,
-            assistantCount:drained.assistantCount||0,
+            assistantCount:Math.max(drained.assistantCount||0,directAssistants.length),
             lastAssistant:lastAssistant,
             lastAssistantLen:lastAssistant.length,
             lastSource:last?last.source:"",
@@ -1081,17 +1324,67 @@ class AuthoringWebGateway @Inject constructor(
             "})();"
     }
 
+    private fun buildPromptPresenceProbeJs(prompt: String): String {
+        val prefix = jsTemplate(prompt.take(30))
+        val tail = jsTemplate(prompt.takeLast(30))
+        return "(function(){" +
+            "const prefix=`" + prefix + "`;" +
+            "const tail=`" + tail + "`;" +
+            "function rectOf(el){if(!el||!el.getBoundingClientRect)return {width:0,height:0,top:0,left:0,bottom:0,right:0};const r=el.getBoundingClientRect();return {width:r.width,height:r.height,top:r.top,left:r.left,bottom:r.bottom,right:r.right};}" +
+            "function visible(el){if(!el)return false;const r=rectOf(el);const s=getComputedStyle(el);return r.width>0&&r.height>0&&r.bottom>0&&r.right>0&&r.top<window.innerHeight&&r.left<window.innerWidth&&s.visibility!=='hidden'&&s.display!=='none';}" +
+            "function pickEditor(){const selectors=['#prompt-textarea','[data-testid=\"composer-text-input\"]','[data-testid=\"prompt-textarea\"]','textarea','.ProseMirror','[contenteditable]','[role=\"textbox\"]'];for(const q of selectors){const all=[...document.querySelectorAll(q)];const list=all.filter(visible);if(list.length){return {el:list[list.length-1],selector:q};}if(all.length){return {el:all[all.length-1],selector:q};}}return null;}" +
+            "function label(el){return String(el&&((el.innerText||el.ariaLabel||el.title||el.getAttribute&&el.getAttribute('aria-label')||el.textContent)||'')).replace(/\\s+/g,' ').trim();}" +
+            "const picked=pickEditor();" +
+            "const el=picked&&picked.el;" +
+            "const text=el?(('value' in el)?String(el.value||''):String(el.innerText||el.textContent||'')):'';" +
+            "const hasPrefix=prefix.length===0||text.indexOf(prefix)>=0;" +
+            "const hasTail=tail.length===0||text.indexOf(tail)>=0;" +
+            "const buttons=[...document.querySelectorAll('button')].filter(visible);" +
+            "const send=buttons.find(b=>!b.disabled&&(b.getAttribute('data-testid')==='send-button'||/send|보내기|전송/i.test(label(b))));" +
+            "return JSON.stringify({selector:picked?picked.selector:'',textLen:text.length,hasPrefix:hasPrefix,hasTail:hasTail,hasPrompt:(text.length>0&&hasPrefix&&hasTail),sendEnabled:!!send,sendLabel:send?label(send):'',href:location.href});" +
+            "})();"
+    }
+
+    private fun buildSendTargetJs(attempt: Int): String =
+        "(function(){" +
+            "const attempt=" + attempt + ";" +
+            "function rectOf(el){if(!el||!el.getBoundingClientRect)return {width:0,height:0,top:0,left:0,bottom:0,right:0};const r=el.getBoundingClientRect();return {width:r.width,height:r.height,top:r.top,left:r.left,bottom:r.bottom,right:r.right};}" +
+            "function visible(el){if(!el)return false;const r=rectOf(el);const s=getComputedStyle(el);return r.width>0&&r.height>0&&r.bottom>0&&r.right>0&&r.top<window.innerHeight&&r.left<window.innerWidth&&s.visibility!=='hidden'&&s.display!=='none';}" +
+            "function label(el){return String(el&&((el.innerText||el.ariaLabel||el.title||el.getAttribute&&el.getAttribute('aria-label')||el.textContent)||'')).replace(/\\s+/g,' ').trim();}" +
+            "function pickEditor(){const selectors=['#prompt-textarea','[data-testid=\"composer-text-input\"]','[data-testid=\"prompt-textarea\"]','textarea','.ProseMirror','[contenteditable]','[role=\"textbox\"]'];for(const q of selectors){const all=[...document.querySelectorAll(q)];const list=all.filter(visible);if(list.length){return list[list.length-1];}if(all.length){return all[all.length-1];}}return null;}" +
+            "const editor=pickEditor();" +
+            "const er=rectOf(editor);" +
+            "const scope=editor&&(editor.closest('form')||editor.closest('[data-testid*=\"composer\"],#thread-bottom,[id=\"thread-bottom\"],[class*=\"composer\"]'));" +
+            "const scoped=scope?[...scope.querySelectorAll('button')]:[];" +
+            "const allButtons=[...document.querySelectorAll('button')];" +
+            "const buttons=(scoped.length?scoped:allButtons).filter(visible).filter(b=>!b.disabled);" +
+            "let rows=buttons.map(b=>({el:b,r:rectOf(b),label:label(b),testid:b.getAttribute('data-testid')||''}));" +
+            "let hit=rows.find(x=>x.testid==='send-button'||/send|보내기|전송/i.test(x.label));" +
+            "if(!hit&&editor){const nearRows=allButtons.filter(visible).filter(b=>!b.disabled).map(b=>({el:b,r:rectOf(b),label:label(b),testid:b.getAttribute('data-testid')||''})).filter(x=>x.r.top>=er.top-160&&x.r.bottom<=er.bottom+180&&x.r.right>=er.right-220);hit=nearRows.find(x=>x.testid==='send-button'||/send|보내기|전송/i.test(x.label))||nearRows.sort((a,b)=>b.r.right-a.r.right||b.r.bottom-a.r.bottom)[0];}" +
+            "if(!hit){hit=rows.filter(x=>x.r.bottom>window.innerHeight*0.55&&x.r.right>window.innerWidth*0.55).sort((a,b)=>b.r.right-a.r.right||b.r.bottom-a.r.bottom)[0];}" +
+            "if(!hit){return JSON.stringify({found:false,attempt:attempt,vw:window.innerWidth,vh:window.innerHeight,buttonCount:rows.length,editorTop:er.top,editorBottom:er.bottom});}" +
+            "const r=hit.r;const vt=Math.max(0,r.top),vb=Math.min(window.innerHeight,r.bottom),vl=Math.max(0,r.left),vr=Math.min(window.innerWidth,r.right);" +
+            "const visibleH=Math.max(0,vb-vt),visibleW=Math.max(0,vr-vl);const tapX=(vl+vr)/2,tapY=(vt+vb)/2;" +
+            "return JSON.stringify({found:true,attempt:attempt,label:hit.label,testid:hit.testid,tapX:tapX,tapY:tapY,x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,vw:window.innerWidth,vh:window.innerHeight,left:r.left,top:r.top,right:r.right,bottom:r.bottom,visibleWidth:visibleW,visibleHeight:visibleH,tapSafe:visibleH>=18&&visibleW>=18&&tapY>6&&tapY<window.innerHeight-6});" +
+            "})();"
+
     /** webviewtest buildSendJs 그대로. */
     private fun buildSendJs(mode: String): String {
         val m = jsString(mode)
         return "(function(){" +
             "const mode='" + m + "';" +
             "function visible(el){const r=el.getBoundingClientRect();const s=getComputedStyle(el);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none';}" +
-            "const editor=document.querySelector('#prompt-textarea,[data-testid=\"composer-text-input\"],[data-testid=\"prompt-textarea\"],textarea,.ProseMirror,[contenteditable],[role=\"textbox\"]');" +
+            "function pickEditor(){const selectors=['#prompt-textarea','[data-testid=\"composer-text-input\"]','[data-testid=\"prompt-textarea\"]','textarea','.ProseMirror','[contenteditable]','[role=\"textbox\"]'];for(const q of selectors){const all=[...document.querySelectorAll(q)];const list=all.filter(visible);if(list.length){return list[list.length-1];}if(all.length){return all[all.length-1];}}return null;}" +
+            "function rectOf(el){if(!el||!el.getBoundingClientRect)return {top:0,bottom:0,left:0,right:0};const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};}" +
+            "function label(el){return String(el&&((el.innerText||el.ariaLabel||el.title||el.getAttribute&&el.getAttribute('aria-label')||el.textContent)||'')).replace(/\\s+/g,' ').trim();}" +
+            "const editor=pickEditor();" +
             "if(mode==='enter'&&editor){editor.focus();editor.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',code:'Enter',which:13,keyCode:13,bubbles:true,cancelable:true}));editor.dispatchEvent(new KeyboardEvent('keyup',{key:'Enter',code:'Enter',which:13,keyCode:13,bubbles:true,cancelable:true}));return 'enter-dispatched';}" +
-            "const buttons=[...document.querySelectorAll('button')].filter(visible);" +
-            "let btn=buttons.find(b=>!b.disabled&&(b.getAttribute('data-testid')==='send-button'||/send|보내기|전송/i.test(b.innerText||b.ariaLabel||b.title||b.getAttribute('aria-label')||'')));" +
-            "if(!btn){btn=buttons.filter(b=>!b.disabled).map(b=>({b,r:b.getBoundingClientRect(),label:(b.innerText||b.ariaLabel||b.title||b.getAttribute('aria-label')||'')}))" +
+            "const scope=editor&&(editor.closest('form')||editor.closest('[data-testid*=\"composer\"],#thread-bottom,[id=\"thread-bottom\"],[class*=\"composer\"]'));" +
+            "const scoped=scope?[...scope.querySelectorAll('button')]:[];" +
+            "const buttons=(scoped.length?scoped:[...document.querySelectorAll('button')]).filter(visible);" +
+            "let btn=buttons.find(b=>!b.disabled&&(b.getAttribute('data-testid')==='send-button'||/send|보내기|전송/i.test(label(b))));" +
+            "if(!btn&&editor){const er=rectOf(editor);btn=[...document.querySelectorAll('button')].filter(visible).filter(b=>!b.disabled).map(b=>({b:b,r:rectOf(b),label:label(b),testid:b.getAttribute('data-testid')||''})).filter(x=>x.r.top>=er.top-160&&x.r.bottom<=er.bottom+180&&x.r.right>=er.right-220).find(x=>x.testid==='send-button'||/send|보내기|전송/i.test(x.label))?.b;}" +
+            "if(!btn){btn=buttons.filter(b=>!b.disabled).map(b=>({b,r:b.getBoundingClientRect(),label:label(b)}))" +
             ".filter(x=>x.r.bottom>window.innerHeight*0.55&&x.r.right>window.innerWidth*0.55).sort((a,b)=>b.r.right-a.r.right)[0]?.b;}" +
             "if(btn){btn.click();return 'clicked-send-button';}" +
             "return 'no-enabled-send';" +
@@ -1168,47 +1461,134 @@ class AuthoringWebGateway @Inject constructor(
             "return out(hit);" +
             "})();"
 
-    private fun buildCaptureScript(minImageCount: Int): String = """
+    private fun buildCaptureScript(
+        minImageCount: Int,
+        preferFirst: Boolean,
+        previous: AssistantMarker? = null,
+    ): String {
+        val prevTurnId = previous?.turnId ?: 0
+        val prevHash = JSONObject.quote(previous?.hash.orEmpty())
+        return """
         (function() {
           try {
               const minCount=$minImageCount;
+              const preferFirst=${if (preferFirst) "true" else "false"};
+              const prevTurnId=$prevTurnId;
+              const prevHash=$prevHash;
+              const requireNew=prevTurnId>0 || prevHash.length>0;
             if(window.__seoinEnsureDomQueue) window.__seoinEnsureDomQueue();
-            const root=window.__seoinLastAssistant?window.__seoinLastAssistant():null;
-            const scope=root||document;
-            const seen=new Set();
-            const imgs=Array.from(scope.querySelectorAll("img, img[src^='blob:'], img[src^='data:']")).filter(function(i){
-              const src=i.currentSrc||i.src||""; if(!src||seen.has(src))return false; seen.add(src);
-              const r=i.getBoundingClientRect();
-              const w=i.naturalWidth||r.width||i.width||0; const h=i.naturalHeight||r.height||i.height||0;
-              return w>=120 && h>=120;
-            });
-            const canvases=Array.from(document.querySelectorAll("main canvas")).filter(function(c){
-              const r=c.getBoundingClientRect(); return (c.width||r.width)>=200 && (c.height||r.height)>=200;
-            });
-            const total=imgs.length+canvases.length;
+            const latest=window.__seoinLatestAssistantSnapshot?window.__seoinLatestAssistantSnapshot():null;
+            const lastRoot=window.__seoinLastAssistant?window.__seoinLastAssistant():null;
+            const latestIsNew=!requireNew || (!!latest && latest.role==="assistant" && (latest.id!==prevTurnId || (!!prevHash && latest.hash!==prevHash)));
+            function textOf(el){ return String((el&&(el.innerText||el.textContent))||"").replace(/\s+/g," ").trim(); }
+            function hashOf(value){ const s=String(value||""); return s.length+":"+s.slice(0,80)+":"+s.slice(-160); }
+            function nodeId(el){
+              const s=window.__seoinDomQueueState;
+              return s&&s.ids&&s.ids.get ? (s.ids.get(el)||0) : 0;
+            }
+            function assistantRoots(){
+              const seenRoots=new Set();
+              const out=[];
+              function add(el){ if(el&&!seenRoots.has(el)){ seenRoots.add(el); out.push(el); } }
+              Array.from(document.querySelectorAll("[data-message-author-role='assistant'], article")).forEach(add);
+              add(lastRoot);
+              return out;
+            }
+            function previousIndex(roots){
+              if(!requireNew) return -1;
+              for(let i=roots.length-1;i>=0;i--){
+                const id=nodeId(roots[i]);
+                const hash=hashOf(textOf(roots[i]));
+                if((prevTurnId>0&&id===prevTurnId) || (!!prevHash&&hash===prevHash)) return i;
+              }
+              return -1;
+            }
+            function largeVisuals(scope){
+              const seenSrc=new Set();
+              const imgs=Array.from((scope||document).querySelectorAll("img, img[src^='blob:'], img[src^='data:']")).filter(function(i){
+                const src=i.currentSrc||i.src||""; if(!src||seenSrc.has(src))return false; seenSrc.add(src);
+                const r=i.getBoundingClientRect();
+                const w=i.naturalWidth||r.width||i.width||0; const h=i.naturalHeight||r.height||i.height||0;
+                return w>=120 && h>=120;
+              });
+              const canvases=Array.from((scope||document).querySelectorAll("canvas")).filter(function(c){
+                const r=c.getBoundingClientRect(); return (c.width||r.width)>=200 && (c.height||r.height)>=200;
+              });
+              return {imgs:imgs,canvases:canvases,total:imgs.length+canvases.length};
+            }
+            const roots=assistantRoots();
+            const prevIdx=previousIndex(roots);
+            const candidates=requireNew ? (prevIdx>=0 ? roots.slice(prevIdx+1) : roots) : [lastRoot||document];
+            const visualTarget=Math.max(1,minCount);
+            const scoped=candidates.slice().reverse().map(function(r){ const v=largeVisuals(r); return {root:r,imgs:v.imgs,canvases:v.canvases,total:v.total}; });
+            const picked=scoped.find(function(x){ return x.total>=visualTarget; });
+            if(requireNew && (!latestIsNew || candidates.length===0)){ SeoinBridge.onImageCaptured(""); return "waiting-new-assistant"; }
+            if(!picked){ SeoinBridge.onImageCaptured(""); return "no-img"; }
+            const imgs=picked.imgs;
+            const canvases=picked.canvases;
+            const total=picked.total;
             if(total < minCount){ SeoinBridge.onImageCaptured(""); return "waiting"; }
-            const canvas=canvases.slice(-1)[0];
-            if(canvas){ try { SeoinBridge.onImageCaptured(canvas.toDataURL("image/png")); return "canvas"; } catch(e){} }
-            const img=imgs.slice(-1)[0];
-            if(!img){ SeoinBridge.onImageCaptured(""); return "no-img"; }
-            fetch(img.src).then(function(r){return r.blob();}).then(function(blob){
+            const img=preferFirst?imgs[0]:imgs.slice(-1)[0];
+            if(img){
+              fetch(img.src).then(function(r){return r.blob();}).then(function(blob){
               const fr=new FileReader();
               fr.onload=function(){ SeoinBridge.onImageCaptured(String(fr.result||"")); };
               fr.onerror=function(){ SeoinBridge.onImageCaptured(""); };
               fr.readAsDataURL(blob);
-            }).catch(function(e){ SeoinBridge.onImageCaptured(""); });
-            return "fetching";
+              }).catch(function(e){ SeoinBridge.onImageCaptured(""); });
+              return "fetching";
+            }
+            const canvas=preferFirst?canvases[0]:canvases.slice(-1)[0];
+            if(canvas){ try { SeoinBridge.onImageCaptured(canvas.toDataURL("image/png")); return "canvas"; } catch(e){} }
+            SeoinBridge.onImageCaptured(""); return "no-img";
           } catch(e){ try{SeoinBridge.onImageCaptured("");}catch(_){} return "err"; }
         })();
-    """.trimIndent()
+        """.trimIndent()
+    }
 
-    private fun buildImageCompletionProbeJs(minImageCount: Int): String = """
+    private fun buildImageCompletionProbeJs(
+        minImageCount: Int,
+        previous: AssistantMarker? = null,
+    ): String {
+        val prevCount = previous?.count ?: 0
+        val prevTurnId = previous?.turnId ?: 0
+        val prevHash = JSONObject.quote(previous?.hash.orEmpty())
+        return """
         (function() {
           try {
             const minCount=$minImageCount;
-            const root=window.__seoinLastAssistant?window.__seoinLastAssistant():null;
-            const scope=root||document;
+            const prevCount=$prevCount;
+            const prevTurnId=$prevTurnId;
+            const prevHash=$prevHash;
+            const requireNew=prevCount>0 || prevTurnId>0 || prevHash.length>0;
+            if(window.__seoinEnsureDomQueue) window.__seoinEnsureDomQueue();
+            const latest=window.__seoinLatestAssistantSnapshot?window.__seoinLatestAssistantSnapshot():null;
+            const lastRoot=window.__seoinLastAssistant?window.__seoinLastAssistant():null;
             const actionWords=/copy|copied|good response|bad response|like|dislike|thumb|regenerate|share|edit|download|복사|좋은|좋음|나쁜|좋아요|싫어요|공유|다시 생성|편집|다운로드/i;
+            const latestIsNew=!requireNew || (!!latest && latest.role==="assistant" && (latest.id!==prevTurnId || (!!prevHash && latest.hash!==prevHash)));
+            function textOf(el){ return String((el&&(el.innerText||el.textContent))||"").replace(/\s+/g," ").trim(); }
+            function hashOf(value){ const s=String(value||""); return s.length+":"+s.slice(0,80)+":"+s.slice(-160); }
+            function nodeId(el){
+              const s=window.__seoinDomQueueState;
+              return s&&s.ids&&s.ids.get ? (s.ids.get(el)||0) : 0;
+            }
+            function assistantRoots(){
+              const seenRoots=new Set();
+              const out=[];
+              function add(el){ if(el&&!seenRoots.has(el)){ seenRoots.add(el); out.push(el); } }
+              Array.from(document.querySelectorAll("[data-message-author-role='assistant'], article")).forEach(add);
+              add(lastRoot);
+              return out;
+            }
+            function previousIndex(roots){
+              if(!requireNew) return -1;
+              for(let i=roots.length-1;i>=0;i--){
+                const id=nodeId(roots[i]);
+                const hash=hashOf(textOf(roots[i]));
+                if((prevTurnId>0&&id===prevTurnId) || (!!prevHash&&hash===prevHash)) return i;
+              }
+              return -1;
+            }
             function visible(el){
               if(!el) return false;
               const r=el.getBoundingClientRect();
@@ -1219,25 +1599,49 @@ class AuthoringWebGateway @Inject constructor(
               return [el.innerText,el.ariaLabel,el.title,el.getAttribute&&el.getAttribute("aria-label"),el.getAttribute&&el.getAttribute("data-testid")]
                 .filter(Boolean).join(" ").replace(/\s+/g," ").trim();
             }
-            const seen=new Set();
-            const imgs=Array.from(scope.querySelectorAll("img, img[src^='blob:'], img[src^='data:']")).filter(function(i){
-              const src=i.currentSrc||i.src||""; if(!src||seen.has(src))return false; seen.add(src);
-              const r=i.getBoundingClientRect();
-              const w=i.naturalWidth||r.width||i.width||0; const h=i.naturalHeight||r.height||i.height||0;
-              return w>=120 && h>=120;
-            });
-            const canvases=Array.from(document.querySelectorAll("main canvas")).filter(function(c){
-              const r=c.getBoundingClientRect(); return (c.width||r.width)>=200 && (c.height||r.height)>=200;
-            });
-            const total=imgs.length+canvases.length;
-            function allActionButtons(){
+            function largeVisuals(scope){
+              const seenSrc=new Set();
+              const imgs=Array.from((scope||document).querySelectorAll("img, img[src^='blob:'], img[src^='data:']")).filter(function(i){
+                const src=i.currentSrc||i.src||""; if(!src||seenSrc.has(src))return false; seenSrc.add(src);
+                const r=i.getBoundingClientRect();
+                const w=i.naturalWidth||r.width||i.width||0; const h=i.naturalHeight||r.height||i.height||0;
+                return w>=120 && h>=120;
+              });
+              const canvases=Array.from((scope||document).querySelectorAll("canvas")).filter(function(c){
+                const r=c.getBoundingClientRect(); return (c.width||r.width)>=200 && (c.height||r.height)>=200;
+              });
+              return {imgs:imgs,canvases:canvases,total:imgs.length+canvases.length};
+            }
+            const roots=assistantRoots();
+            const prevIdx=previousIndex(roots);
+            const candidates=requireNew ? (prevIdx>=0 ? roots.slice(prevIdx+1) : roots) : [lastRoot||document];
+            const visualTarget=Math.max(1,minCount);
+            const scoped=candidates.slice().reverse().map(function(r){ const v=largeVisuals(r); return {root:r,imgs:v.imgs,canvases:v.canvases,total:v.total}; });
+            const picked=scoped.find(function(x){ return x.total>=visualTarget; })||null;
+            const root=picked ? picked.root : (requireNew ? candidates[candidates.length-1] : lastRoot);
+            const visualSet=picked||largeVisuals(root||document);
+            const imgs=visualSet.imgs;
+            const canvases=visualSet.canvases;
+            const total=visualSet.total;
+            const newAssistant=!requireNew || (latestIsNew && candidates.length>0);
+            function scopedActionButtons(){
               const q="button,[role='button'],[aria-label],[data-testid]";
-              const fromRoot=root?Array.from(root.querySelectorAll(q)):[];
-              const fromDoc=Array.from(document.querySelectorAll(q));
-              return Array.from(new Set(fromRoot.concat(fromDoc))).filter(visible);
+              const turn=root&&root.closest&&(root.closest("[data-testid^='conversation-turn']")||root.closest("article")||root.parentElement);
+              const fromTurn=turn&&turn.querySelectorAll?Array.from(turn.querySelectorAll(q)):[];
+              const fromRoot=root&&root.querySelectorAll?Array.from(root.querySelectorAll(q)):[];
+              return Array.from(new Set(fromTurn.concat(fromRoot))).filter(visible);
+            }
+            function documentActionButtonsNearRoot(){
+              if(!root) return [];
+              const rr=root.getBoundingClientRect();
+              const q="button,[role='button'],[aria-label],[data-testid]";
+              return Array.from(document.querySelectorAll(q)).filter(visible).filter(function(b){
+                const br=b.getBoundingClientRect();
+                return br.top>=rr.top-24 && br.top<=rr.bottom+300 && br.left>=0 && br.right<=window.innerWidth+8;
+              });
             }
             function actionNearRect(rect){
-              return allActionButtons().some(function(b){
+              return scopedActionButtons().some(function(b){
                 const br=b.getBoundingClientRect();
                 const horizontal=br.right>=rect.left-40 && br.left<=rect.right+40;
                 const below=br.top>=rect.bottom-24 && br.top<=rect.bottom+300;
@@ -1246,22 +1650,25 @@ class AuthoringWebGateway @Inject constructor(
             }
             function actionNearRoot(){
               if(!root) return false;
-              const rr=root.getBoundingClientRect();
-              return allActionButtons().some(function(b){
-                const br=b.getBoundingClientRect();
-                return br.top>=rr.top-24 && br.top<=rr.bottom+260 && actionWords.test(label(b));
-              });
+              const candidates=Array.from(new Set(scopedActionButtons().concat(documentActionButtonsNearRoot())));
+              return candidates.some(function(b){ return actionWords.test(label(b)); });
             }
             const visual=canvases.slice(-1)[0]||imgs.slice(-1)[0]||null;
             const visualReady=!!visual && actionNearRect(visual.getBoundingClientRect());
             const rootReady=actionNearRoot();
-            const ready=total>=minCount && (visualReady || rootReady);
-            return JSON.stringify({ready:ready,total:total,minCount:minCount,visualReady:visualReady,rootReady:rootReady});
+            const actionReady=visualReady || rootReady;
+            const buttons=Array.from(document.querySelectorAll("button,[role='button']")).filter(visible);
+            const labels=buttons.map(function(b){return b.innerText||b.ariaLabel||b.title||b.getAttribute("aria-label")||"";}).join("\n");
+            const stopVisible=/stop|중지|정지|생성 중지|응답 중지/i.test(labels);
+            const uploadingVisible=/uploading|첨부 중|업로드|upload failed|파일을 처리/i.test(labels);
+            const ready=newAssistant && total>=minCount && actionReady && !stopVisible && !uploadingVisible;
+            return JSON.stringify({ready:ready,total:total,minCount:minCount,newAssistant:newAssistant,turnId:latest?latest.id:0,turnLen:latest?latest.len:0,prevTurnId:prevTurnId,selectedRootId:nodeId(root),visualReady:visualReady,rootReady:rootReady,actionReady:actionReady,scopedActions:scopedActionButtons().length,nearDocActions:documentActionButtonsNearRoot().length,stopVisible:stopVisible,uploadingVisible:uploadingVisible});
           } catch(e) {
             return JSON.stringify({ready:false,error:String(e)});
           }
         })();
-    """.trimIndent()
+        """.trimIndent()
+    }
 
     private fun buildJsonChunkCaptureScript(
         id: String,
@@ -1279,18 +1686,27 @@ class AuthoringWebGateway @Inject constructor(
                 if(!bridge || !bridge.onTextChunk) return "no-bridge";
                 if(window.__seoinEnsureDomQueue) window.__seoinEnsureDomQueue();
                 const meta=window.__seoinDrainChangedTurns?window.__seoinDrainChangedTurns():{assistantCount:0,last:null};
-                const count=meta.assistantCount||0;
+                const directAssistants=Array.from(document.querySelectorAll("[data-message-author-role='assistant']"))
+                  .filter(function(el){ return String((el.innerText||el.textContent)||"").trim().length>0; });
+                const count=Math.max(meta.assistantCount||0,directAssistants.length);
                 const latest=window.__seoinLatestAssistantSnapshot?window.__seoinLatestAssistantSnapshot():(meta.last||null);
                 if(!latest) return fail("no-assistant-snapshot");
+                const requireNew=(minCount>0)||(prevId>0)||(prevHash.length>0);
                 const same=(!!prevHash && latest.hash===prevHash) || (prevId>0 && latest.id===prevId && (!prevHash || latest.hash===prevHash));
-                if(count < minCount && !latest) return fail("waiting-new-assistant");
+                if(requireNew && same) return fail("same-assistant");
+                if(count < minCount) return fail("waiting-new-assistant");
                 const last=window.__seoinLastAssistant?window.__seoinLastAssistant():null;
                 const roots=[];
                 const seen=new Set();
                 const addRoot=function(el){ if(el && !seen.has(el)){ seen.add(el); roots.push(el); } };
+                directAssistants.slice().reverse().slice(0,8).forEach(addRoot);
                 addRoot(last);
                 Array.from(document.querySelectorAll("[data-message-author-role='assistant'], article")).reverse().slice(0,8).forEach(addRoot);
                 if(!roots.length) return fail("no-assistant");
+                function visible(el){ if(!el||!el.getBoundingClientRect)return false; const r=el.getBoundingClientRect(); const s=getComputedStyle(el); return r.width>0&&r.height>0&&s.visibility!=="hidden"&&s.display!=="none"; }
+                function label(el){ return [el&&el.innerText,el&&el.ariaLabel,el&&el.title,el&&el.getAttribute&&el.getAttribute("aria-label"),el&&el.getAttribute&&el.getAttribute("data-testid")].filter(Boolean).join(" "); }
+                """ + ResponseCompletionDetector.ACTION_MENU_JS + """
+                if(!actionMenuReady(roots[0])) return fail("waiting-actions");
                 const candidates=[];
                 roots.forEach(function(root){
                   Array.from(root.querySelectorAll("pre code, pre, code")).reverse()
@@ -1299,8 +1715,6 @@ class AuthoringWebGateway @Inject constructor(
                     .forEach(function(t){ candidates.push(t); });
                   candidates.push(root.innerText || root.textContent || "");
                 });
-                const main=document.querySelector("main");
-                if(main) candidates.push(main.innerText || main.textContent || "");
                 const balancedJson=function(raw) {
                   const text=String(raw||"").replace(/```json/gi, "```").replace(/```/g, "").trim();
                   let found="";
@@ -1372,6 +1786,7 @@ class AuthoringWebGateway @Inject constructor(
         const val MAX_CHATGPT_Q_URL_CHARS = 7_500
         const val PAGE_LOAD_TIMEOUT_MS = 20_000L
         const val EDITOR_TIMEOUT_MS = 120_000L          // 로그인/에디터 등장 대기(첫 1회 로그인 포함).
+        const val EVAL_TIMEOUT_MS = 8_000L
         // 첨부(webviewtest 상수 그대로).
         const val ATTACH_MAX_ATTEMPTS = 4
         const val ATTACH_RETRY_WAIT_MS = 4_500L
@@ -1380,6 +1795,8 @@ class AuthoringWebGateway @Inject constructor(
         // 응답.
         const val SEND_MAX_ATTEMPTS = 18
         const val MODE_SELECT_MAX_ATTEMPTS = 5
+        const val USER_SEND_CONFIRM_TIMEOUT_MS = 9_000L
+        const val USER_SEND_CONFIRM_POLL_MS = 700L
         const val RESPONSE_STABLE_MS = 12_000L
         const val RESPONSE_TIMEOUT_MS = 210_000L
         const val RESPONSE_POLL_MS = 2_200L
@@ -1461,6 +1878,10 @@ class AuthoringWebGateway @Inject constructor(
                 const s=String(value||"");
                 return s.length+":"+s.slice(0,80)+":"+s.slice(-160);
               };
+              const visualCount=function(el){
+                if(!el||!el.querySelectorAll) return 0;
+                return el.querySelectorAll("img,canvas,video,[role='img']").length;
+              };
               const visible=function(el){
                 if(!el||!el.getBoundingClientRect) return false;
                 const r=el.getBoundingClientRect();
@@ -1531,7 +1952,8 @@ class AuthoringWebGateway @Inject constructor(
                 const role=roleOf(el);
                 if(role!=="assistant"&&role!=="user") return null;
                 const value=text(el);
-                if(value.length===0) return null;
+                const visuals=visualCount(el);
+                if(value.length===0&&visuals===0) return null;
                 const id=idOf(el);
                 if(role==="assistant") state.seenAssistant.add(id);
                 const snap={
@@ -1539,6 +1961,7 @@ class AuthoringWebGateway @Inject constructor(
                   seq:++state.seq,
                   role:role,
                   len:value.length,
+                  visuals:visuals,
                   hash:hashOf(value),
                   text:value,
                   source:String(source||"mutation"),
