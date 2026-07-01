@@ -391,8 +391,10 @@ class AuthoringWebGateway @Inject constructor(
         val pre = evalObj(buildSnapshotJs())
         val preCount = pre?.optInt("assistantCount") ?: 0
         val preLen = pre?.optInt("lastAssistantLen") ?: 0
-        val preTail = pre?.optString("bodyTail")?.length ?: 0
-        Log.d(TAG, "query pre count=$preCount len=$preLen queue=${pre?.optInt("domQueueDepth")} raf=${pre?.optLong("raf")} visible=${pre?.optString("visibilityState")}")
+        val preText = pre?.optString("lastAssistant").orEmpty()
+            .ifEmpty { pre?.optString("bodyTail").orEmpty() }
+        val preHash = pre?.optString("lastHash").orEmpty()
+        Log.d(TAG, "query pre count=$preCount len=$preLen hash=${preHash.take(80)} queue=${pre?.optInt("domQueueDepth")} raf=${pre?.optLong("raf")} visible=${pre?.optString("visibilityState")}")
 
         if (!inject(prompt)) { lastQueryFailure = AuthoringQueryFailureReason.SEND_FAILED; return@withContext null }
         delay(1400)
@@ -415,14 +417,16 @@ class AuthoringWebGateway @Inject constructor(
                 val stop = snap.optBoolean("stopVisible")
                 val uploading = snap.optBoolean("uploadingVisible")
                 val actionsReady = snap.optBoolean("assistantActionsReady")
-                val hasNew = (count > preCount && len > 20) || len > preLen + 20 || text.length > preTail + 20
+                val hash = snap.optString("lastHash")
+                val changedFromPre = (hash.isNotBlank() && hash != preHash) || (text.isNotBlank() && text != preText)
+                val hasNew = changedFromPre && ((count > preCount && len > 20) || len > 20)
                 val quietMs = now() - lastChange
                 val stable = ResponseCompletionDetector.isComplete(snap, hasNew, quietMs, RESPONSE_STABLE_MS)
                 if (stable) {
                     Log.d(
                         TAG,
                         "query stable len=$len count=$count queue=${snap.optInt("domQueueDepth")} " +
-                            "actionsReady=$actionsReady stop=$stop lastSource=${snap.optString("lastSource")} raf=${snap.optLong("raf")}",
+                            "actionsReady=$actionsReady stop=$stop changed=$changedFromPre lastSource=${snap.optString("lastSource")} raf=${snap.optLong("raf")}",
                     )
                     return@withContext snap.optString("lastAssistant").ifEmpty { text }
                 }
@@ -430,7 +434,7 @@ class AuthoringWebGateway @Inject constructor(
                     lastWaitLog = now()
                     Log.d(
                         TAG,
-                        "query waiting stable len=$len count=$count quietMs=$quietMs actionsReady=$actionsReady stop=$stop uploading=$uploading " +
+                        "query waiting stable len=$len count=$count quietMs=$quietMs changed=$changedFromPre actionsReady=$actionsReady stop=$stop uploading=$uploading " +
                             "queue=${snap.optInt("domQueueDepth")} source=${snap.optString("lastSource")}",
                     )
                 }
